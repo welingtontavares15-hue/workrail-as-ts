@@ -726,6 +726,11 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
+<<<<<<< HEAD
+<!-- Bcryptjs para hash de senha (evita dependência de Firebase Auth) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js" crossorigin="anonymous"></script>
+=======
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
 <style>
 /* ══ LOGIN OVERLAY ══ */
 #login-overlay{
@@ -888,8 +893,13 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
       <div class="login-title">Acesso ao Sistema</div>
       <div class="login-sub">Use seu e-mail e senha cadastrados pelo administrador.</div>
       <div class="login-field">
+<<<<<<< HEAD
+        <label>Usuário</label>
+        <input type="text" id="loginUsername" placeholder="usuario.nome (ex: welington.tavares)" autocomplete="username">
+=======
         <label>E-mail</label>
         <input type="email" id="loginEmail" placeholder="seu@email.com" autocomplete="username">
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
       </div>
       <div class="login-field">
         <label>Senha</label>
@@ -1774,7 +1784,16 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
         <input type="text" id="admin-u-nome" class="field-input" placeholder="Ex: João da Silva">
       </div>
       <div class="login-field" style="margin:0">
+<<<<<<< HEAD
+        <label style="font-size:12px;font-weight:600;color:var(--text-mid)">Usuário (username) *</label>
+        <input type="text" id="admin-u-username" class="field-input" placeholder="Ex: joao.silva" style="font-family:'DM Mono',monospace;font-size:12px">
+        <span style="font-size:10px;color:var(--text-muted);margin-top:2px;display:block">Use minúsculas, números e pontos (ex: welington.tavares)</span>
+      </div>
+      <div class="login-field" style="margin:0">
+        <label style="font-size:12px;font-weight:600;color:var(--text-mid)">E-mail (para notificações) *</label>
+=======
         <label style="font-size:12px;font-weight:600;color:var(--text-mid)">E-mail *</label>
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
         <input type="email" id="admin-u-email" class="field-input" placeholder="email@empresa.com">
       </div>
       <div class="login-field" style="margin:0" id="admin-u-senha-wrap">
@@ -2188,6 +2207,35 @@ function _initializeFirebaseApp() {
     firebaseOk = true;
     console.log('[WORKRAIL] Firebase inicializado com sucesso.');
 
+<<<<<<< HEAD
+    // ── Verifica sessão armazenada no localStorage ────────────────
+    const sessaoArmazenada = localStorage.getItem('WORKRAIL_SESSION');
+    if (sessaoArmazenada) {
+      try {
+        currentUser = JSON.parse(sessaoArmazenada);
+        console.log('[WORKRAIL] Sessão restaurada para:', currentUser.username);
+        showLoading(false);
+        document.getElementById('login-overlay').classList.add('hidden');
+        atualizarInterfaceAposPerfil();
+      } catch(e) {
+        console.error('[WORKRAIL] Erro ao restaurar sessão:', e);
+        localStorage.removeItem('WORKRAIL_SESSION');
+        currentUser = null;
+        showLoading(false);
+        document.getElementById('login-overlay').classList.remove('hidden');
+      }
+    } else {
+      showLoading(false);
+      currentUser = null;
+      document.getElementById('login-overlay').classList.remove('hidden');
+    }
+
+    // ── Observa estado de autenticação (legacy Firebase Auth) ──────
+    auth.onAuthStateChanged(async (user) => {
+      // Mantido para compatibilidade, mas não é usado no novo sistema
+      if (!currentUser && user) {
+        await carregarPerfilUsuario(user);
+=======
     // ── Observa estado de autenticação ───────────────────────────
     auth.onAuthStateChanged(async (user) => {
       showLoading(false);
@@ -2196,6 +2244,7 @@ function _initializeFirebaseApp() {
       } else {
         currentUser = null;
         document.getElementById('login-overlay').classList.remove('hidden');
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
       }
     });
 
@@ -2324,12 +2373,24 @@ async function enviarRecuperacao() {
 // ════════════════════════════════════════════════════════════
 
 async function fazerLogin() {
+<<<<<<< HEAD
+  const username = document.getElementById('loginUsername').value.trim();
+=======
   const email = document.getElementById('loginEmail').value.trim();
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
   const senha  = document.getElementById('loginSenha').value;
   const btn    = document.getElementById('loginBtn');
   const errEl  = document.getElementById('loginError');
 
   errEl.classList.remove('show');
+<<<<<<< HEAD
+  if (!username || !senha) {
+    errEl.textContent = 'Preencha usuário e senha.';
+    errEl.classList.add('show');
+    return;
+  }
+
+=======
   if (!email || !senha) {
     errEl.textContent = 'Preencha e-mail e senha.';
     errEl.classList.add('show');
@@ -2341,6 +2402,7 @@ async function fazerLogin() {
     errEl.classList.add('show');
     return;
   }
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
   // Rate limiting
   if (!AuthRateLimiter.check()) {
     const mins = Math.ceil(AuthRateLimiter.lockoutMs() / 60000);
@@ -2353,13 +2415,69 @@ async function fazerLogin() {
   btn.textContent = 'Entrando...';
 
   try {
+<<<<<<< HEAD
+    // ──── Buscar usuário no Firestore ────────────────────────────
+    const usuariosRef = db.collection('usuarios');
+    const snap = await usuariosRef.where('username', '==', username).limit(1).get();
+
+    if (snap.empty) {
+      throw { code: 'user-not-found', message: 'Usuário não encontrado.' };
+    }
+
+    const usuarioDoc = snap.docs[0];
+    const usuarioData = usuarioDoc.data();
+
+    // ──── Validar se está ativo ────────────────────────────────────
+    if (!usuarioData.ativo) {
+      throw { code: 'user-disabled', message: 'Esta conta foi desativada pelo administrador.' };
+    }
+
+    // ──── Validar senha ────────────────────────────────────────────
+    const senhaValida = await bcrypt.compare(senha, usuarioData.senhaHash);
+    if (!senhaValida) {
+      throw { code: 'wrong-password', message: 'Senha incorreta.' };
+    }
+
+    // ──── Login bem-sucedido ──────────────────────────────────────
+    AuthRateLimiter.reset();
+
+    // Armazenar sessão em localStorage
+    const sessaoData = {
+      uid: usuarioDoc.id,
+      username: usuarioData.username,
+      nome: usuarioData.nome,
+      email: usuarioData.email,
+      perfil: usuarioData.perfil,
+      fornecedor: usuarioData.fornecedor || null,
+      ativo: usuarioData.ativo,
+      loginEm: new Date().toISOString()
+    };
+
+    localStorage.setItem('WORKRAIL_SESSION', JSON.stringify(sessaoData));
+
+    // Carregar perfil do usuário
+    currentUser = sessaoData;
+    document.getElementById('login-overlay').classList.add('hidden');
+
+    // Atualizar interface
+    atualizarInterfaceAposPerfil();
+
+=======
     await auth.signInWithEmailAndPassword(email, senha);
     AuthRateLimiter.reset();
     // onAuthStateChanged cuida do resto
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
   } catch(e) {
     AuthRateLimiter.record();
     const remaining = AuthRateLimiter.remaining();
     const msgs = {
+<<<<<<< HEAD
+      'user-not-found':    'Usuário não encontrado.',
+      'wrong-password':    'Senha incorreta.',
+      'user-disabled':     'Esta conta foi desativada pelo administrador.'
+    };
+    let msg = msgs[e.code] || e.message || 'Erro ao entrar. Tente novamente.';
+=======
       'auth/user-not-found':    'Usuário não encontrado.',
       'auth/wrong-password':    'Senha incorreta.',
       'auth/invalid-email':     'E-mail inválido.',
@@ -2368,30 +2486,74 @@ async function fazerLogin() {
       'auth/invalid-credential':'E-mail ou senha incorretos.'
     };
     let msg = msgs[e.code] || 'Erro ao entrar. Tente novamente.';
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
     if (remaining <= 2 && remaining > 0) msg += ` (${remaining} tentativa${remaining===1?'':'s'} restante${remaining===1?'':'s'})`;
     errEl.textContent = msg;
     errEl.classList.add('show');
     btn.disabled = false;
     btn.textContent = 'Entrar';
+<<<<<<< HEAD
+    console.error('[WORKRAIL] Erro de login:', e);
+=======
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
   }
 }
 
 async function fazerLogout() {
   if (!confirm('Deseja sair do sistema?')) return;
   try {
+<<<<<<< HEAD
+    // Limpar sessão
+    localStorage.removeItem('WORKRAIL_SESSION');
+    currentUser = null;
+    document.getElementById('login-overlay').classList.remove('hidden');
+    document.getElementById('loginUsername').value = '';
+=======
     if (auth) await auth.signOut();
     currentUser = null;
     document.getElementById('login-overlay').classList.remove('hidden');
     document.getElementById('loginEmail').value = '';
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
     document.getElementById('loginSenha').value = '';
     document.getElementById('loginBtn').disabled = false;
     document.getElementById('loginBtn').textContent = 'Entrar';
     document.getElementById('loginError').classList.remove('show');
+<<<<<<< HEAD
+    console.log('[WORKRAIL] Logout realizado com sucesso.');
+=======
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
   } catch(e) {
     console.error('[WORKRAIL] Erro ao sair:', e);
   }
 }
 
+<<<<<<< HEAD
+// ──── Atualizar interface após login bem-sucedido ────────────────────
+function atualizarInterfaceAposPerfil() {
+  showLoading(false);
+
+  // Aplicar menu por perfil
+  aplicarControleMenu();
+
+  // Atualizar nome do usuário na topbar
+  if (currentUser) {
+    const nomeExibicao = currentUser.nome || currentUser.username;
+    const userInitial = (currentUser.nome || currentUser.username).charAt(0).toUpperCase();
+
+    // Atualizar elemento de usuário na topbar (se existir)
+    const tbUser = document.querySelector('.tb-user');
+    if (tbUser) {
+      tbUser.textContent = userInitial;
+      tbUser.title = nomeExibicao;
+    }
+  }
+
+  // Ir para a tela inicial/dashboard
+  irPara('screen-home');
+}
+
+=======
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
 async function carregarPerfilUsuario(firebaseUser) {
   try {
     // Tenta carregar perfil da coleção 'usuarios'
@@ -4166,8 +4328,13 @@ async function carregarUsuariosAdmin() {
         : '<span class="badge-inativo">Inativo</span>';
       const fornecedorCell = u.fornecedor || '—';
       tbody.innerHTML += `<tr>
+<<<<<<< HEAD
+        <td><strong>${u.nome || '—'}</strong><br><span style="font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace">@${u.username}</span></td>
+        <td style="color:var(--text-mid);font-size:12px">${u.email || '—'}</td>
+=======
         <td><strong>${u.nome || '—'}</strong></td>
         <td style="color:var(--text-mid)">${u.email || '—'}</td>
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
         <td><span class="chip ${PERFIS[u.perfil]?.chip||''}" style="font-size:10px">${perfilLabel}</span></td>
         <td>${fornecedorCell}</td>
         <td>${statusBadge}</td>
@@ -4187,12 +4354,26 @@ function abrirModalNovoUsuario() {
   document.getElementById('modal-usuario-title').textContent = 'Novo Usuário';
   document.getElementById('admin-uid-edit').value = '';
   document.getElementById('admin-u-nome').value = '';
+<<<<<<< HEAD
+  document.getElementById('admin-u-username').value = '';
+  document.getElementById('admin-u-username').disabled = false;
+  document.getElementById('admin-u-username').removeAttribute('data-original');
+  document.getElementById('admin-u-email').value = '';
+  document.getElementById('admin-u-email').disabled = false;
+  document.getElementById('admin-u-senha').value = '';
+  document.getElementById('admin-u-senha-wrap').style.display = ''; // Mostrar senha para novo usuário
+  document.getElementById('admin-u-perfil').value = 'vendas';
+  document.getElementById('admin-u-fornecedor').value = 'EBST';
+  document.getElementById('admin-u-erro').style.display = 'none';
+  document.getElementById('admin-u-salvar-btn').textContent = 'Criar Usuário';
+=======
   document.getElementById('admin-u-email').value = '';
   document.getElementById('admin-u-email').disabled = false;
   document.getElementById('admin-u-senha').value = '';
   document.getElementById('admin-u-perfil').value = 'vendas';
   document.getElementById('admin-u-fornecedor').value = 'EBST';
   document.getElementById('admin-u-erro').style.display = 'none';
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
   document.getElementById('admin-u-senha-wrap').style.display = '';
   document.getElementById('admin-u-reset-wrap').style.display = 'none';
   adminToggleFornecedor();
@@ -4208,19 +4389,36 @@ async function editarUsuarioAdmin(uid) {
     document.getElementById('modal-usuario-title').textContent = 'Editar Usuário';
     document.getElementById('admin-uid-edit').value = uid;
     document.getElementById('admin-u-nome').value = u.nome || '';
+<<<<<<< HEAD
+    document.getElementById('admin-u-username').value = u.username || '';
+    document.getElementById('admin-u-username').disabled = false;
+    document.getElementById('admin-u-username').setAttribute('data-original', u.username || '');
+    document.getElementById('admin-u-email').value = u.email || '';
+    document.getElementById('admin-u-email').disabled = false;
+=======
     document.getElementById('admin-u-email').value = u.email || '';
     document.getElementById('admin-u-email').disabled = true;
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
     document.getElementById('admin-u-senha').value = '';
     document.getElementById('admin-u-perfil').value = u.perfil || 'vendas';
     document.getElementById('admin-u-fornecedor').value = u.fornecedor || 'EBST';
     document.getElementById('admin-u-erro').style.display = 'none';
+<<<<<<< HEAD
+    document.getElementById('admin-u-senha-wrap').style.display = 'none'; // Esconder campo de senha na edição
+    document.getElementById('admin-u-reset-wrap').style.display = 'none'; // Esconder botão de reset por enquanto
+=======
     document.getElementById('admin-u-senha-wrap').style.display = 'none';
     document.getElementById('admin-u-reset-wrap').style.display = '';
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
     adminToggleFornecedor();
     document.getElementById('admin-u-salvar-btn').textContent = 'Salvar Alterações';
     showMod('modal-admin-usuario');
   } catch(e) {
     showToast('Erro ao carregar usuário.', 'error');
+<<<<<<< HEAD
+    console.error('[ADMIN] Erro ao editar usuário:', e);
+=======
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
   }
 }
 
@@ -4235,6 +4433,10 @@ function adminToggleFornecedor() {
 async function salvarUsuarioAdmin() {
   const uid      = document.getElementById('admin-uid-edit').value.trim();
   const nome     = document.getElementById('admin-u-nome').value.trim();
+<<<<<<< HEAD
+  const username = document.getElementById('admin-u-username').value.trim();
+=======
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
   const email    = document.getElementById('admin-u-email').value.trim();
   const senha    = document.getElementById('admin-u-senha').value;
   const perfil   = document.getElementById('admin-u-perfil').value;
@@ -4242,6 +4444,95 @@ async function salvarUsuarioAdmin() {
   const erroEl   = document.getElementById('admin-u-erro');
 
   erroEl.style.display = 'none';
+<<<<<<< HEAD
+
+  // ──── Validações ─────────────────────────────────────────────────
+  if (!nome || !username || !email || !perfil) {
+    erroEl.textContent = 'Nome, usuário, e-mail e perfil são obrigatórios.';
+    erroEl.style.display = '';
+    return;
+  }
+
+  // Validar formato de username (minúsculas, números, pontos)
+  if (!/^[a-z0-9.]+$/.test(username)) {
+    erroEl.textContent = 'Username deve conter apenas letras minúsculas, números e pontos.';
+    erroEl.style.display = '';
+    return;
+  }
+
+  // Validar email
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    erroEl.textContent = 'E-mail inválido.';
+    erroEl.style.display = '';
+    return;
+  }
+
+  try {
+    const btn = document.getElementById('admin-u-salvar-btn');
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+
+    if (!uid) {
+      // ──── CRIAR NOVO USUÁRIO ──────────────────────────────────────
+      if (!senha || senha.length < 6) {
+        erroEl.textContent = 'Senha deve ter no mínimo 6 caracteres.';
+        erroEl.style.display = '';
+        btn.disabled = false;
+        btn.textContent = 'Criar Usuário';
+        return;
+      }
+
+      // Verificar se username já existe
+      const existeUsername = await db.collection('usuarios').where('username', '==', username).limit(1).get();
+      if (!existeUsername.empty) {
+        erroEl.textContent = 'Username já está em uso.';
+        erroEl.style.display = '';
+        btn.disabled = false;
+        btn.textContent = 'Criar Usuário';
+        return;
+      }
+
+      // Gerar hash de senha com bcryptjs
+      const senhaHash = await bcrypt.hash(senha, 10);
+
+      // Criar documento do usuário no Firestore
+      const novoUsuarioRef = db.collection('usuarios').doc();
+      await novoUsuarioRef.set({
+        username,
+        nome,
+        email,
+        senhaHash, // Armazenar apenas o hash, nunca a senha
+        perfil,
+        fornecedor: fornecedor || null,
+        ativo: true,
+        criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+        criadoPor: currentUser?.uid || 'admin'
+      });
+
+      showToast('✓ Usuário criado com sucesso!', 'success');
+    } else {
+      // ──── EDITAR USUÁRIO EXISTENTE ────────────────────────────────
+      const updateData = { nome, perfil, email };
+
+      // Se tentou mudar username, validar
+      if (document.getElementById('admin-u-username').getAttribute('data-original') !== username) {
+        const existeUsername = await db.collection('usuarios').where('username', '==', username).limit(1).get();
+        if (!existeUsername.empty) {
+          erroEl.textContent = 'Username já está em uso.';
+          erroEl.style.display = '';
+          btn.disabled = false;
+          btn.textContent = 'Salvar';
+          return;
+        }
+        updateData.username = username;
+      }
+
+      // Se mudou fornecedor
+      if (fornecedor) updateData.fornecedor = fornecedor;
+
+      await db.collection('usuarios').doc(uid).update(updateData);
+      showToast('✓ Usuário atualizado!', 'success');
+=======
   if (!nome || !email) { erroEl.textContent = 'Nome e e-mail são obrigatórios.'; erroEl.style.display = ''; return; }
 
   try {
@@ -4262,13 +4553,21 @@ async function salvarUsuarioAdmin() {
       // Editar existente (apenas dados no Firestore; senha via reset)
       await db.collection('usuarios').doc(uid).update({ nome, perfil, fornecedor });
       showToast('Usuário atualizado!', 'success');
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
     }
 
     closeMod('modal-admin-usuario');
     carregarUsuariosAdmin();
     btn.disabled = false;
   } catch(e) {
+<<<<<<< HEAD
+    const erros = {
+      'permission-denied': 'Sem permissão para realizar esta ação.',
+      'invalid-argument': 'Dados inválidos.'
+    };
+=======
     const erros = { 'auth/email-already-in-use':'E-mail já cadastrado.', 'auth/invalid-email':'E-mail inválido.', 'auth/weak-password':'Senha muito fraca.' };
+>>>>>>> bd4f3aeb9de477d5847dfca3af9115569d53d185
     erroEl.textContent = erros[e.code] || ('Erro: ' + e.message);
     erroEl.style.display = '';
     document.getElementById('admin-u-salvar-btn').disabled = false;
