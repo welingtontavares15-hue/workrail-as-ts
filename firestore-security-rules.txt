@@ -1,0 +1,217 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   REGRAS DE SEGURANÇA — FIRESTORE
+   Sistema WORKRAIL — Solicitação de Máquinas AS&TS
+
+   ⚠️  IMPORTANTE: Estas regras devem ser copiadas para o Firebase Console
+       Caminho: Firestore Database → Regras
+
+   Data: 29/03/2026
+   Versão: 1.0
+   ════════════════════════════════════════════════════════════════════════════ */
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ─── FUNÇÃO AUXILIAR: Obter perfil do usuário ─── */
+    function getUserProfile() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.perfil;
+    }
+
+    /* ─── FUNÇÃO AUXILIAR: Verificar se é fornecedor ─── */
+    function isFornecedor() {
+      let perfil = getUserProfile();
+      return perfil == 'fornecedor_ebst' || perfil == 'fornecedor_hobart';
+    }
+
+    /* ─── FUNÇÃO AUXILIAR: Obter fornecedor do usuário ─── */
+    function getUserFornecedor() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.fornecedor;
+    }
+
+    /* ─── FUNÇÃO AUXILIAR: Verificar se pode ver solicitação ─── */
+    function canViewSolicitacao() {
+      let doc = resource.data;
+      let perfil = getUserProfile();
+      let uid = request.auth.uid;
+
+      // super_admin vê tudo
+      if (perfil == 'super_admin') { return true; }
+
+      // supervisor_asts, adm_vendas veem tudo
+      if (perfil == 'supervisor_asts' || perfil == 'adm_vendas') { return true; }
+
+      // vendas vê só suas solicitações
+      if (perfil == 'vendas') {
+        return doc.criadoPorUid == uid;
+      }
+
+      // fornecedor_ebst vê só solicitações da EBST
+      if (perfil == 'fornecedor_ebst') {
+        return doc.dadosAdm.encaminhadoFornecedor == 'EBST';
+      }
+
+      // fornecedor_hobart vê só solicitações da Hobart
+      if (perfil == 'fornecedor_hobart') {
+        return doc.dadosAdm.encaminhadoFornecedor == 'Hobart Brasil';
+      }
+
+      return false;
+    }
+
+    /* ─── FUNÇÃO AUXILIAR: Verificar se pode editar etapa ─── */
+    function canEditEtapa(etapa) {
+      let perfil = getUserProfile();
+
+      // super_admin pode editar tudo
+      if (perfil == 'super_admin') { return true; }
+
+      // Validar por etapa
+      match (etapa) {
+        match 'solicitacao' { return perfil == 'vendas'; }
+        match 'supervisor' { return perfil == 'supervisor_asts'; }
+        match 'adm_vendas' { return perfil == 'adm_vendas'; }
+        match 'fornecedor' {
+          return isFornecedor() &&
+                 getUserFornecedor() == resource.data.dadosAdm.encaminhadoFornecedor;
+        }
+        match 'logistica' { return perfil == 'adm_vendas'; }
+        match 'data_instalacao' { return perfil == 'supervisor_asts'; }
+        match 'relatorio_final' { return perfil == 'supervisor_asts'; }
+      }
+      return false;
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════ */
+    /* COLEÇÃO: usuarios                                                         */
+    /* ════════════════════════════════════════════════════════════════════════ */
+    match /usuarios/{userId} {
+      // Ler: super_admin ou seu próprio perfil
+      allow read: if request.auth.uid == userId ||
+                     getUserProfile() == 'super_admin';
+
+      // Escrever: apenas super_admin pode criar/editar usuários
+      allow create, update, delete: if getUserProfile() == 'super_admin';
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════ */
+    /* COLEÇÃO: fornecedores                                                     */
+    /* ════════════════════════════════════════════════════════════════════════ */
+    match /fornecedores/{docId} {
+      // Ler: todos autenticados podem ler
+      allow read: if request.auth.uid != null;
+
+      // Escrever: apenas super_admin
+      allow create, update, delete: if getUserProfile() == 'super_admin';
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════ */
+    /* COLEÇÃO: modelos_maquinas                                                 */
+    /* ════════════════════════════════════════════════════════════════════════ */
+    match /modelos_maquinas/{docId} {
+      // Ler: todos autenticados
+      allow read: if request.auth.uid != null;
+
+      // Escrever: apenas super_admin
+      allow create, update, delete: if getUserProfile() == 'super_admin';
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════ */
+    /* COLEÇÃO: solicitacoes (Documento Principal + Histórico)                   */
+    /* ════════════════════════════════════════════════════════════════════════ */
+    match /solicitacoes/{solicitacaoId} {
+
+      /* ─── REGRAS DO DOCUMENTO PRINCIPAL ─── */
+      allow read: if canViewSolicitacao();
+
+      /* Criar: apenas vendas */
+      allow create: if request.auth.uid != null &&
+                       getUserProfile() == 'vendas' &&
+                       request.resource.data.criadoPorUid == request.auth.uid &&
+                       request.resource.data.criadoPorPerfil == 'vendas' &&
+                       request.resource.data.etapaAtual == 'solicitacao';
+
+      /* Atualizar: validar por etapa */
+      allow update: if canViewSolicitacao() &&
+                       canEditEtapa(resource.data.etapaAtual) &&
+                       request.resource.data.protocolo == resource.data.protocolo &&
+                       request.resource.data.criadoPorUid == resource.data.criadoPorUid;
+
+      /* Deletar: super_admin apenas */
+      allow delete: if getUserProfile() == 'super_admin';
+
+      /* ─── SUBCOLEÇÃO: historico ─── */
+      match /historico/{eventoId} {
+        // Ler histórico: quem pode ver a solicitação pode ver histórico
+        allow read: if canViewSolicitacao();
+
+        // Criar evento: somente quem está editando a solicitação
+        // (Será validado no código JS antes de chamar)
+        allow create: if canViewSolicitacao() &&
+                        request.resource.data.executadoPorUid == request.auth.uid;
+
+        // Não permitir editar histórico (auditoria)
+        allow update, delete: if false;
+      }
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════ */
+    /* COLEÇÃO: contadores                                                       */
+    /* ════════════════════════════════════════════════════════════════════════ */
+    match /contadores/{docId} {
+      // Ler: todos autenticados
+      allow read: if request.auth.uid != null;
+
+      // Escrever: Cloud Function apenas (via regra especial)
+      // Em desenvolvimento, permitir super_admin
+      allow write: if getUserProfile() == 'super_admin';
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════ */
+    /* BLOQUEIO GERAL: Negar qualquer coisa não explícita                        */
+    /* ════════════════════════════════════════════════════════════════════════ */
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   NOTAS DE IMPLEMENTAÇÃO
+
+   1. ESTRATÉGIA DE SEGURANÇA:
+      - Leitura controlada por perfil (vendedor não vê de outro)
+      - Escrita controlada por etapa (supervisor só edita supervisão)
+      - Histórico é imutável (append-only)
+      - Contadores atualizados por Cloud Function
+
+   2. PERFIS E PERMISSÕES:
+      ┌─────────────────┬───────┬───────────┬─────────────┬──────────┐
+      │ Perfil          │ Lê    │ Cria Sol. │ Edita Etapa │ Admin    │
+      ├─────────────────┼───────┼───────────┼─────────────┼──────────┤
+      │ vendas          │ Suas  │ Sim       │ -           │ Não      │
+      │ supervisor_asts │ Todas │ Não       │ supervisor  │ Não      │
+      │ adm_vendas      │ Todas │ Não       │ adm_vendas  │ Não      │
+      │ fornecedor_*    │ Suas  │ Não       │ fornecedor  │ Não      │
+      │ super_admin     │ Todas │ Não       │ Todas       │ Sim      │
+      └─────────────────┴───────┴───────────┴─────────────┴──────────┘
+
+   3. AUDITORIA:
+      - Todo evento cria registro em historico
+      - Histórico nunca é deletado (append-only)
+      - Campo 'executadoPor*' rastreia quem fez
+
+   4. SEGURANÇA DE DOCUMENTOS:
+      - protocolo não pode ser alterado após criação
+      - criadoPorUid imutável (validar na update)
+      - Status tem sequência definida (validar em JS antes)
+
+   5. TESTING:
+      Testar:
+      - Vendedor A não consegue ver Vendedor B
+      - Fornecedor EBST não consegue ver Hobart
+      - Fornecedor não consegue editar outras etapas
+      - Super_admin consegue tudo
+      - Histórico é imutável
+
+   ════════════════════════════════════════════════════════════════════════════ */
