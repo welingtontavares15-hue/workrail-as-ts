@@ -1,0 +1,198 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   REGRAS DE SEGURANÇA — FIREBASE STORAGE
+   Sistema WORKRAIL — Solicitação de Máquinas AS&TS
+
+   ⚠️  IMPORTANTE: Estas regras devem ser copiadas para o Firebase Console
+       Caminho: Storage → Regras
+
+   Estrutura:
+   - solicitacoes/{protocolo}/contrato/{arquivo}
+   - solicitacoes/{protocolo}/nf/{arquivo}
+   - solicitacoes/{protocolo}/relatorio/{arquivo}
+
+   Data: 29/03/2026
+   Versão: 1.0
+   ════════════════════════════════════════════════════════════════════════════ */
+
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    /* ─── FUNÇÃO AUXILIAR: Obter documento da solicitação ─── */
+    function getSolicitacao(protocolo) {
+      return firestore.get(/databases/(default)/documents/solicitacoes/$(protocolo)).data;
+    }
+
+    /* ─── FUNÇÃO AUXILIAR: Obter perfil do usuário ─── */
+    function getUserPerfil() {
+      let userDoc = firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid));
+      return userDoc.exists ? userDoc.data.perfil : '';
+    }
+
+    /* ─── FUNÇÃO AUXILIAR: Obter fornecedor do usuário ─── */
+    function getUserFornecedor() {
+      let userDoc = firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid));
+      return userDoc.exists ? userDoc.data.fornecedor : '';
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════ */
+    /* PASTA: solicitacoes/{protocolo}/contrato/                               */
+    /* Acesso: Vendedor (criar), ADM, Supervisor, Admin (ler/deletar)          */
+    /* ════════════════════════════════════════════════════════════════════════ */
+    match /solicitacoes/{protocolo}/contrato/{allFiles=**} {
+      let sol = getSolicitacao(protocolo);
+      let perfil = getUserPerfil();
+
+      // Ler contrato
+      allow read: if request.auth.uid != null && (
+        // Vendedor criador
+        sol.criadoPorUid == request.auth.uid ||
+        // ADM, Supervisor, Admin
+        perfil == 'adm_vendas' ||
+        perfil == 'supervisor_asts' ||
+        perfil == 'super_admin'
+      );
+
+      // Criar contrato (upload inicial)
+      allow create: if request.auth.uid != null &&
+                       perfil == 'vendas' &&
+                       sol.criadoPorUid == request.auth.uid &&
+                       request.resource.size <= 10 * 1024 * 1024 && // 10 MB
+                       request.resource.contentType.matches('.*pdf|.*word|.*x-pdf.*');
+
+      // Deletar contrato
+      allow delete: if request.auth.uid != null && (
+        perfil == 'adm_vendas' ||
+        perfil == 'supervisor_asts' ||
+        perfil == 'super_admin'
+      );
+
+      // Não permitir update (reupload = delete + create)
+      allow update: if false;
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════ */
+    /* PASTA: solicitacoes/{protocolo}/nf/                                      */
+    /* Acesso: Fornecedor responsável (criar),                                  */
+    /*         ADM, Supervisor (ler/deletar)                                    */
+    /* ════════════════════════════════════════════════════════════════════════ */
+    match /solicitacoes/{protocolo}/nf/{allFiles=**} {
+      let sol = getSolicitacao(protocolo);
+      let perfil = getUserPerfil();
+      let fornecedor = getUserFornecedor();
+
+      // Ler NF
+      allow read: if request.auth.uid != null && (
+        // Fornecedor responsável
+        (sol.dadosAdm.encaminhadoFornecedor == fornecedor &&
+         (perfil == 'fornecedor_ebst' || perfil == 'fornecedor_hobart')) ||
+        // ADM, Supervisor, Admin
+        perfil == 'adm_vendas' ||
+        perfil == 'supervisor_asts' ||
+        perfil == 'super_admin'
+      );
+
+      // Criar/Upload NF (apenas fornecedor responsável)
+      allow create: if request.auth.uid != null && (
+        (perfil == 'fornecedor_ebst' &&
+         sol.dadosAdm.encaminhadoFornecedor == 'EBST') ||
+        (perfil == 'fornecedor_hobart' &&
+         sol.dadosAdm.encaminhadoFornecedor == 'Hobart Brasil')
+      ) &&
+      request.resource.size <= 10 * 1024 * 1024 && // 10 MB
+      request.resource.contentType.matches('.*pdf|.*word|.*x-pdf.*');
+
+      // Deletar NF (ADM, Supervisor, Admin)
+      allow delete: if request.auth.uid != null && (
+        perfil == 'adm_vendas' ||
+        perfil == 'supervisor_asts' ||
+        perfil == 'super_admin'
+      );
+
+      // Não permitir update
+      allow update: if false;
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════ */
+    /* PASTA: solicitacoes/{protocolo}/relatorio/                               */
+    /* Acesso: Supervisor AS&TS (criar),                                        */
+    /*         Super Admin (ler/deletar)                                         */
+    /* ════════════════════════════════════════════════════════════════════════ */
+    match /solicitacoes/{protocolo}/relatorio/{allFiles=**} {
+      let perfil = getUserPerfil();
+
+      // Ler relatório
+      allow read: if request.auth.uid != null && (
+        perfil == 'supervisor_asts' ||
+        perfil == 'super_admin'
+      );
+
+      // Criar/Upload relatório (apenas supervisor)
+      allow create: if request.auth.uid != null &&
+                       perfil == 'supervisor_asts' &&
+                       request.resource.size <= 10 * 1024 * 1024 && // 10 MB
+                       request.resource.contentType.matches('.*pdf|.*word|.*x-pdf.*');
+
+      // Deletar relatório (apenas super_admin)
+      allow delete: if request.auth.uid != null &&
+                       perfil == 'super_admin';
+
+      // Não permitir update
+      allow update: if false;
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════ */
+    /* BLOQUEIO GERAL                                                            */
+    /* ════════════════════════════════════════════════════════════════════════ */
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   NOTAS DE IMPLEMENTAÇÃO
+
+   1. ESTRUTURA DE CAMINHOS:
+      ✓ solicitacoes/{protocolo}/contrato/
+      ✓ solicitacoes/{protocolo}/nf/
+      ✓ solicitacoes/{protocolo}/relatorio/
+
+   2. PERMISSÕES POR PASTA:
+
+      CONTRATO
+      ├─ Ler: Vendedor criador, ADM, Supervisor, Admin
+      ├─ Criar: Vendedor criador apenas (upload inicial)
+      └─ Deletar: ADM, Supervisor, Admin
+
+      NOTA FISCAL
+      ├─ Ler: Fornecedor responsável, ADM, Supervisor, Admin
+      ├─ Criar: Fornecedor responsável apenas
+      └─ Deletar: ADM, Supervisor, Admin
+
+      RELATÓRIO
+      ├─ Ler: Supervisor, Admin
+      ├─ Criar: Supervisor apenas
+      └─ Deletar: Admin apenas
+
+   3. VALIDAÇÕES:
+      ✓ Tamanho máximo: 10 MB
+      ✓ Tipo: PDF ou Word
+      ✓ Fornecedor: Validado contra dadosAdm.encaminhadoFornecedor
+
+   4. SEGURANÇA:
+      ✓ Sem permissão de UPDATE (força delete + create)
+      ✓ Validação de perfil a cada operação
+      ✓ Validação de protocolo existe
+      ✓ Bloqueio geral: tudo é deny unless allow
+
+   5. TESTING:
+      - Vendedor consegue fazer upload de contrato
+      - Vendedor não consegue deletar contrato
+      - Fornecedor EBST consegue fazer upload de NF da EBST
+      - Fornecedor EBST NÃO consegue fazer upload de NF da Hobart
+      - Supervisor consegue fazer upload de relatório
+      - Fornecedor NÃO consegue fazer upload de relatório
+      - Admin consegue deletar qualquer arquivo
+
+   ════════════════════════════════════════════════════════════════════════════ */

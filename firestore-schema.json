@@ -1,0 +1,647 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WORKRAIL Firestore Schema",
+  "description": "Schema completo das coleções e documentos do sistema WORKRAIL",
+  "type": "object",
+  "collections": {
+    "usuarios": {
+      "description": "Usuários do sistema",
+      "type": "object",
+      "documentStructure": {
+        "uid": {
+          "type": "string",
+          "description": "UID do Firebase Auth",
+          "required": true
+        },
+        "nome": {
+          "type": "string",
+          "description": "Nome completo do usuário",
+          "required": true
+        },
+        "email": {
+          "type": "string",
+          "description": "Email do usuário",
+          "required": true
+        },
+        "perfil": {
+          "type": "string",
+          "enum": [
+            "super_admin",
+            "vendas",
+            "supervisor_asts",
+            "adm_vendas",
+            "fornecedor_ebst",
+            "fornecedor_hobart"
+          ],
+          "description": "Perfil/role do usuário",
+          "required": true
+        },
+        "fornecedor": {
+          "type": "string",
+          "enum": ["EBST", "Hobart Brasil", null],
+          "description": "Fornecedor associado (somente para fornecedor_*)",
+          "required": false
+        },
+        "ativo": {
+          "type": "boolean",
+          "description": "Status de ativação",
+          "default": true
+        },
+        "criadoEm": {
+          "type": "number",
+          "description": "Timestamp de criação (Firebase serverTimestamp())",
+          "required": true
+        },
+        "atualizadoEm": {
+          "type": "number",
+          "description": "Timestamp da última atualização",
+          "required": true
+        }
+      }
+    },
+    "fornecedores": {
+      "description": "Cadastro de fornecedores",
+      "type": "object",
+      "documentStructure": {
+        "codigo": {
+          "type": "string",
+          "enum": ["EBST", "Hobart Brasil"],
+          "description": "Código único do fornecedor",
+          "required": true
+        },
+        "nome": {
+          "type": "string",
+          "description": "Nome completo",
+          "required": true
+        },
+        "email": {
+          "type": "string",
+          "description": "Email para notificações",
+          "required": true
+        },
+        "contato": {
+          "type": "string",
+          "description": "Telefone ou pessoa de contato",
+          "required": false
+        },
+        "ativo": {
+          "type": "boolean",
+          "default": true
+        },
+        "criadoEm": {
+          "type": "number",
+          "required": true
+        },
+        "atualizadoEm": {
+          "type": "number",
+          "required": true
+        }
+      }
+    },
+    "modelos_maquinas": {
+      "description": "Catálogo de modelos de máquinas",
+      "type": "object",
+      "documentStructure": {
+        "codigo": {
+          "type": "string",
+          "description": "ID único do modelo",
+          "required": true
+        },
+        "fabricante": {
+          "type": "string",
+          "enum": ["Hobart", "EBST"],
+          "required": true
+        },
+        "modelo": {
+          "type": "string",
+          "description": "Nome do modelo",
+          "required": true
+        },
+        "categoria": {
+          "type": "string",
+          "enum": ["Ecomax", "CCR", "HD-Remanufaturada", "HD-Nova", "HD-MOB"],
+          "required": false
+        },
+        "voltagem": {
+          "type": "string",
+          "description": "Ex: 220V, 380V",
+          "required": false
+        },
+        "capacidade": {
+          "type": "string",
+          "description": "Ex: 400-500 refeições/dia",
+          "required": false
+        },
+        "ativo": {
+          "type": "boolean",
+          "default": true
+        },
+        "criadoEm": {
+          "type": "number",
+          "required": true
+        },
+        "atualizadoEm": {
+          "type": "number",
+          "required": true
+        }
+      }
+    },
+    "solicitacoes": {
+      "description": "Solicitações de máquinas (documento principal)",
+      "type": "object",
+      "documentStructure": {
+        "protocolo": {
+          "type": "string",
+          "pattern": "^WR-\\d{4}-\\d{4}$",
+          "description": "Código único WR-YYYY-NNNN",
+          "required": true
+        },
+        "numeroPedido": {
+          "type": "string",
+          "description": "Número do pedido (pode ser igual ao protocolo)",
+          "required": true
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "AGUARDANDO_SUPERVISOR",
+            "REJEITADA_SUPERVISOR",
+            "AGUARDANDO_ADM",
+            "EM_PREPARACAO_FORNECEDOR",
+            "NF_ANEXADA_AGUARDANDO_LOGISTICA",
+            "AGUARDANDO_DATA_INSTALACAO",
+            "AGUARDANDO_RELATORIO_FINAL",
+            "CONCLUIDA"
+          ],
+          "description": "Status atual da solicitação",
+          "required": true
+        },
+        "etapaAtual": {
+          "type": "string",
+          "enum": [
+            "solicitacao",
+            "supervisor",
+            "adm_vendas",
+            "fornecedor",
+            "logistica",
+            "data_instalacao",
+            "relatorio_final",
+            "concluido"
+          ],
+          "description": "Etapa atual do fluxo",
+          "required": true
+        },
+        "criadoEm": {
+          "type": "number",
+          "required": true
+        },
+        "atualizadoEm": {
+          "type": "number",
+          "required": true
+        },
+        "criadoPorUid": {
+          "type": "string",
+          "required": true
+        },
+        "criadoPorNome": {
+          "type": "string",
+          "required": true
+        },
+        "criadoPorEmail": {
+          "type": "string",
+          "required": true
+        },
+        "criadoPorPerfil": {
+          "type": "string",
+          "enum": ["vendas"],
+          "required": true
+        },
+        "visibilidade": {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "fornecedor": {
+              "type": "string",
+              "enum": ["EBST", "Hobart Brasil", ""],
+              "description": "Fornecedor responsável (vazio até definição)"
+            },
+            "ownerUid": {
+              "type": "string",
+              "description": "UID do vendedor criador"
+            },
+            "podeVerTudo": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["supervisor_asts", "adm_vendas", "super_admin"]
+              },
+              "description": "Perfis que sempre veem tudo"
+            }
+          }
+        },
+        "dadosCliente": {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "shipTo": {
+              "type": "string"
+            },
+            "nomeCliente": {
+              "type": "string"
+            },
+            "cnpj": {
+              "type": "string"
+            },
+            "emailCliente": {
+              "type": "string"
+            },
+            "enderecoInstalacao": {
+              "type": "string"
+            }
+          }
+        },
+        "dadosSolicitacao": {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "tipoSolicitacao": {
+              "type": "string",
+              "enum": ["Instalação", "Comodato", "Manutenção"]
+            },
+            "modeloMaquina": {
+              "type": "string"
+            },
+            "fabricante": {
+              "type": "string",
+              "enum": ["Hobart", "EBST"]
+            },
+            "refeicoesDia": {
+              "type": "number"
+            },
+            "refeicoesHora": {
+              "type": "number"
+            },
+            "mesaNecessaria": {
+              "type": "boolean"
+            },
+            "detergente": {
+              "type": "string"
+            },
+            "secante": {
+              "type": "string"
+            },
+            "observacoesContratuais": {
+              "type": "string"
+            }
+          }
+        },
+        "parecerSupervisor": {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "decisao": {
+              "type": "string",
+              "enum": ["aprovado", "rejeitado", ""]
+            },
+            "especificacaoMaquina": {
+              "type": "string"
+            },
+            "fornecedorDefinido": {
+              "type": "string",
+              "enum": ["EBST", "Hobart Brasil", ""]
+            },
+            "observacoes": {
+              "type": "string"
+            },
+            "aprovadoEm": {
+              "type": ["number", "null"]
+            },
+            "aprovadoPorUid": {
+              "type": "string"
+            },
+            "aprovadoPorNome": {
+              "type": "string"
+            }
+          }
+        },
+        "dadosAdm": {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "aprovado": {
+              "type": "boolean"
+            },
+            "encaminhadoFornecedor": {
+              "type": "string",
+              "enum": ["EBST", "Hobart Brasil", ""]
+            },
+            "aprovadoEm": {
+              "type": ["number", "null"]
+            },
+            "aprovadoPorUid": {
+              "type": "string"
+            },
+            "aprovadoPorNome": {
+              "type": "string"
+            },
+            "observacoes": {
+              "type": "string"
+            }
+          }
+        },
+        "dadosFornecedor": {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "fornecedor": {
+              "type": "string",
+              "enum": ["EBST", "Hobart Brasil", ""]
+            },
+            "numeroNF": {
+              "type": "string"
+            },
+            "dataLiberacaoMaquina": {
+              "type": "string"
+            },
+            "observacoes": {
+              "type": "string"
+            },
+            "anexadoEm": {
+              "type": ["number", "null"]
+            }
+          }
+        },
+        "dadosLogistica": {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "coletaSolicitada": {
+              "type": "boolean"
+            },
+            "dataColeta": {
+              "type": "string"
+            },
+            "dataEntrega": {
+              "type": "string"
+            },
+            "responsavelLogistica": {
+              "type": "string"
+            },
+            "observacoes": {
+              "type": "string"
+            },
+            "acionadoEm": {
+              "type": ["number", "null"]
+            }
+          }
+        },
+        "dadosInstalacao": {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "dataInstalacao": {
+              "type": "string"
+            },
+            "informadoPorUid": {
+              "type": "string"
+            },
+            "informadoPorNome": {
+              "type": "string"
+            },
+            "informadoEm": {
+              "type": ["number", "null"]
+            },
+            "observacoes": {
+              "type": "string"
+            }
+          }
+        },
+        "dadosRelatorio": {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "observacoesFinais": {
+              "type": "string"
+            },
+            "finalizadoPorUid": {
+              "type": "string"
+            },
+            "finalizadoPorNome": {
+              "type": "string"
+            },
+            "finalizadoEm": {
+              "type": ["number", "null"]
+            }
+          }
+        },
+        "contrato": {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "nomeArquivo": {
+              "type": "string"
+            },
+            "storagePath": {
+              "type": "string"
+            },
+            "downloadURL": {
+              "type": "string"
+            },
+            "uploadEm": {
+              "type": ["number", "null"]
+            },
+            "uploadPorUid": {
+              "type": "string"
+            },
+            "uploadPorNome": {
+              "type": "string"
+            }
+          }
+        },
+        "notaFiscal": {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "nomeArquivo": {
+              "type": "string"
+            },
+            "storagePath": {
+              "type": "string"
+            },
+            "downloadURL": {
+              "type": "string"
+            },
+            "uploadEm": {
+              "type": ["number", "null"]
+            },
+            "uploadPorUid": {
+              "type": "string"
+            },
+            "uploadPorNome": {
+              "type": "string"
+            }
+          }
+        },
+        "relatorioInstalacao": {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "nomeArquivo": {
+              "type": "string"
+            },
+            "storagePath": {
+              "type": "string"
+            },
+            "downloadURL": {
+              "type": "string"
+            },
+            "uploadEm": {
+              "type": ["number", "null"]
+            },
+            "uploadPorUid": {
+              "type": "string"
+            },
+            "uploadPorNome": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "subcollections": {
+        "historico": {
+          "description": "Histórico de eventos da solicitação",
+          "documentStructure": {
+            "tipoEvento": {
+              "type": "string",
+              "enum": [
+                "SOLICITACAO_CRIADA",
+                "SUPERVISOR_APROVOU",
+                "SUPERVISOR_REJEITOU",
+                "ADM_APROVOU",
+                "ADM_ENCAMINHOU_FORNECEDOR",
+                "FORNECEDOR_ANEXOU_NF",
+                "ADM_ACIONOU_LOGISTICA",
+                "SUPERVISOR_INFORMOU_DATA_INSTALACAO",
+                "SUPERVISOR_ANEXOU_RELATORIO",
+                "PROCESSO_FINALIZADO"
+              ],
+              "required": true
+            },
+            "descricao": {
+              "type": "string",
+              "required": true
+            },
+            "etapaOrigem": {
+              "type": "string",
+              "required": true
+            },
+            "etapaDestino": {
+              "type": "string",
+              "required": true
+            },
+            "statusResultante": {
+              "type": "string",
+              "required": true
+            },
+            "executadoPorUid": {
+              "type": "string",
+              "required": true
+            },
+            "executadoPorNome": {
+              "type": "string",
+              "required": true
+            },
+            "executadoPorPerfil": {
+              "type": "string",
+              "required": true
+            },
+            "dataEvento": {
+              "type": "number",
+              "description": "Firebase serverTimestamp()",
+              "required": true
+            },
+            "payloadResumo": {
+              "type": "object",
+              "description": "Resumo dos dados relevantes ao evento"
+            }
+          }
+        }
+      }
+    },
+    "contadores": {
+      "description": "Contadores sequenciais para protocolo e pedidos",
+      "type": "object",
+      "documentStructure": {
+        "ano": {
+          "type": "number",
+          "description": "Ano em questão (ex: 2026)",
+          "required": true
+        },
+        "protocolos_contador": {
+          "type": "number",
+          "description": "Próximo número sequencial para protocolo WR-YYYY-NNNN",
+          "default": 1
+        },
+        "pedidos_contador": {
+          "type": "number",
+          "description": "Próximo número sequencial para pedido",
+          "default": 1
+        }
+      }
+    }
+  },
+  "firebase_storage_structure": {
+    "description": "Estrutura de pastas no Firebase Storage",
+    "structure": {
+      "solicitacoes/{protocolo}/contrato/{nomeArquivo}": {
+        "description": "Contrato da solicitação",
+        "access": ["vendas", "adm_vendas", "supervisor_asts", "super_admin"]
+      },
+      "solicitacoes/{protocolo}/nf/{nomeArquivo}": {
+        "description": "Nota Fiscal anexada pelo fornecedor",
+        "access": ["fornecedor_ebst", "fornecedor_hobart", "adm_vendas", "supervisor_asts", "super_admin"]
+      },
+      "solicitacoes/{protocolo}/relatorio/{nomeArquivo}": {
+        "description": "Relatório de instalação",
+        "access": ["supervisor_asts", "super_admin"]
+      }
+    }
+  },
+  "indices": {
+    "description": "Índices recomendados para Firestore",
+    "indices_list": [
+      {
+        "collection": "solicitacoes",
+        "fields": [
+          {"fieldPath": "criadoPorUid", "order": "ASCENDING"},
+          {"fieldPath": "atualizadoEm", "order": "DESCENDING"}
+        ],
+        "reason": "Listar solicitações do vendedor ordenadas por data"
+      },
+      {
+        "collection": "solicitacoes",
+        "fields": [
+          {"fieldPath": "status", "order": "ASCENDING"},
+          {"fieldPath": "atualizadoEm", "order": "DESCENDING"}
+        ],
+        "reason": "Filtrar por status e ordenar por data"
+      },
+      {
+        "collection": "solicitacoes",
+        "fields": [
+          {"fieldPath": "dadosAdm.encaminhadoFornecedor", "order": "ASCENDING"},
+          {"fieldPath": "atualizadoEm", "order": "DESCENDING"}
+        ],
+        "reason": "Fornecedor ver suas solicitações"
+      },
+      {
+        "collection": "solicitacoes",
+        "fields": [
+          {"fieldPath": "etapaAtual", "order": "ASCENDING"},
+          {"fieldPath": "atualizadoEm", "order": "DESCENDING"}
+        ],
+        "reason": "Filtrar por etapa"
+      }
+    ]
+  }
+}
