@@ -2398,18 +2398,16 @@ async function fazerLogin() {
 
     // ══════════════════════════════════════════════════════════════════
     // PASSO 2: Agora que request.auth está válido, ler perfil do Firestore
-    // A security rule permite leitura pois isAuthenticated() == true
+    // Busca direta pelo UID (compatível com a security rule: uid == userId)
     // ══════════════════════════════════════════════════════════════════
-    const usuariosRef = db.collection('usuarios');
-    const snap = await usuariosRef.where('email', '==', email).limit(1).get();
+    const usuarioDoc = await db.collection('usuarios').doc(authUser.uid).get();
 
-    if (snap.empty) {
-      // Email autenticado mas sem perfil no Firestore
+    if (!usuarioDoc.exists) {
+      // UID autenticado mas sem perfil no Firestore
       await firebase.auth().signOut();
       throw { code: 'user-error', message: 'Usuário não encontrado no Firestore. Contate o administrador.' };
     }
 
-    const usuarioDoc = snap.docs[0];
     const usuarioData = usuarioDoc.data();
 
     // ══════════════════════════════════════════════════════════════════
