@@ -2217,11 +2217,17 @@ function _initializeFirebaseApp() {
       document.getElementById('login-overlay').classList.remove('hidden');
     }
 
-    // ── Observa estado de autenticação (legacy Firebase Auth) ──────
+    // ── Observa estado de autenticação ──────────────────────────
     auth.onAuthStateChanged(async (user) => {
-      // Mantido para compatibilidade, mas não é usado no novo sistema
       if (!currentUser && user) {
+        // Sessão Firebase ativa mas sem sessão local — carrega perfil
         await carregarPerfilUsuario(user);
+      } else if (currentUser && !user) {
+        // currentUser em memória mas Firebase Auth deslogado — limpa sessão
+        console.warn('[WORKRAIL] Firebase Auth deslogado inesperadamente. Limpando sessão.');
+        localStorage.removeItem('WORKRAIL_SESSION');
+        currentUser = null;
+        document.getElementById('login-overlay').classList.remove('hidden');
       }
     });
 
