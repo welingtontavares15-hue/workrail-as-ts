@@ -888,10 +888,10 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
     </div>
     <div class="login-body">
       <div class="login-title">Acesso ao Sistema</div>
-      <div class="login-sub">Use seu usuário e senha cadastrados pelo administrador.</div>
+      <div class="login-sub">Use seu email e senha cadastrados pelo administrador.</div>
       <div class="login-field">
-        <label>Usuário</label>
-        <input type="text" id="loginUsername" placeholder="usuario.nome (ex: welington.tavares)" autocomplete="username">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="seu.email@example.com" autocomplete="email">
       </div>
       <div class="login-field">
         <label>Senha</label>
@@ -922,10 +922,10 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
       <button onclick="fecharRecuperarSenha()" style="background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:20px;line-height:1">&times;</button>
     </div>
     <div style="padding:22px 24px">
-      <p style="font-size:13px;color:#546e7a;margin-bottom:16px">Informe seu username para verificar sua conta. O administrador poderá resetar sua senha.</p>
+      <p style="font-size:13px;color:#546e7a;margin-bottom:16px">Informe seu email para verificar sua conta. O administrador poderá resetar sua senha.</p>
       <div style="margin-bottom:14px">
-        <label style="font-size:12px;font-weight:600;color:#455a64;display:block;margin-bottom:6px">Username</label>
-        <input type="text" id="recSenhaUsername" placeholder="usuario.nome (ex: welington.tavares)" autocomplete="username"
+        <label style="font-size:12px;font-weight:600;color:#455a64;display:block;margin-bottom:6px">Email</label>
+        <input type="email" id="recSenhaEmail" placeholder="seu.email@example.com" autocomplete="email"
           style="width:100%;padding:9px 12px;border:1px solid #cfd8dc;border-radius:5px;font-size:13.5px;font-family:inherit;outline:none;transition:border-color .15s"
           onkeydown="if(event.key==='Enter')enviarRecuperacao()">
       </div>
@@ -2305,7 +2305,7 @@ function abrirRecuperarSenha(e) {
   const m = document.getElementById('modal-recuperar-senha');
   if (!m) return;
   m.style.display = 'flex';
-  // Campo username já limpo no modal
+  // Campo email já limpo no modal
   document.getElementById('recSenhaMsg').textContent = '';
   document.getElementById('recSenhaBtn').disabled = false;
 }
@@ -2314,31 +2314,31 @@ function fecharRecuperarSenha() {
   if (m) m.style.display = 'none';
 }
 async function enviarRecuperacao() {
-  const usernameEl = document.getElementById('recSenhaUsername');
+  const emailEl = document.getElementById('recSenhaEmail');
   const msgEl   = document.getElementById('recSenhaMsg');
   const btn     = document.getElementById('recSenhaBtn');
-  const username = usernameEl ? usernameEl.value.trim() : '';
+  const email = emailEl ? emailEl.value.trim() : '';
   msgEl.textContent = '';
-  if (!username) {
+  if (!email) {
     msgEl.style.color = '#c62828';
-    msgEl.textContent = 'Informe seu username.';
+    msgEl.textContent = 'Informe seu email.';
     return;
   }
   btn.disabled = true;
   btn.textContent = 'Verificando...';
   try {
-    // Verificar se username existe no Firestore
-    const snap = await db.collection('usuarios').where('username', '==', username).limit(1).get();
+    // Verificar se email existe no Firestore
+    const snap = await db.collection('usuarios').where('email', '==', email).limit(1).get();
     if (snap.empty) {
       msgEl.style.color = '#c62828';
-      msgEl.textContent = 'Usuário não encontrado.';
+      msgEl.textContent = 'Email não encontrado.';
       btn.disabled = false;
       btn.textContent = 'Solicitar Reset';
       return;
     }
     const userData = snap.docs[0].data();
     msgEl.style.color = '#2e7d32';
-    msgEl.innerHTML = '✔ Usuário encontrado!<br>Contate o administrador para resetar sua senha.<br><small style="color:#78909c">E-mail no perfil: ' + (userData.email || 'não informado') + '</small>';
+    msgEl.innerHTML = '✔ Email encontrado!<br>Contate o administrador para resetar sua senha.<br><small style="color:#78909c">Usuário: ' + (userData.username || 'não informado') + '</small>';
     setTimeout(() => { btn.disabled = false; btn.textContent = 'Solicitar Reset'; }, 3000);
   } catch(e) {
     msgEl.style.color = '#c62828';
@@ -2353,14 +2353,14 @@ async function enviarRecuperacao() {
 // ════════════════════════════════════════════════════════════
 
 async function fazerLogin() {
-  const username = document.getElementById('loginUsername').value.trim();
+  const email = document.getElementById('loginEmail').value.trim();
   const senha  = document.getElementById('loginSenha').value;
   const btn    = document.getElementById('loginBtn');
   const errEl  = document.getElementById('loginError');
 
   errEl.classList.remove('show');
-  if (!username || !senha) {
-    errEl.textContent = 'Preencha usuário e senha.';
+  if (!email || !senha) {
+    errEl.textContent = 'Preencha email e senha.';
     errEl.classList.add('show');
     return;
   }
@@ -2377,41 +2377,64 @@ async function fazerLogin() {
   btn.textContent = 'Entrando...';
 
   try {
-    // ──── Buscar usuário no Firestore ────────────────────────────
+    // ══════════════════════════════════════════════════════════════════
+    // PASSO 1: Autenticar via Firebase Authentication (request.auth)
+    // Este é o ÚNICO lugar onde fazemos requisição sem ter request.auth
+    // ══════════════════════════════════════════════════════════════════
+    let authUser;
+    try {
+      const authResult = await firebase.auth().signInWithEmailAndPassword(email, senha);
+      authUser = authResult.user;
+      console.log('[WORKRAIL] Autenticação Firebase bem-sucedida para:', email);
+    } catch (authError) {
+      if (authError.code === 'auth/wrong-password') {
+        throw { code: 'wrong-password', message: 'Senha incorreta.' };
+      } else if (authError.code === 'auth/user-not-found') {
+        throw { code: 'user-not-found', message: 'Usuário não encontrado.' };
+      } else {
+        throw { code: 'auth-error', message: authError.message || 'Erro ao autenticar. Tente novamente.' };
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // PASSO 2: Agora que request.auth está válido, ler perfil do Firestore
+    // A security rule permite leitura pois isAuthenticated() == true
+    // ══════════════════════════════════════════════════════════════════
     const usuariosRef = db.collection('usuarios');
-    const snap = await usuariosRef.where('username', '==', username).limit(1).get();
+    const snap = await usuariosRef.where('email', '==', email).limit(1).get();
 
     if (snap.empty) {
-      throw { code: 'user-not-found', message: 'Usuário não encontrado.' };
+      // Email autenticado mas sem perfil no Firestore
+      await firebase.auth().signOut();
+      throw { code: 'user-error', message: 'Usuário não encontrado no Firestore. Contate o administrador.' };
     }
 
     const usuarioDoc = snap.docs[0];
     const usuarioData = usuarioDoc.data();
 
-    // ──── Validar se está ativo ────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════
+    // PASSO 3: Validar se a conta está ativa
+    // ══════════════════════════════════════════════════════════════════
     if (!usuarioData.ativo) {
+      await firebase.auth().signOut();
       throw { code: 'user-disabled', message: 'Esta conta foi desativada pelo administrador.' };
     }
 
-    // ──── Validar senha ────────────────────────────────────────────
-    const senhaValida = await bcrypt.compare(senha, usuarioData.senhaHash);
-    if (!senhaValida) {
-      throw { code: 'wrong-password', message: 'Senha incorreta.' };
-    }
-
-    // ──── Login bem-sucedido ──────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════
+    // PASSO 4: Login bem-sucedido - armazenar sessão
+    // ══════════════════════════════════════════════════════════════════
     AuthRateLimiter.reset();
 
-    // Armazenar sessão em localStorage
     const sessaoData = {
-      uid: usuarioDoc.id,
+      uid: authUser.uid,  // Usar uid do Firebase Auth como fonte canônica
       username: usuarioData.username,
       nome: usuarioData.nome,
       email: usuarioData.email,
       perfil: usuarioData.perfil,
       fornecedor: usuarioData.fornecedor || null,
       ativo: usuarioData.ativo,
-      loginEm: new Date().toISOString()
+      loginEm: new Date().toISOString(),
+      autenticadoEm: authUser.metadata.creationTime
     };
 
     localStorage.setItem('WORKRAIL_SESSION', JSON.stringify(sessaoData));
@@ -2423,13 +2446,22 @@ async function fazerLogin() {
     // Atualizar interface
     atualizarInterfaceAposPerfil();
 
+    console.log('[WORKRAIL] Login bem-sucedido para:', email);
+
   } catch(e) {
+    // Se conseguiu autenticar mas depois falhou, fazer logout
+    if (firebase.auth().currentUser) {
+      await firebase.auth().signOut();
+    }
+
     AuthRateLimiter.record();
     const remaining = AuthRateLimiter.remaining();
     const msgs = {
       'user-not-found':    'Usuário não encontrado.',
       'wrong-password':    'Senha incorreta.',
-      'user-disabled':     'Esta conta foi desativada pelo administrador.'
+      'user-disabled':     'Esta conta foi desativada pelo administrador.',
+      'user-error':        'Erro na configuração do usuário. Contate o administrador.',
+      'auth-error':        'Erro de autenticação. Tente novamente.'
     };
     let msg = msgs[e.code] || e.message || 'Erro ao entrar. Tente novamente.';
     if (remaining <= 2 && remaining > 0) msg += ` (${remaining} tentativa${remaining===1?'':'s'} restante${remaining===1?'':'s'})`;
@@ -2448,7 +2480,7 @@ async function fazerLogout() {
     localStorage.removeItem('WORKRAIL_SESSION');
     currentUser = null;
     document.getElementById('login-overlay').classList.remove('hidden');
-    document.getElementById('loginUsername').value = '';
+    document.getElementById('loginEmail').value = '';
     document.getElementById('loginSenha').value = '';
     document.getElementById('loginBtn').disabled = false;
     document.getElementById('loginBtn').textContent = 'Entrar';
