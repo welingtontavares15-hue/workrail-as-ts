@@ -2607,8 +2607,8 @@ function aplicarControleMenu(perfil) {
   // Esconde itens de menu não permitidos por perfil
   const regras = {
     // item_id: ['perfis que PODEM ver']
-    'sb-solicitacao':  ['vendas','adm'],
-    'sb-pendentes':    ['gestor','adm'],
+    'sb-solicitacao':  ['vendas','adm','super_admin'],
+    'sb-pendentes':    ['gestor','adm','super_admin'],
     'sb-relatorios':   ['gestor','adm','super_admin'],
     'sb-configuracoes':['adm','super_admin'],
     'sb-dashboard':    ['vendas','gestor','adm','super_admin'],
