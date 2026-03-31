@@ -1295,6 +1295,10 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
             <svg viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="11" height="11" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M4 5h5M4 7h5M4 9h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
             Modelos
           </button>
+          <button class="admin-tab" data-tab="maquinas" onclick="adminTab('maquinas')">
+            <svg viewBox="0 0 13 13" fill="none"><rect x="1" y="4" width="8" height="7" rx="1.2" stroke="currentColor" stroke-width="1.1"/><path d="M9 6h2l1.5 2.5V11H9V6z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><circle cx="3.5" cy="11.5" r=".8" stroke="currentColor" stroke-width="1"/><circle cx="11" cy="11.5" r=".8" stroke="currentColor" stroke-width="1"/></svg>
+            Máquinas
+          </button>
           <button class="admin-tab" data-tab="sistema" onclick="adminTab('sistema')">
             <svg viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="2" stroke="currentColor" stroke-width="1.1"/><path d="M6.5 1.5v1M6.5 10v1M1.5 6.5h1M10 6.5h1M3.1 3.1l.7.7M9.2 9.2l.7.7M3.1 9.9l.7-.7M9.2 3.8l.7-.7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
             Sistema
@@ -1355,6 +1359,44 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
               <thead><tr><th>Modelo</th><th>Fabricante</th><th>Capacidade</th><th>Voltagem</th><th>Status</th><th style="width:140px">Ações</th></tr></thead>
               <tbody id="admin-lista-modelos"><tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:28px">Carregando...</td></tr></tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- ── ABA MÁQUINAS ── -->
+        <div class="admin-pane" id="admin-pane-maquinas" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px;flex-wrap:wrap">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <div class="search-bar" style="min-width:220px">
+                <svg viewBox="0 0 15 15" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.3"/><path d="M10 10l3.5 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                <input type="text" id="adminBuscaMaquina" placeholder="Buscar por Serial, Modelo ou Fornecedor..." oninput="filtrarTabelaMaquinasAdmin()">
+              </div>
+              <select id="adminFiltroFornecedor" onchange="filtrarTabelaMaquinasAdmin()" style="padding:7px 10px;border:1px solid var(--input-border);border-radius:6px;font-size:13px;background:#fff;height:36px">
+                <option value="">Todos os fornecedores</option>
+                <option value="Hobart Brasil">Hobart Brasil</option>
+                <option value="EBST">EBST</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:8px">
+              <label style="display:inline-flex;align-items:center;gap:6px;padding:7px 13px;background:var(--teal);color:#fff;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;height:36px">
+                <svg viewBox="0 0 13 13" fill="none" style="width:12px;height:12px"><path d="M6.5 2v7M3 6l3.5 3.5L10 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                Importar Excel
+                <input type="file" id="adminExcelInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="importarMaquinasViaExcel(this,'admin')">
+              </label>
+              <button class="btn" style="height:36px;font-size:12px;padding:0 13px;background:#fff;border:1px solid var(--border);color:var(--text-mid)" onclick="limparBaseMaquinas()">
+                <svg viewBox="0 0 13 13" fill="none" style="width:12px;height:12px;margin-right:4px"><path d="M2 2l9 9M11 2L2 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Limpar Base
+              </button>
+            </div>
+          </div>
+          <div id="adminMaquinasStatus" style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px"></div>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>Serial</th><th>Modelo</th><th>Fornecedor</th><th>Origem</th><th style="width:100px">Ações</th></tr></thead>
+              <tbody id="admin-lista-maquinas"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:28px">Nenhuma máquina na base. Importe um arquivo Excel.</td></tr></tbody>
+            </table>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.6">
+            <strong>Colunas esperadas no Excel:</strong> <code>Serial</code> (ou <code>serialMaquina</code>), <code>Modelo</code>, <code>Fornecedor</code>.
+            Linhas sem Serial são ignoradas. Duplicatas por Serial são descartadas.
           </div>
         </div>
 
@@ -1432,11 +1474,11 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
             <div class="fcard">
               <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="4" r="2.5" stroke="currentColor" stroke-width="1.1"/><path d="M1 12c0-3.04 2.46-5.5 5.5-5.5S12 8.96 12 12" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg><span class="fc-title">Dados do Cliente</span></div>
               <div class="fc-body c4">
-                <div class="field"><label>Ship To <span class="req">*</span></label><input type="text" placeholder="Código Ship To"></div>
-                <div class="field s2"><label>Nome do Cliente <span class="req">*</span></label><input type="text" placeholder="Razão social"></div>
-                <div class="field"><label>CNPJ <span class="req">*</span></label><input type="text" placeholder="00.000.000/0000-00"></div>
-                <div class="field s3"><label>E-mail do Cliente <span class="req">*</span></label><input type="email" placeholder="contato@cliente.com.br"></div>
-                <div class="field s4"><label>Endereço de Instalação <span class="req">*</span></label><input type="text" placeholder="Rua, número, bairro, cidade, estado, CEP"></div>
+                <div class="field"><label>Ship To <span class="req">*</span></label><input type="text" id="inputShipTo" placeholder="Código Ship To"></div>
+                <div class="field s2"><label>Nome do Cliente <span class="req">*</span></label><input type="text" id="inputNomeCliente" placeholder="Razão social"></div>
+                <div class="field"><label>CNPJ <span class="req">*</span></label><input type="text" id="inputCnpj" placeholder="00.000.000/0000-00"></div>
+                <div class="field s3"><label>E-mail do Cliente <span class="req">*</span></label><input type="email" id="inputEmailCliente" placeholder="contato@cliente.com.br"></div>
+                <div class="field s4"><label>Endereço de Instalação <span class="req">*</span></label><input type="text" id="inputEnderecoInstalacao" placeholder="Rua, número, bairro, cidade, estado, CEP"></div>
               </div>
             </div>
             <div class="fcard">
@@ -1533,7 +1575,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
               <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M8 1v3h3M5 7h3M5 9h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg><span class="fc-title">Contrato</span></div>
               <div class="fc-body c2">
                 <div class="field"><label>Contrato <span class="req">*</span></label><label class="file-drop" id="fProp"><input type="file" onchange="setFile(this,'fProp','fPropA')"><svg viewBox="0 0 18 18" fill="none"><path d="M9 4v8M5 8l4-4 4 4M3 14h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Anexar contrato</span></label><div class="file-attached" id="fPropA"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1"/><path d="M8 1v3h3" stroke="currentColor" stroke-width="1"/></svg><span></span></div></div>
-                <div class="field"><label>Observações contratuais</label><textarea placeholder="Informações complementares sobre o contrato..."></textarea></div>
+                <div class="field"><label>Observações contratuais</label><textarea id="textareaComentariosSolic" placeholder="Informações complementares sobre o contrato..."></textarea></div>
               </div>
             </div>
           </div>
@@ -1597,7 +1639,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
             </div>
             <div class="fcard">
               <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="11" height="11" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M3.5 5h6M3.5 7h4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg><span class="fc-title">Parecer</span></div>
-              <div class="fc-body c1"><div class="field"><label>Observações do Supervisor AS&amp;TS <span class="req">*</span></label><textarea placeholder="Descreva a justificativa da aprovação, rejeição ou orientação de ajuste."></textarea></div></div>
+              <div class="fc-body c1"><div class="field"><label>Observações do Supervisor AS&amp;TS <span class="req">*</span></label><textarea id="textareaParecerGestor" placeholder="Descreva a justificativa da aprovação, rejeição ou orientação de ajuste."></textarea></div></div>
             </div>
           </div>
           <div class="action-bar"><div class="ab-left"><button class="btn btn-back" onclick="go('solicitacao')"><svg viewBox="0 0 13 13" fill="none"><path d="M8 2L4 6.5 8 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Voltar</button></div></div>
@@ -1630,13 +1672,12 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
               </div>
             </div>
             <div class="fcard">
-              <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><rect x="1" y="2" width="11" height="9" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M4 6h5M4 8h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><circle cx="10" cy="2.5" r="2" fill="#0e7b82"/><path d="M9.3 2.5l.5.5.9-.9" stroke="#fff" stroke-width=".8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="fc-title">Identificação da Máquina</span><span style="font-size:10px;color:var(--text-muted);margin-left:auto">Preencha ao menos ID ou Serial</span></div>
+              <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><rect x="1" y="2" width="11" height="9" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M4 6h5M4 8h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><circle cx="10" cy="2.5" r="2" fill="#0e7b82"/><path d="M9.3 2.5l.5.5.9-.9" stroke="#fff" stroke-width=".8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="fc-title">Serial da Máquina</span><span style="font-size:10px;color:var(--text-muted);margin-left:auto">Informe o Serial da máquina a ser entregue</span></div>
               <div class="fc-body c2">
-                <div class="field"><label>ID da Máquina</label><input type="text" id="inputIdMaquina" placeholder="Ex: WR-M-001"></div>
                 <div class="field"><label>Serial da Máquina</label><input type="text" id="inputSerialMaquina" placeholder="Ex: HB-2024-XXXXX"></div>
-                <div class="field s2" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-                  <button type="button" class="btn" style="background:var(--teal);color:#fff;padding:7px 14px;font-size:12px;gap:6px;border-radius:6px" onclick="abrirModalImportarMaquinas()"><svg viewBox="0 0 13 13" fill="none" style="width:13px;height:13px"><path d="M6.5 2v7M3 6l3.5 3.5L10 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Importar máquinas (Excel)</button>
-                  <span style="font-size:11px;color:var(--text-muted)">ou preencha ID/Serial manualmente acima</span>
+                <div class="field" style="display:flex;align-items:flex-end;gap:10px">
+                  <button type="button" class="btn" style="background:var(--teal);color:#fff;padding:7px 14px;font-size:12px;gap:6px;border-radius:6px;white-space:nowrap" onclick="abrirModalSelecionarMaquina()"><svg viewBox="0 0 13 13" fill="none" style="width:13px;height:13px"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.2"/><path d="M9 9l2.5 2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Selecionar da Base</button>
+                  <span style="font-size:11px;color:var(--text-muted)">ou preencha o Serial manualmente</span>
                 </div>
                 <div id="admMaquinaSelecionada" style="display:none" class="field s2">
                   <div style="background:#e0f4f5;border:1px solid #0e7b82;border-radius:6px;padding:8px 12px;font-size:12px;display:flex;align-items:center;gap:10px">
@@ -1674,10 +1715,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
               </div>
             </div>
             <div class="fcard">
-              <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><rect x="1" y="2" width="11" height="9" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M4 6h5M4 8h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><circle cx="10" cy="2.5" r="2" fill="#c62828"/><path d="M9.4 2.1l1.2 1.2M10.6 2.1l-1.2 1.2" stroke="#fff" stroke-width=".8" stroke-linecap="round"/></svg><span class="fc-title">Identificação da Máquina Expedida</span><span style="font-size:10px;color:var(--red);margin-left:auto">ID da Máquina obrigatório ao anexar NF</span></div>
+              <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><rect x="1" y="2" width="11" height="9" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M4 6h5M4 8h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><circle cx="10" cy="2.5" r="2" fill="#c62828"/><path d="M9.4 2.1l1.2 1.2M10.6 2.1l-1.2 1.2" stroke="#fff" stroke-width=".8" stroke-linecap="round"/></svg><span class="fc-title">Serial da Máquina Expedida</span><span style="font-size:10px;color:var(--red);margin-left:auto">Serial obrigatório ao anexar NF</span></div>
               <div class="fc-body c2">
-                <div class="field"><label>ID da Máquina <span class="req">*</span></label><input type="text" id="inputIdMaquinaForn" placeholder="Obrigatório — Ex: WR-M-001"></div>
-                <div class="field"><label>Serial da Máquina</label><input type="text" id="inputSerialMaquinaForn" placeholder="Ex: HB-2024-XXXXX"></div>
+                <div class="field s2"><label>Serial da Máquina <span class="req">*</span></label><input type="text" id="inputSerialMaquinaForn" placeholder="Obrigatório — Ex: HB-2024-XXXXX"></div>
                 <div id="fornMaquinaPreenchida" style="display:none" class="field s2">
                   <div style="background:#e0f4f5;border:1px solid #0e7b82;border-radius:6px;padding:8px 12px;font-size:12px;display:flex;align-items:center;gap:8px">
                     <svg viewBox="0 0 13 13" fill="none" style="width:13px;height:13px;color:#0e7b82;flex-shrink:0"><path d="M2.5 6.5l3 3L10.5 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1925,39 +1965,30 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
 
 <!-- ══ MODAL IMPORTAR MÁQUINAS ══ -->
 <div id="mImportarMaquinas" class="modal-overlay hidden" style="align-items:flex-start;padding-top:40px">
-  <div class="modal" style="max-width:700px;width:95%;max-height:85vh;display:flex;flex-direction:column;gap:0">
+  <div class="modal" style="max-width:640px;width:95%;max-height:85vh;display:flex;flex-direction:column;gap:0">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <h3 style="font-size:15px;font-weight:600;color:var(--text)">Importar Máquinas por Fornecedor</h3>
+      <h3 style="font-size:15px;font-weight:600;color:var(--text)">Selecionar Máquina da Base</h3>
       <button onclick="closeMod('mImportarMaquinas')" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:18px;line-height:1">✕</button>
     </div>
     <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px">
       <div style="flex:1;min-width:160px">
         <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">Fornecedor</label>
-        <select id="importFornecedorSelect" style="width:100%;padding:7px 10px;border:1px solid var(--input-border);border-radius:6px;font-size:13px;background:#fff">
+        <select id="importFornecedorSelect" onchange="filtrarResultadosMaquinas()" style="width:100%;padding:7px 10px;border:1px solid var(--input-border);border-radius:6px;font-size:13px;background:#fff">
           <option value="">Todos os fornecedores</option>
           <option value="Hobart Brasil">Hobart Brasil</option>
           <option value="EBST">EBST</option>
         </select>
       </div>
       <div style="flex:2;min-width:200px">
-        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">Buscar por ID ou Serial</label>
-        <input type="text" id="importBuscaMaquina" placeholder="Digite ID ou Serial da máquina..." oninput="filtrarResultadosMaquinas()" style="width:100%;padding:7px 10px;border:1px solid var(--input-border);border-radius:6px;font-size:13px">
-      </div>
-      <div>
-        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">Importar Excel</label>
-        <label style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;background:var(--teal);color:#fff;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500">
-          <svg viewBox="0 0 13 13" fill="none" style="width:12px;height:12px"><path d="M6.5 2v7M3 6l3.5 3.5L10 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-          Carregar Excel
-          <input type="file" id="importExcelInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="importarMaquinasViaExcel(this)">
-        </label>
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">Buscar por Serial ou Modelo</label>
+        <input type="text" id="importBuscaMaquina" placeholder="Digite o Serial ou Modelo..." oninput="filtrarResultadosMaquinas()" style="width:100%;padding:7px 10px;border:1px solid var(--input-border);border-radius:6px;font-size:13px">
       </div>
     </div>
     <div id="importStatusMsg" style="font-size:11px;color:var(--text-muted);margin-bottom:8px"></div>
-    <div style="overflow-y:auto;flex:1;border:1px solid var(--border);border-radius:6px;min-height:200px;max-height:340px">
+    <div style="overflow-y:auto;flex:1;border:1px solid var(--border);border-radius:6px;min-height:200px;max-height:360px">
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead style="position:sticky;top:0;background:#f4f6f8;z-index:1">
           <tr>
-            <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--text-mid);border-bottom:1px solid var(--border)">ID Máquina</th>
             <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--text-mid);border-bottom:1px solid var(--border)">Serial</th>
             <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--text-mid);border-bottom:1px solid var(--border)">Modelo</th>
             <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--text-mid);border-bottom:1px solid var(--border)">Fornecedor</th>
@@ -1965,7 +1996,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
           </tr>
         </thead>
         <tbody id="importTabelaMaquinas">
-          <tr><td colspan="5" style="padding:30px;text-align:center;color:var(--text-muted)">Carregue um arquivo Excel ou selecione um fornecedor para ver as máquinas disponíveis.</td></tr>
+          <tr><td colspan="4" style="padding:30px;text-align:center;color:var(--text-muted)">Nenhuma máquina na base. Acesse Admin Sistema → Máquinas para importar via Excel.</td></tr>
         </tbody>
       </table>
     </div>
@@ -2976,28 +3007,17 @@ function arquivoAnexado(dropId) {
 
 function validateStep_Solicitacao() {
   const erros = [];
-  const sc = '#screen-solicitacao ';
-
-  if (!lerInput(sc + 'input[placeholder="Código Ship To"]'))
-    erros.push('Ship To');
-  if (!lerInput(sc + 'input[placeholder="Razão social"]'))
-    erros.push('Nome do Cliente');
-  const cnpjVal = lerInput(sc + 'input[placeholder="00.000.000/0000-00"]');
+  if (!document.getElementById('inputShipTo')?.value?.trim())           erros.push('Ship To');
+  if (!document.getElementById('inputNomeCliente')?.value?.trim())      erros.push('Nome do Cliente');
+  const cnpjVal = document.getElementById('inputCnpj')?.value?.trim();
   if (!cnpjVal) erros.push('CNPJ');
   else if (!validarCNPJ(cnpjVal)) erros.push('CNPJ inválido');
-  if (!lerInput(sc + 'input[type="email"]'))
-    erros.push('E-mail do Cliente');
-  if (!lerInput(sc + 'input[placeholder*="Rua"]'))
-    erros.push('Endereço de Instalação');
-
-  const nums = document.querySelectorAll(sc + 'input[type="number"]');
-  if (!nums[0]?.value) erros.push('Refeições/Dia');
-  if (!nums[1]?.value) erros.push('Refeições/Hora');
-
-  const selects = document.querySelectorAll(sc + 'select');
-  if (!selects[0]?.value) erros.push('Tipo da Solicitação');
-  if (!selects[1]?.value) erros.push('Modelo da Máquina');
-
+  if (!document.getElementById('inputEmailCliente')?.value?.trim())     erros.push('E-mail do Cliente');
+  if (!document.getElementById('inputEnderecoInstalacao')?.value?.trim()) erros.push('Endereço de Instalação');
+  if (!document.getElementById('inputRefeicoesDia')?.value)             erros.push('Refeições/Dia');
+  if (!document.getElementById('inputRefeicoesHora')?.value)            erros.push('Refeições/Hora');
+  if (!document.getElementById('tipoSolicitacao')?.value)               erros.push('Tipo da Solicitação');
+  if (!document.getElementById('modeloMaquinaSelect')?.value)           erros.push('Modelo da Máquina');
   if (!arquivoAnexado('fProp')) erros.push('Contrato (arquivo obrigatório)');
 
   if (erros.length > 0) {
@@ -3008,7 +3028,7 @@ function validateStep_Solicitacao() {
 }
 
 function validateStep_Gestor(tipo) {
-  const obs = document.querySelector('#screen-gestor textarea')?.value?.trim();
+  const obs = document.getElementById('textareaParecerGestor')?.value?.trim();
   const fornecedor = document.getElementById('supervisorFornecedor')?.value;
   const modelo = document.getElementById('supervisorModeloValidado')?.value?.trim();
   if (!fornecedor || !modelo || !obs) {
@@ -3026,9 +3046,8 @@ function validateStep_Adm() {
   if (!document.getElementById('inputVigenciaAdm')?.value?.trim()) erros.push('Vigência');
   if (!arquivoAnexado('fContrato')) erros.push('Contrato Assinado (arquivo)');
 
-  const idMaq  = document.getElementById('inputIdMaquina')?.value?.trim();
-  const serial = document.getElementById('inputSerialMaquina')?.value?.trim();
-  if (!idMaq && !serial) erros.push('Identificação da Máquina (ID ou Serial obrigatório)');
+  // Serial é opcional no ADM — fornecedor pode ainda não ter separado a máquina
+  // (Serial obrigatório somente na etapa do Fornecedor ao anexar NF)
 
   if (erros.length > 0) {
     showToast('Campos obrigatórios: ' + erros.join(' · '), 'error');
@@ -3040,10 +3059,10 @@ function validateStep_Adm() {
 function validateStep_Fornecedor() {
   const erros = [];
 
-  if (!document.getElementById('inputNumeroNF')?.value?.trim()) erros.push('Número da NF');
-  if (!document.getElementById('dataColeta')?.value)            erros.push('Data de Liberação');
-  if (!arquivoAnexado('fNF'))                                   erros.push('Nota Fiscal (arquivo obrigatório)');
-  if (!document.getElementById('inputIdMaquinaForn')?.value?.trim()) erros.push('ID da Máquina (obrigatório ao emitir NF)');
+  if (!document.getElementById('inputNumeroNF')?.value?.trim())        erros.push('Número da NF');
+  if (!document.getElementById('dataColeta')?.value)                   erros.push('Data de Liberação');
+  if (!arquivoAnexado('fNF'))                                          erros.push('Nota Fiscal (arquivo obrigatório)');
+  if (!document.getElementById('inputSerialMaquinaForn')?.value?.trim()) erros.push('Serial da Máquina (obrigatório ao emitir NF)');
 
   if (erros.length > 0) {
     showToast('Campos obrigatórios: ' + erros.join(' · '), 'error');
@@ -3107,23 +3126,21 @@ function _salvarBaseLocal() {
 }
 
 /**
- * Normaliza um registro de máquina garantindo todos os campos e calculando chaveIdentificacao.
+ * Normaliza um registro de máquina garantindo todos os campos.
+ * chaveIdentificacao = serialMaquina (identificador único no fluxo).
  * @param {Object} reg - objeto bruto
  * @returns {Object} registro normalizado
  */
 function normalizarRegistroMaquina(reg) {
-  const idMaquina     = (reg.idMaquina     || reg.id     || reg.ID     || '').toString().trim();
   const serialMaquina = (reg.serialMaquina || reg.serial || reg.Serial || '').toString().trim();
   const modelo        = (reg.modelo        || reg.Modelo || reg.model  || '').toString().trim();
   const fornecedor    = (reg.fornecedor    || reg.Fornecedor || '').toString().trim();
-  const origem        = (reg.origem === 'importada') ? 'importada' : (idMaquina || serialMaquina ? 'manual' : 'manual');
-  const chaveIdentificacao = idMaquina || serialMaquina;
-  return { idMaquina, serialMaquina, modelo, fornecedor, origem, chaveIdentificacao };
+  const origem        = (reg.origem === 'importada') ? 'importada' : 'manual';
+  return { serialMaquina, modelo, fornecedor, origem, chaveIdentificacao: serialMaquina };
 }
 
 /**
  * Retorna máquinas da base, opcionalmente filtradas por fornecedor.
- * Preparado para futura troca por Firestore/API.
  */
 function obterMaquinasPorFornecedor(fornecedor) {
   if (!fornecedor) return [..._baseMaquinas];
@@ -3131,103 +3148,104 @@ function obterMaquinasPorFornecedor(fornecedor) {
 }
 
 /**
- * Busca uma máquina por ID ou Serial dentro da base.
- * @param {string} fornecedor - filtro opcional
- * @param {'id'|'serial'|'ambos'} tipoBusca
- * @param {string} termo
+ * Busca máquinas por Serial ou Modelo (texto livre).
  */
-function buscarMaquinaPorIdOuSerial(fornecedor, tipoBusca, termo) {
+function buscarMaquinaPorSerial(fornecedor, termo) {
   const t = termo.trim().toLowerCase();
-  if (!t) return obterMaquinasPorFornecedor(fornecedor);
-  return obterMaquinasPorFornecedor(fornecedor).filter(m => {
-    if (tipoBusca === 'id')     return m.idMaquina.toLowerCase().includes(t);
-    if (tipoBusca === 'serial') return m.serialMaquina.toLowerCase().includes(t);
-    return m.idMaquina.toLowerCase().includes(t) || m.serialMaquina.toLowerCase().includes(t);
-  });
+  const base = obterMaquinasPorFornecedor(fornecedor);
+  if (!t) return base;
+  return base.filter(m =>
+    m.serialMaquina.toLowerCase().includes(t) ||
+    m.modelo.toLowerCase().includes(t)
+  );
 }
 
 /**
  * Importa máquinas a partir de um arquivo Excel (.xlsx/.xls) ou CSV.
- * Colunas esperadas (case-insensitive): idMaquina/ID, serialMaquina/Serial, modelo/Modelo, fornecedor/Fornecedor.
- * Registros duplicados por ID são ignorados.
+ * Colunas esperadas: Serial (ou serialMaquina), Modelo, Fornecedor.
+ * Duplicatas por Serial são ignoradas.
  * @param {HTMLInputElement} inputEl - elemento <input type="file">
+ * @param {string} [contexto] - 'admin' para atualizar tabela do Admin Sistema
  */
-function importarMaquinasViaExcel(inputEl) {
+function importarMaquinasViaExcel(inputEl, contexto) {
   const file = inputEl?.files?.[0];
   if (!file) return;
   if (typeof XLSX === 'undefined') {
     showToast('Biblioteca Excel não carregada. Verifique a conexão.', 'error');
     return;
   }
-  const statusEl = document.getElementById('importStatusMsg');
+  const statusEl = document.getElementById(contexto === 'admin' ? 'adminMaquinasStatus' : 'importStatusMsg');
   if (statusEl) statusEl.textContent = 'Lendo arquivo…';
 
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
-      const wb = XLSX.read(e.target.result, { type: 'array' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
+      const wb   = XLSX.read(e.target.result, { type: 'array' });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
 
       let adicionados = 0, ignorados = 0;
-      const idsExistentes = new Set(_baseMaquinas.map(m => m.idMaquina).filter(Boolean));
       const serialsExistentes = new Set(_baseMaquinas.map(m => m.serialMaquina).filter(Boolean));
 
       rows.forEach(row => {
         const norm = normalizarRegistroMaquina({ ...row, origem: 'importada' });
-        if (!norm.chaveIdentificacao) { ignorados++; return; }
-        // Checa duplicidade
-        if (norm.idMaquina && idsExistentes.has(norm.idMaquina)) { ignorados++; return; }
-        if (!norm.idMaquina && norm.serialMaquina && serialsExistentes.has(norm.serialMaquina)) { ignorados++; return; }
+        if (!norm.serialMaquina) { ignorados++; return; }
+        if (serialsExistentes.has(norm.serialMaquina)) { ignorados++; return; }
         _baseMaquinas.push(norm);
-        if (norm.idMaquina)     idsExistentes.add(norm.idMaquina);
-        if (norm.serialMaquina) serialsExistentes.add(norm.serialMaquina);
+        serialsExistentes.add(norm.serialMaquina);
         adicionados++;
       });
 
       _salvarBaseLocal();
-      if (statusEl) statusEl.textContent = `✓ ${adicionados} máquina(s) importada(s). ${ignorados > 0 ? ignorados + ' ignorada(s) (duplicatas ou sem ID/Serial).' : ''}`;
-      filtrarResultadosMaquinas();
+      const msg = `✓ ${adicionados} máquina(s) importada(s).${ignorados > 0 ? ' ' + ignorados + ' ignorada(s) (sem Serial ou duplicata).' : ''}`;
+      if (statusEl) statusEl.textContent = msg;
+      showToast(msg, 'success');
+      if (contexto === 'admin') carregarTabelaMaquinasAdmin();
+      else filtrarResultadosMaquinas();
     } catch(err) {
       console.error('[WORKRAIL] Erro ao ler Excel:', err);
-      if (statusEl) statusEl.textContent = '✕ Erro ao ler arquivo. Verifique o formato (.xlsx, .xls ou .csv).';
+      const errMsg = '✕ Erro ao ler arquivo. Verifique o formato (.xlsx, .xls ou .csv).';
+      if (statusEl) statusEl.textContent = errMsg;
+      showToast(errMsg, 'error');
     }
-    // Limpa input para permitir re-importação do mesmo arquivo
     inputEl.value = '';
   };
   reader.readAsArrayBuffer(file);
 }
 
-// ─── UI do modal de importação ─────────────────────────────
+// ─── Modal de seleção (chamado do fluxo ADM) ───────────────
 
-function abrirModalImportarMaquinas() {
-  // Pré-seleciona o fornecedor já escolhido no ADM
+function abrirModalSelecionarMaquina() {
   const fornAtual = document.getElementById('selectFornecedorAdm')?.value || '';
   const sel = document.getElementById('importFornecedorSelect');
   if (sel && fornAtual) sel.value = fornAtual;
-  document.getElementById('importBuscaMaquina').value = '';
-  document.getElementById('importStatusMsg').textContent =
-    _baseMaquinas.length > 0 ? `Base local: ${_baseMaquinas.length} máquina(s) carregada(s).` : 'Nenhuma máquina na base local. Importe um arquivo Excel.';
+  const busca = document.getElementById('importBuscaMaquina');
+  if (busca) busca.value = '';
+  const statusEl = document.getElementById('importStatusMsg');
+  if (statusEl) statusEl.textContent = _baseMaquinas.length > 0
+    ? `Base: ${_baseMaquinas.length} máquina(s). Use Admin Sistema → Máquinas para importar mais.`
+    : 'Base vazia. Acesse Admin Sistema → Máquinas para importar via Excel.';
   filtrarResultadosMaquinas();
   document.getElementById('mImportarMaquinas').classList.remove('hidden');
 }
+// Alias mantido para compatibilidade
+const abrirModalImportarMaquinas = abrirModalSelecionarMaquina;
 
 function filtrarResultadosMaquinas() {
   const fornecedor = document.getElementById('importFornecedorSelect')?.value || '';
   const termo      = document.getElementById('importBuscaMaquina')?.value || '';
-  const lista      = buscarMaquinaPorIdOuSerial(fornecedor, 'ambos', termo);
+  const lista      = buscarMaquinaPorSerial(fornecedor, termo);
   const tbody      = document.getElementById('importTabelaMaquinas');
   if (!tbody) return;
 
   if (lista.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text-muted)">Nenhuma máquina encontrada. Importe um arquivo Excel ou ajuste o filtro.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--text-muted)">Nenhuma máquina encontrada. Acesse Admin Sistema → Máquinas para importar via Excel.</td></tr>';
     return;
   }
 
   tbody.innerHTML = lista.slice(0, 200).map(m => `
     <tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:7px 10px;font-family:var(--mono, monospace);font-size:11px">${m.idMaquina || '—'}</td>
-      <td style="padding:7px 10px;font-size:11px;color:var(--text-mid)">${m.serialMaquina || '—'}</td>
+      <td style="padding:7px 10px;font-family:'DM Mono',monospace;font-size:11.5px;color:var(--teal-dark)">${m.serialMaquina || '—'}</td>
       <td style="padding:7px 10px;font-size:12px">${m.modelo || '—'}</td>
       <td style="padding:7px 10px;font-size:11px;color:var(--text-mid)">${m.fornecedor || '—'}</td>
       <td style="padding:7px 10px;text-align:center">
@@ -3237,39 +3255,27 @@ function filtrarResultadosMaquinas() {
 }
 
 function selecionarMaquinaImportada(maquina) {
-  // Preenche campos da etapa ADM
-  const idEl  = document.getElementById('inputIdMaquina');
+  // Preenche campo Serial na etapa ADM
   const serEl = document.getElementById('inputSerialMaquina');
-  if (idEl)  idEl.value  = maquina.idMaquina  || '';
   if (serEl) serEl.value = maquina.serialMaquina || '';
 
-  // Preenche campos da etapa Fornecedor (pré-carga)
-  const idFEl  = document.getElementById('inputIdMaquinaForn');
+  // Pré-carrega Serial na etapa Fornecedor
   const serFEl = document.getElementById('inputSerialMaquinaForn');
-  if (idFEl)  idFEl.value  = maquina.idMaquina  || '';
   if (serFEl) serFEl.value = maquina.serialMaquina || '';
 
-  // Atualiza label de confirmação no ADM
-  const label = [maquina.idMaquina, maquina.serialMaquina, maquina.modelo].filter(Boolean).join(' · ');
+  // Exibe confirmação no ADM
+  const label    = [maquina.serialMaquina, maquina.modelo, maquina.fornecedor].filter(Boolean).join(' · ');
   const admLabel = document.getElementById('admMaquinaLabel');
   const admBox   = document.getElementById('admMaquinaSelecionada');
   if (admLabel) admLabel.textContent = label;
   if (admBox)   admBox.style.display = '';
 
-  // Atualiza label no Fornecedor
-  const fLabel = document.getElementById('fornMaquinaLabel');
-  const fBox   = document.getElementById('fornMaquinaPreenchida');
-  if (fLabel) fLabel.textContent = label;
-  if (fBox)   fBox.style.display = '';
-
   closeMod('mImportarMaquinas');
-  showToast('Máquina selecionada: ' + (maquina.chaveIdentificacao || label), 'success');
+  showToast('Máquina selecionada: Serial ' + (maquina.serialMaquina || '—'), 'success');
 }
 
 function limparMaquinaAdm() {
-  const idEl  = document.getElementById('inputIdMaquina');
   const serEl = document.getElementById('inputSerialMaquina');
-  if (idEl)  idEl.value  = '';
   if (serEl) serEl.value = '';
   const admBox = document.getElementById('admMaquinaSelecionada');
   if (admBox) admBox.style.display = 'none';
@@ -3305,11 +3311,11 @@ function coletarDadosSolicitacao() {
   const sc = '#screen-solicitacao ';
   return {
     dadosCliente: {
-      shipTo:      lerInput(sc + 'input[placeholder="Código Ship To"]'),
-      nomeCliente: lerInput(sc + 'input[placeholder="Razão social"]'),
-      cnpj:        lerInput(sc + 'input[placeholder="00.000.000/0000-00"]'),
-      email:       lerInput(sc + 'input[type="email"]'),
-      endereco:    lerInput(sc + 'input[placeholder*="Rua"]')
+      shipTo:      document.getElementById('inputShipTo')?.value?.trim() || '',
+      nomeCliente: document.getElementById('inputNomeCliente')?.value?.trim() || '',
+      cnpj:        document.getElementById('inputCnpj')?.value?.trim() || '',
+      email:       document.getElementById('inputEmailCliente')?.value?.trim() || '',
+      endereco:    document.getElementById('inputEnderecoInstalacao')?.value?.trim() || ''
     },
     dadosSolicitacao: {
       numeroPedido:    document.getElementById('numeroPedidoSolic')?.value || '',
@@ -3321,7 +3327,7 @@ function coletarDadosSolicitacao() {
       modeloMaquina:   document.getElementById('modeloMaquinaSelect')?.value || '',
       detergente:      document.getElementById('selectDetergente')?.value || '',
       secante:         document.getElementById('selectSecante')?.value || '',
-      comentarios:     document.querySelector(sc + 'textarea')?.value || '',
+      comentarios:     document.getElementById('textareaComentariosSolic')?.value?.trim() || '',
       representante:   currentUser?.nome || 'Representante'
     },
     criadoPorUid: currentUser?.uid || null
@@ -3329,11 +3335,10 @@ function coletarDadosSolicitacao() {
 }
 
 function coletarDadosAdm() {
-  const idMaq  = document.getElementById('inputIdMaquina')?.value?.trim()  || '';
-  const serial = document.getElementById('inputSerialMaquina')?.value?.trim() || '';
+  const serial     = document.getElementById('inputSerialMaquina')?.value?.trim() || '';
   const fornecedor = document.getElementById('selectFornecedorAdm')?.value || '';
-  const modelo = currentSolicitacao?.dadosSolicitacao?.modeloMaquina || '';
-  const maquina = normalizarRegistroMaquina({ idMaquina: idMaq, serialMaquina: serial, modelo, fornecedor });
+  const modelo     = currentSolicitacao?.dadosSolicitacao?.modeloMaquina || '';
+  const maquina    = normalizarRegistroMaquina({ serialMaquina: serial, modelo, fornecedor });
   return {
     tipoContrato:    document.getElementById('selectTipoContrato')?.value || '',
     vigencia:        document.getElementById('inputVigenciaAdm')?.value?.trim() || '',
@@ -3345,11 +3350,10 @@ function coletarDadosAdm() {
 }
 
 function coletarDadosFornecedor() {
-  const idMaq  = document.getElementById('inputIdMaquinaForn')?.value?.trim()  || '';
-  const serial = document.getElementById('inputSerialMaquinaForn')?.value?.trim() || '';
+  const serial     = document.getElementById('inputSerialMaquinaForn')?.value?.trim() || '';
   const fornecedor = currentSolicitacao?.dadosAdm?.fornecedor || '';
-  const modelo = currentSolicitacao?.dadosSolicitacao?.modeloMaquina || '';
-  const maquinaConfirmada = normalizarRegistroMaquina({ idMaquina: idMaq, serialMaquina: serial, modelo, fornecedor });
+  const modelo     = currentSolicitacao?.dadosSolicitacao?.modeloMaquina || '';
+  const maquinaConfirmada = normalizarRegistroMaquina({ serialMaquina: serial, modelo, fornecedor });
   return {
     numeroNF:         document.getElementById('inputNumeroNF')?.value?.trim() || '',
     dataColeta:       document.getElementById('dataColeta')?.value || '',
@@ -3439,7 +3443,7 @@ async function confirmAprovar() {
   closeMod('mAprovar');
   showLoading(true);
   try {
-    const obs = document.querySelector('#screen-gestor textarea')?.value?.trim();
+    const obs = document.getElementById('textareaParecerGestor')?.value?.trim();
 
     // Recuperar o Nº do Pedido gerado na abertura da solicitação
     const numPedido = currentSolicitacao?.dadosAdm?.numeroPedido
@@ -3487,7 +3491,7 @@ async function confirmAprovar() {
 
 // 02 → GESTOR rejeita
 async function confirmRejeitar() {
-  const obs = document.querySelector('#screen-gestor textarea')?.value?.trim();
+  const obs = document.getElementById('textareaParecerGestor')?.value?.trim();
   if (!obs) {
     closeMod('mRejeitar');
     showToast('Informe o motivo da rejeição antes de prosseguir.', 'error');
@@ -3523,7 +3527,7 @@ async function confirmRejeitar() {
 
 // 02 → GESTOR solicita ajuste
 async function confirmSolicitarAjuste() {
-  const obs = document.querySelector('#screen-gestor textarea')?.value?.trim();
+  const obs = document.getElementById('textareaParecerGestor')?.value?.trim();
   if (!obs) {
     closeMod('mAjuste');
     showToast('Informe as orientações de ajuste antes de prosseguir.', 'error');
@@ -3590,7 +3594,6 @@ async function confirmFornecedor() {
         Pedido: dadosAdm.numeroPedido,
         Fornecedor: dadosAdm.fornecedor,
         Modelo: currentSolicitacao?.dadosSolicitacao?.modeloMaquina,
-        'ID Máquina': dadosAdm.maquina?.idMaquina || '—',
         'Serial Máquina': dadosAdm.maquina?.serialMaquina || '—',
         EntregaPrevista: dadosAdm.entregaPrevista,
         Cliente: currentSolicitacao?.dadosCliente?.nomeCliente
@@ -3647,7 +3650,6 @@ async function confirmExpedicao() {
       'Máquina Expedida — NF Disponível',
       `NF anexada e máquina liberada pelo fornecedor. A ADM deve acionar a logística para coleta e entrega.`,
       prot, { NF: dados.numeroNF, DataColeta: dados.dataColeta,
-              'ID Máquina': dados.maquinaConfirmada?.idMaquina || '—',
               'Serial Máquina': dados.maquinaConfirmada?.serialMaquina || '—',
               Cliente: currentSolicitacao?.dadosCliente?.nomeCliente }
     );
@@ -3946,24 +3948,20 @@ function go(id){
     const fornecedorAdm = document.getElementById('selectFornecedorAdm');
     if (fornecedorAdm && fornecedorRecomendado) fornecedorAdm.value = fornecedorRecomendado;
 
-    // Pré-preencher máquina se já salva (retorno à tela ADM)
+    // Pré-preencher Serial se já salvo (retorno à tela ADM)
     const maqAdm = currentSolicitacao?.dadosAdm?.maquina;
-    if (maqAdm) {
-      const elId  = document.getElementById('inputIdMaquina');
+    if (maqAdm?.serialMaquina) {
       const elSer = document.getElementById('inputSerialMaquina');
-      if (elId  && maqAdm.idMaquina)     elId.value  = maqAdm.idMaquina;
-      if (elSer && maqAdm.serialMaquina) elSer.value = maqAdm.serialMaquina;
+      if (elSer && !elSer.value) elSer.value = maqAdm.serialMaquina;
     }
   }
 
-  // Ao entrar na tela Fornecedor, pré-preenche ID/Serial da máquina aprovada pelo ADM
+  // Ao entrar na tela Fornecedor, pré-preenche Serial da máquina registrada pelo ADM
   if (id === 'fornecedor') {
     const maqAdm = currentSolicitacao?.dadosAdm?.maquina;
-    if (maqAdm) {
-      const elId  = document.getElementById('inputIdMaquinaForn');
+    if (maqAdm?.serialMaquina) {
       const elSer = document.getElementById('inputSerialMaquinaForn');
-      if (elId  && maqAdm.idMaquina     && !elId.value)  elId.value  = maqAdm.idMaquina;
-      if (elSer && maqAdm.serialMaquina && !elSer.value) elSer.value = maqAdm.serialMaquina;
+      if (elSer && !elSer.value) elSer.value = maqAdm.serialMaquina;
     }
   }
 
@@ -4521,14 +4519,72 @@ function adminTab(tab) {
   document.querySelectorAll('.admin-tab').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === tab);
   });
-  ['usuarios','fornecedores','modelos','sistema'].forEach(t => {
+  ['usuarios','fornecedores','modelos','maquinas','sistema'].forEach(t => {
     const el = document.getElementById('admin-pane-' + t);
     if (el) el.style.display = t === tab ? '' : 'none';
   });
   if (tab === 'usuarios')     carregarUsuariosAdmin();
   if (tab === 'fornecedores') carregarFornecedoresAdmin();
   if (tab === 'modelos')      carregarModelosAdmin();
+  if (tab === 'maquinas')     carregarTabelaMaquinasAdmin();
   if (tab === 'sistema')      carregarInfoSistema();
+}
+
+// ─── ABA MÁQUINAS — Gestão da base local ─────────────────────
+
+function carregarTabelaMaquinasAdmin() {
+  filtrarTabelaMaquinasAdmin();
+  const statusEl = document.getElementById('adminMaquinasStatus');
+  if (statusEl) statusEl.textContent = _baseMaquinas.length > 0
+    ? `Base: ${_baseMaquinas.length} máquina(s) importada(s). Última importação via Excel.`
+    : 'Nenhuma máquina na base. Importe um arquivo Excel.';
+}
+
+function filtrarTabelaMaquinasAdmin() {
+  const termo    = document.getElementById('adminBuscaMaquina')?.value?.toLowerCase().trim() || '';
+  const fornFilt = document.getElementById('adminFiltroFornecedor')?.value || '';
+  const tbody    = document.getElementById('admin-lista-maquinas');
+  if (!tbody) return;
+
+  const lista = _baseMaquinas.filter(m => {
+    const matchForn  = !fornFilt || m.fornecedor === fornFilt;
+    const matchTermo = !termo ||
+      m.serialMaquina.toLowerCase().includes(termo) ||
+      m.modelo.toLowerCase().includes(termo) ||
+      m.fornecedor.toLowerCase().includes(termo);
+    return matchForn && matchTermo;
+  });
+
+  if (lista.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:28px">${_baseMaquinas.length === 0 ? 'Nenhuma máquina na base. Importe um arquivo Excel.' : 'Nenhuma máquina encontrada com os filtros aplicados.'}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = lista.map((m, i) => `
+    <tr>
+      <td style="font-family:'DM Mono',monospace;font-size:11.5px;color:var(--teal-dark)">${m.serialMaquina || '—'}</td>
+      <td>${m.modelo || '—'}</td>
+      <td>${m.fornecedor || '—'}</td>
+      <td><span class="chip" style="font-size:10px;padding:2px 7px">${m.origem || 'importada'}</span></td>
+      <td style="text-align:center">
+        <button class="btn-mini" style="background:var(--red-l);color:var(--red)" onclick="removerMaquinaAdmin(${i})">Remover</button>
+      </td>
+    </tr>`).join('');
+}
+
+function removerMaquinaAdmin(idx) {
+  _baseMaquinas.splice(idx, 1);
+  _salvarBaseLocal();
+  carregarTabelaMaquinasAdmin();
+  showToast('Máquina removida da base.', 'success');
+}
+
+function limparBaseMaquinas() {
+  if (!confirm('Confirma a remoção de TODAS as máquinas da base local? Esta ação não pode ser desfeita.')) return;
+  _baseMaquinas = [];
+  _salvarBaseLocal();
+  carregarTabelaMaquinasAdmin();
+  showToast('Base de máquinas limpa com sucesso.', 'success');
 }
 
 // ─── STATS BAR — Contadores ──────────────────────────────────
