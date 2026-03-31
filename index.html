@@ -3282,11 +3282,35 @@ function normalizarRegistroMaquina(reg) {
   const fornecedor        = (reg.fornecedor        || reg.Fornecedor      || '').toString().trim();
   const mesa              = _normSN(reg.mesa       || reg.Mesa            || '');
   const dosador           = _normSN(reg.dosador    || reg.Dosador         || '');
-  const dataInstalacao    = (reg.dataInstalacao    || reg['Data de instalação'] || reg.DataInstalacao || '').toString().trim();
+  const dataInstalacao    = _normData(reg.dataInstalacao || reg['Data de instalação'] || reg.DataInstalacao || '');
   const endereco          = (reg.endereco          || reg.Endereço        || reg.Endereco        || '').toString().trim();
   const responsavelVendas = (reg.responsavelVendas || reg['Responsável de vendas'] || reg.Responsavel || '').toString().trim();
   const origem            = (reg.origem === 'importada') ? 'importada' : 'manual';
   return { serialMaquina, modelo, fornecedor, mesa, dosador, dataInstalacao, endereco, responsavelVendas, origem, chaveIdentificacao: serialMaquina };
+}
+
+/**
+ * Normaliza campo de data: aceita serial numérico do Excel, DD/MM/AAAA ou AAAA-MM-DD.
+ * Sempre retorna AAAA-MM-DD (ISO) para consistência no Firestore.
+ */
+function _normData(v) {
+  const s = v.toString().trim();
+  if (!s) return '';
+  // Serial numérico do Excel (ex: 45366)
+  const n = Number(s);
+  if (!isNaN(n) && n > 1000 && s === String(Math.floor(n))) {
+    // Excel epoch: 1 = 01/01/1900. Excel trata 1900 como ano bissexto (bug),
+    // então seriais > 59 têm deslocamento de 1 dia a menos.
+    const dias = n > 59 ? n - 2 : n - 1;
+    const d = new Date(Date.UTC(1900, 0, 1) + dias * 86400000);
+    return d.toISOString().split('T')[0];
+  }
+  // DD/MM/AAAA → AAAA-MM-DD
+  const pt = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (pt) return `${pt[3]}-${pt[2].padStart(2,'0')}-${pt[1].padStart(2,'0')}`;
+  // AAAA-MM-DD — já está no formato correto
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  return s; // devolve como está se não reconhecer
 }
 
 /** Normaliza campo Sim/Não — aceita s, sim, yes, 1, n, não, no, 0 */
