@@ -1179,8 +1179,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
               <table class="ctd-table" id="ctdTable">
                 <thead>
                   <tr>
-                    <th>Protocolo</th>
+                    <th>N° do pedido</th>
                     <th>Cliente</th>
+                    <th>Serial</th>
                     <th>Modelo</th>
                     <th>Instalação</th>
                     <th>Vigência</th>
@@ -1190,7 +1191,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
                   </tr>
                 </thead>
                 <tbody id="ctdBody">
-                  <tr><td colspan="8"><div class="dash-loading"><div class="dash-spinner"></div>Carregando contratos…</div></td></tr>
+                  <tr><td colspan="9"><div class="dash-loading"><div class="dash-spinner"></div>Carregando contratos…</div></td></tr>
                 </tbody>
               </table>
             </div>
@@ -1214,11 +1215,25 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
           <div style="display:flex;gap:10px;align-items:center">
             <div class="search-bar" style="flex:1">
               <svg viewBox="0 0 15 15" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.3"/><path d="M10 10l3.5 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-              <input type="text" placeholder="Buscar por cliente, protocolo, técnico...">
+              <input type="text" id="histSearchInput" placeholder="Buscar por cliente, N° do pedido, serial..." oninput="filtrarHistorico(this.value)">
             </div>
           </div>
           <div class="filter-row" id="filterRow"></div>
-          <table class="hist-table" id="histTable"><thead><tr><th>Protocolo</th><th>Cliente</th><th>Modelo</th><th>Responsável</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead><tbody id="histBody"></tbody></table>
+          <div style="overflow-x:auto">
+          <table class="hist-table" id="histTable" style="min-width:1100px"><thead><tr>
+            <th>N° do pedido</th>
+            <th>Cliente</th>
+            <th>Serial</th>
+            <th>Modelo</th>
+            <th>Fornecedor</th>
+            <th>Mesa</th>
+            <th>Dosador</th>
+            <th>Data instalação</th>
+            <th>Responsável vendas</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr></thead><tbody id="histBody"></tbody></table>
+          </div>
         </div>
       </div>
 
@@ -1388,15 +1403,23 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
             </div>
           </div>
           <div id="adminMaquinasStatus" style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px"></div>
-          <div class="admin-table-wrap">
-            <table class="admin-table">
-              <thead><tr><th>Serial</th><th>Modelo</th><th>Fornecedor</th><th>Origem</th><th style="width:100px">Ações</th></tr></thead>
-              <tbody id="admin-lista-maquinas"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:28px">Nenhuma máquina na base. Importe um arquivo Excel.</td></tr></tbody>
-            </table>
+          <div style="overflow-x:auto">
+          <table class="admin-table" style="min-width:1000px">
+            <thead><tr>
+              <th>Serial</th><th>Modelo</th><th>Fornecedor</th>
+              <th>Mesa</th><th>Dosador</th><th>Data instalação</th>
+              <th>Endereço</th><th>Responsável vendas</th><th>Origem</th>
+              <th style="width:90px">Ações</th>
+            </tr></thead>
+            <tbody id="admin-lista-maquinas"><tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:28px">Nenhuma máquina na base. Importe um arquivo Excel.</td></tr></tbody>
+          </table>
           </div>
-          <div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.6">
-            <strong>Colunas esperadas no Excel:</strong> <code>Serial</code> (ou <code>serialMaquina</code>), <code>Modelo</code>, <code>Fornecedor</code>.
-            Linhas sem Serial são ignoradas. Duplicatas por Serial são descartadas.
+          <div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.7">
+            <strong>Colunas obrigatórias no Excel:</strong>
+            <code>Serial</code>, <code>Modelo</code>, <code>Fornecedor</code>, <code>Mesa</code> (Sim/Não),
+            <code>Dosador</code> (Sim/Não), <code>Data de instalação</code> (AAAA-MM-DD ou DD/MM/AAAA),
+            <code>Endereço</code>, <code>Responsável de vendas</code>.
+            Linhas com campo obrigatório ausente são bloqueadas. Duplicatas por Serial são descartadas.
           </div>
         </div>
 
@@ -1437,6 +1460,32 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
                 <div class="cfg-info-row"><span class="cfg-info-key">Coleções Firestore</span><span class="cfg-info-val" style="font-size:10px">solicitacoes · usuarios · fornecedores · modelos_maquinas · contadores</span></div>
                 <div class="cfg-info-row" style="border:none"><span class="cfg-info-key">Documentos Firebase</span><span class="cfg-info-val" id="cfg-total-docs">—</span></div>
               </div>
+            </div>
+
+            <!-- Vigência Contratual -->
+            <div class="fcard" style="grid-column:1/-1">
+              <div class="fc-head">
+                <svg viewBox="0 0 13 13" fill="none"><rect x="1" y="1.5" width="11" height="10" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M4 1.5v2M9 1.5v2M1 5h11" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+                <span class="fc-title">Vigência Contratual — Alertas</span>
+              </div>
+              <div class="fc-body" style="padding:14px 16px;display:grid;grid-template-columns:repeat(3,1fr) auto;gap:12px;align-items:flex-end">
+                <div class="field">
+                  <label>Alerta Vermelho (dias restantes ≤)</label>
+                  <input type="number" id="cfg-vigencia-verm" min="1" max="365" placeholder="30" style="width:100%">
+                </div>
+                <div class="field">
+                  <label>Alerta Laranja (dias restantes ≤)</label>
+                  <input type="number" id="cfg-vigencia-lar" min="1" max="365" placeholder="90" style="width:100%">
+                </div>
+                <div class="field">
+                  <label>Alerta Amarelo (dias restantes ≤)</label>
+                  <input type="number" id="cfg-vigencia-amar" min="1" max="365" placeholder="180" style="width:100%">
+                </div>
+                <div>
+                  <button class="btn-primary" onclick="salvarCfgVigenciaAdmin()">Salvar</button>
+                </div>
+              </div>
+              <div id="cfg-vigencia-msg" style="font-size:11px;color:var(--teal-dark);padding:0 16px 12px;display:none"></div>
             </div>
 
             <!-- Perfis de acesso -->
@@ -2915,17 +2964,23 @@ async function carregarHistoricoFirebase() {
     let rows = snap.docs.map(d => {
       const data = d.data();
       const st   = STATUS[data.status] || STATUS.RASCUNHO;
+      const dataInstRaw = data.dadosInstalacao?.dataInstalacao || data.dadosRelatorio?.dataInstalacao || data.dadosFornecedor?.dataColeta || '';
+      const dataInstFmt = dataInstRaw ? dataInstRaw.split('-').reverse().join('/') : '—';
       return {
-        id:        d.id,
-        code:      data.protocolo || d.id,
-        client:    data.dadosCliente?.nomeCliente || '—',
-        model:     data.dadosSolicitacao?.modeloMaquina || data.parecerGestor?.especificacao?.modeloValidado || '—',
-        resp:      data.dadosSolicitacao?.representante || '—',
-        fornecedor:data.dadosAdm?.fornecedor || data.parecerGestor?.especificacao?.fornecedorSugerido || '—',
-        createdByUid: data.criadoPorUid || null,
-        date:      data.criadoEm?.toDate ? data.criadoEm.toDate().toLocaleDateString('pt-BR') : '—',
-        status:    st.chip,
-        statusTxt: st.label
+        id:             d.id,
+        code:           data.dadosSolicitacao?.numeroPedido || data.protocolo || d.id,
+        client:         data.dadosCliente?.nomeCliente || '—',
+        serial:         data.dadosFornecedor?.maquinaConfirmada?.serialMaquina || data.dadosAdm?.maquina?.serialMaquina || '—',
+        model:          data.dadosSolicitacao?.modeloMaquina || data.parecerGestor?.especificacao?.modeloValidado || '—',
+        fornecedor:     data.dadosAdm?.fornecedor || data.parecerGestor?.especificacao?.fornecedorSugerido || '—',
+        mesa:           data.dadosSolicitacao?.mesa || '—',
+        dosador:        data.dadosSolicitacao?.dosador || '—',
+        dataInstalacao: dataInstFmt,
+        resp:           data.dadosSolicitacao?.representante || data.dadosSolicitacao?.responsavelVendas || '—',
+        createdByUid:   data.criadoPorUid || null,
+        date:           data.criadoEm?.toDate ? data.criadoEm.toDate().toLocaleDateString('pt-BR') : '—',
+        status:         st.chip,
+        statusTxt:      st.label
       };
     });
 
@@ -3132,11 +3187,24 @@ function _salvarBaseLocal() {
  * @returns {Object} registro normalizado
  */
 function normalizarRegistroMaquina(reg) {
-  const serialMaquina = (reg.serialMaquina || reg.serial || reg.Serial || '').toString().trim();
-  const modelo        = (reg.modelo        || reg.Modelo || reg.model  || '').toString().trim();
-  const fornecedor    = (reg.fornecedor    || reg.Fornecedor || '').toString().trim();
-  const origem        = (reg.origem === 'importada') ? 'importada' : 'manual';
-  return { serialMaquina, modelo, fornecedor, origem, chaveIdentificacao: serialMaquina };
+  const serialMaquina     = (reg.serialMaquina     || reg.serial          || reg.Serial          || '').toString().trim();
+  const modelo            = (reg.modelo            || reg.Modelo          || reg.model           || '').toString().trim();
+  const fornecedor        = (reg.fornecedor        || reg.Fornecedor      || '').toString().trim();
+  const mesa              = _normSN(reg.mesa       || reg.Mesa            || '');
+  const dosador           = _normSN(reg.dosador    || reg.Dosador         || '');
+  const dataInstalacao    = (reg.dataInstalacao    || reg['Data de instalação'] || reg.DataInstalacao || '').toString().trim();
+  const endereco          = (reg.endereco          || reg.Endereço        || reg.Endereco        || '').toString().trim();
+  const responsavelVendas = (reg.responsavelVendas || reg['Responsável de vendas'] || reg.Responsavel || '').toString().trim();
+  const origem            = (reg.origem === 'importada') ? 'importada' : 'manual';
+  return { serialMaquina, modelo, fornecedor, mesa, dosador, dataInstalacao, endereco, responsavelVendas, origem, chaveIdentificacao: serialMaquina };
+}
+
+/** Normaliza campo Sim/Não — aceita s, sim, yes, 1, n, não, no, 0 */
+function _normSN(v) {
+  const s = v.toString().trim().toLowerCase();
+  if (['s','sim','yes','1','y'].includes(s)) return 'Sim';
+  if (['n','não','nao','no','0'].includes(s)) return 'Não';
+  return v.toString().trim() || '—';
 }
 
 /**
@@ -3187,9 +3255,14 @@ function importarMaquinasViaExcel(inputEl, contexto) {
       let adicionados = 0, ignorados = 0;
       const serialsExistentes = new Set(_baseMaquinas.map(m => m.serialMaquina).filter(Boolean));
 
+      const CAMPOS_OBRIG = ['serialMaquina','modelo','fornecedor','mesa','dosador','dataInstalacao','endereco','responsavelVendas'];
+      let bloqueados = 0;
+
       rows.forEach(row => {
         const norm = normalizarRegistroMaquina({ ...row, origem: 'importada' });
-        if (!norm.serialMaquina) { ignorados++; return; }
+        // Verifica campos obrigatórios
+        const faltando = CAMPOS_OBRIG.filter(c => !norm[c] || norm[c] === '—');
+        if (faltando.length > 0) { ignorados++; bloqueados++; return; }
         if (serialsExistentes.has(norm.serialMaquina)) { ignorados++; return; }
         _baseMaquinas.push(norm);
         serialsExistentes.add(norm.serialMaquina);
@@ -3197,9 +3270,12 @@ function importarMaquinasViaExcel(inputEl, contexto) {
       });
 
       _salvarBaseLocal();
-      const msg = `✓ ${adicionados} máquina(s) importada(s).${ignorados > 0 ? ' ' + ignorados + ' ignorada(s) (sem Serial ou duplicata).' : ''}`;
+      const partes = [`✓ ${adicionados} máquina(s) importada(s).`];
+      if (bloqueados > 0) partes.push(`${bloqueados} bloqueada(s) por campo obrigatório ausente (Serial, Modelo, Fornecedor, Mesa, Dosador, Data de instalação, Endereço, Responsável de vendas).`);
+      else if (ignorados > 0) partes.push(`${ignorados - bloqueados} ignorada(s) (duplicata por Serial).`);
+      const msg = partes.join(' ');
       if (statusEl) statusEl.textContent = msg;
-      showToast(msg, 'success');
+      showToast(adicionados > 0 ? msg : '⚠ Nenhuma máquina importada. Verifique os campos obrigatórios.', adicionados > 0 ? 'success' : 'error');
       if (contexto === 'admin') carregarTabelaMaquinasAdmin();
       else filtrarResultadosMaquinas();
     } catch(err) {
@@ -4083,26 +4159,48 @@ function buildFilters(){
     <button class="filter-btn${f===activeFilter?' active':''}" onclick="setFilter('${f}')">${f}</button>`).join('');
 }
 function setFilter(f){activeFilter=f;buildFilters();buildHistoryTable();}
-function buildHistoryTable(){
-  const body=document.getElementById('histBody');
-  const data=activeFilter==='Todos'?HISTORY:HISTORY.filter(h=>{
+function buildHistoryTable(lista){
+  const body = document.getElementById('histBody');
+  if (!body) return;
+  const data = lista || (activeFilter==='Todos' ? HISTORY : HISTORY.filter(h=>{
     const map={'Concluído':'c-done','Em andamento':'c-transit','Ag. aprovação':'c-pending','Em Trânsito':'c-transit','Reprovado':'c-rejected'};
     return h.status===map[activeFilter]||h.statusTxt.toLowerCase().includes(activeFilter.toLowerCase());
-  });
-  body.innerHTML=data.map(h=>`
-    <tr onclick="goPage('historico')">
+  }));
+  if (!data.length) {
+    body.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:28px;color:var(--text-muted)">Nenhum registro encontrado.</td></tr>';
+    return;
+  }
+  body.innerHTML = data.map(h=>`
+    <tr>
       <td><span class="ht-code">${h.code}</span></td>
       <td><span class="ht-avatar">${h.client.slice(0,2).toUpperCase()}</span><span class="ht-name">${h.client}</span></td>
+      <td style="font-size:11.5px;font-family:'DM Mono',monospace;color:var(--teal-dark)">${h.serial||'—'}</td>
       <td style="font-size:12px">${h.model}</td>
+      <td style="font-size:12px">${h.fornecedor||'—'}</td>
+      <td style="font-size:12px;text-align:center">${h.mesa||'—'}</td>
+      <td style="font-size:12px;text-align:center">${h.dosador||'—'}</td>
+      <td style="font-size:12px;font-family:'DM Mono',monospace;white-space:nowrap">${h.dataInstalacao||h.date}</td>
       <td style="font-size:12px">${h.resp}</td>
-      <td style="font-size:12px;font-family:'DM Mono',monospace">${h.date}</td>
       <td><div class="chip ${h.status}"><div class="chip-dot"></div>${h.statusTxt}</div></td>
       <td><div class="ht-actions">
         <button class="ht-btn" title="Ver"><svg viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.2"/><circle cx="6.5" cy="6.5" r="1.5" fill="currentColor"/></svg></button>
-        <button class="ht-btn" title="Editar"><svg viewBox="0 0 13 13" fill="none"><path d="M8.5 2.5L10.5 4.5M8.5 2.5L6 5l2 2 2.5-2.5M6 5L2.5 8.5l-.5 2 2-.5L7.5 7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <button class="ht-btn" title="PDF"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1.2"/><path d="M8 1v3h3M5 7h3M5 9h2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg></button>
       </div></td>
     </tr>`).join('');
+}
+
+function filtrarHistorico(termo) {
+  const t = (termo||'').toLowerCase().trim();
+  if (!t) { buildHistoryTable(); return; }
+  const filtrados = HISTORY.filter(h =>
+    (h.client||'').toLowerCase().includes(t) ||
+    (h.code||'').toLowerCase().includes(t) ||
+    (h.serial||'').toLowerCase().includes(t) ||
+    (h.model||'').toLowerCase().includes(t) ||
+    (h.fornecedor||'').toLowerCase().includes(t) ||
+    (h.resp||'').toLowerCase().includes(t)
+  );
+  buildHistoryTable(filtrados);
 }
 
 // ─── BUILD NOTIFICATIONS ────────────────────────────────────
@@ -4181,13 +4279,26 @@ function buildConfig(){
 // Dados internos dos contratos carregados (para filtro)
 let _dashContratos = [];
 
-// Classifica prazo restante em categoria
+// ── Parâmetros de vigência contratual (lidos do localStorage) ──
+function _cfgVigencia() {
+  try {
+    const raw = localStorage.getItem('wr_cfg_vigencia');
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return { alertaVerm: 30, alertaLar: 90, alertaAmar: 180 };
+}
+function _salvarCfgVigencia(obj) {
+  try { localStorage.setItem('wr_cfg_vigencia', JSON.stringify(obj)); } catch(e) {}
+}
+
+// Classifica prazo restante usando thresholds parametrizáveis
 function ctdCategoria(dias) {
   if (dias === null) return 'cinza';
-  if (dias < 0)   return 'vencido';
-  if (dias <= 30)  return 'vermelho';
-  if (dias <= 90)  return 'laranja';
-  if (dias <= 180) return 'amarelo';
+  const cfg = _cfgVigencia();
+  if (dias < 0)                    return 'vencido';
+  if (dias <= cfg.alertaVerm)      return 'vermelho';
+  if (dias <= cfg.alertaLar)       return 'laranja';
+  if (dias <= cfg.alertaAmar)      return 'amarelo';
   return 'verde';
 }
 
@@ -4281,7 +4392,7 @@ function renderizarTabelaContratos(contratos) {
   const tbody = document.getElementById('ctdBody');
   if (!tbody) return;
   if (!contratos.length) {
-    tbody.innerHTML = `<tr><td colspan="8">
+    tbody.innerHTML = `<tr><td colspan="9">
       <div class="dash-empty">
         <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         Nenhum contrato com vigência cadastrada
@@ -4296,8 +4407,9 @@ function renderizarTabelaContratos(contratos) {
     const barCor = {'verde':'#2e7d32','amarelo':'#f57f17','laranja':'#e65100','vermelho':'#c62828','vencido':'#880e4f','cinza':'#90a4ae'}[cat];
 
     return `<tr>
-      <td><span class="ctd-proto">${c.protocolo||'—'}</span></td>
+      <td><span class="ctd-proto">${c.numeroPedido||'—'}</span></td>
       <td><span class="ctd-cliente">${c.nomeCliente}</span></td>
+      <td style="font-size:11.5px;font-family:'DM Mono',monospace;color:var(--teal-dark)">${c.serial||'—'}</td>
       <td><span class="ctd-modelo">${c.modelo||'—'}</span></td>
       <td style="font-size:11px;color:var(--text-mid);white-space:nowrap">${fmtDate(c.dataInst)}</td>
       <td style="font-size:11px;color:var(--text-mid);text-align:center">${c.meses ? c.meses+'m' : '—'}</td>
@@ -4322,7 +4434,8 @@ function filtrarContratos(termo) {
   if (!t) { renderizarTabelaContratos(_dashContratos); return; }
   const filtrados = _dashContratos.filter(c =>
     (c.nomeCliente||'').toLowerCase().includes(t) ||
-    (c.protocolo||'').toLowerCase().includes(t) ||
+    (c.numeroPedido||'').toLowerCase().includes(t) ||
+    (c.serial||'').toLowerCase().includes(t) ||
     (c.modelo||'').toLowerCase().includes(t)
   );
   renderizarTabelaContratos(filtrados);
@@ -4347,7 +4460,7 @@ async function carregarDashboard() {
     document.getElementById('dash-kpi-venc90').textContent   = '—';
     document.getElementById('dash-kpi-vencidos').textContent = '—';
     const tbody = document.getElementById('ctdBody');
-    if (tbody) tbody.innerHTML = `<tr><td colspan="8"><div class="dash-empty">
+    if (tbody) tbody.innerHTML = `<tr><td colspan="9"><div class="dash-empty">
       <svg viewBox="0 0 24 24" fill="none"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       Firebase não configurado — conecte ao Firebase para ver os contratos
     </div></td></tr>`;
@@ -4356,7 +4469,7 @@ async function carregarDashboard() {
 
   // Mostra loading na tabela
   const tbody = document.getElementById('ctdBody');
-  if (tbody) tbody.innerHTML = `<tr><td colspan="8"><div class="dash-loading"><div class="dash-spinner"></div>Carregando contratos…</div></td></tr>`;
+  if (tbody) tbody.innerHTML = `<tr><td colspan="9"><div class="dash-loading"><div class="dash-spinner"></div>Carregando contratos…</div></td></tr>`;
 
   try {
     // Busca todas as solicitações (sem filtro de status para pegar também em andamento)
@@ -4371,7 +4484,6 @@ async function carregarDashboard() {
                           doc.dadosRelatorio?.dataInstalacao || '';
       const nomeCliente = doc.dadosCliente?.nomeCliente || doc.dadosCliente?.nome || 'Sem nome';
       const modelo      = doc.dadosSolicitacao?.modeloMaquina || '';
-      const protocolo   = doc.dadosSolicitacao?.numeroPedido  || doc.protocolo || doc.id.substring(0,8).toUpperCase();
       const status      = doc.status || doc.etapaAtual || '';
 
       let dataVenc = null, dias = null, pctDecorrido = null;
@@ -4385,15 +4497,19 @@ async function carregarDashboard() {
         pctDecorrido = (vividos / totalDias) * 100;
       }
 
-      return { id: doc.id, protocolo, nomeCliente, modelo, dataInst, meses, dataVenc, dias, pctDecorrido, status };
+      const serial       = doc.dadosFornecedor?.maquinaConfirmada?.serialMaquina ||
+                           doc.dadosAdm?.maquina?.serialMaquina || '';
+      const numeroPedido = doc.dadosSolicitacao?.numeroPedido || doc.protocolo || doc.id.substring(0,8).toUpperCase();
+      return { id: doc.id, protocolo: numeroPedido, numeroPedido, serial, nomeCliente, modelo, dataInst, meses, dataVenc, dias, pctDecorrido, status };
     });
 
     // ── KPIs ───────────────────────────────────────────────
+    const cfg         = _cfgVigencia();
     const comVigencia = contratos.filter(c => c.dias !== null);
     const ativas      = comVigencia.filter(c => c.dias > 0).length;
     const semVig      = contratos.filter(c => c.dias === null).length;
-    const venc30      = comVigencia.filter(c => c.dias >= 0 && c.dias <= 30).length;
-    const venc90      = comVigencia.filter(c => c.dias > 30  && c.dias <= 90).length;
+    const venc30      = comVigencia.filter(c => c.dias >= 0 && c.dias <= cfg.alertaVerm).length;
+    const venc90      = comVigencia.filter(c => c.dias > cfg.alertaVerm && c.dias <= cfg.alertaLar).length;
     const vencidos    = comVigencia.filter(c => c.dias < 0).length;
 
     document.getElementById('dash-kpi-ativas').textContent   = ativas + semVig;
@@ -4431,7 +4547,7 @@ async function carregarDashboard() {
           <div class="dash-alert-list">
             ${criticos.map(c=>`
               <div class="dash-alert-item">
-                <strong>${c.protocolo}</strong>
+                <strong>${c.numeroPedido||'—'}</strong>
                 <span style="color:var(--text-mid)">· ${c.nomeCliente}</span>
                 <span style="color:var(--text-muted);font-size:11px">· ${c.modelo}</span>
                 <span style="margin-left:auto"><span class="ctd-badge ctd-${c.dias<=7?'vencido':'vermelho'}">${ctdLabel(c.dias)}</span></span>
@@ -4461,9 +4577,9 @@ async function carregarDashboard() {
     desenharBarMeses('barChartDash', dadosMeses);
 
     // ── Donut: contratos por prazo ─────────────────────────
-    const nVerde    = comVigencia.filter(c => c.dias > 180).length;
-    const nAmarelo  = comVigencia.filter(c => c.dias > 90 && c.dias <= 180).length;
-    const nLaranja  = comVigencia.filter(c => c.dias > 30 && c.dias <= 90).length;
+    const nVerde    = comVigencia.filter(c => c.dias > cfg.alertaAmar).length;
+    const nAmarelo  = comVigencia.filter(c => c.dias > cfg.alertaLar  && c.dias <= cfg.alertaAmar).length;
+    const nLaranja  = comVigencia.filter(c => c.dias > cfg.alertaVerm && c.dias <= cfg.alertaLar).length;
     const nVermelho = venc30;
     const nVencido  = vencidos;
     const nSemVig   = semVig;
@@ -4490,7 +4606,7 @@ async function carregarDashboard() {
   } catch(e) {
     console.error('Erro ao carregar dashboard:', e);
     const tbody2 = document.getElementById('ctdBody');
-    if (tbody2) tbody2.innerHTML = `<tr><td colspan="8"><div class="dash-empty">
+    if (tbody2) tbody2.innerHTML = `<tr><td colspan="9"><div class="dash-empty">
       <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       Erro ao carregar: ${e.message}
     </div></td></tr>`;
@@ -4563,11 +4679,16 @@ function filtrarTabelaMaquinasAdmin() {
   tbody.innerHTML = lista.map((m, i) => `
     <tr>
       <td style="font-family:'DM Mono',monospace;font-size:11.5px;color:var(--teal-dark)">${m.serialMaquina || '—'}</td>
-      <td>${m.modelo || '—'}</td>
-      <td>${m.fornecedor || '—'}</td>
+      <td style="font-size:12px">${m.modelo || '—'}</td>
+      <td style="font-size:12px">${m.fornecedor || '—'}</td>
+      <td style="font-size:12px;text-align:center">${m.mesa || '—'}</td>
+      <td style="font-size:12px;text-align:center">${m.dosador || '—'}</td>
+      <td style="font-size:11.5px;font-family:'DM Mono',monospace">${m.dataInstalacao || '—'}</td>
+      <td style="font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${m.endereco||''}">${m.endereco || '—'}</td>
+      <td style="font-size:12px">${m.responsavelVendas || '—'}</td>
       <td><span class="chip" style="font-size:10px;padding:2px 7px">${m.origem || 'importada'}</span></td>
       <td style="text-align:center">
-        <button class="btn-mini" style="background:var(--red-l);color:var(--red)" onclick="removerMaquinaAdmin(${i})">Remover</button>
+        <button class="btn-mini" style="background:var(--red-l);color:var(--red)" onclick="removerMaquinaAdmin(${_baseMaquinas.indexOf(m)})">Remover</button>
       </td>
     </tr>`).join('');
 }
@@ -5107,6 +5228,30 @@ function onEnterAdmin() {
     const el = document.getElementById('cfg-formsubmit-email');
     if (el) el.value = saved;
   }
+  // Pré-carrega configuração de vigência
+  const cfg = _cfgVigencia();
+  const elVerm = document.getElementById('cfg-vigencia-verm');
+  const elLar  = document.getElementById('cfg-vigencia-lar');
+  const elAmar = document.getElementById('cfg-vigencia-amar');
+  if (elVerm) elVerm.value = cfg.alertaVerm;
+  if (elLar)  elLar.value  = cfg.alertaLar;
+  if (elAmar) elAmar.value = cfg.alertaAmar;
+}
+
+function salvarCfgVigenciaAdmin() {
+  const verm = parseInt(document.getElementById('cfg-vigencia-verm')?.value) || 0;
+  const lar  = parseInt(document.getElementById('cfg-vigencia-lar')?.value)  || 0;
+  const amar = parseInt(document.getElementById('cfg-vigencia-amar')?.value) || 0;
+  if (verm <= 0 || lar <= 0 || amar <= 0) {
+    showToast('Informe valores positivos para todos os alertas.', 'error'); return;
+  }
+  if (verm >= lar || lar >= amar) {
+    showToast('Os limites devem ser crescentes: Vermelho < Laranja < Amarelo.', 'error'); return;
+  }
+  _salvarCfgVigencia({ alertaVerm: verm, alertaLar: lar, alertaAmar: amar });
+  const msg = document.getElementById('cfg-vigencia-msg');
+  if (msg) { msg.textContent = '✓ Configuração salva com sucesso.'; msg.style.display = 'block'; setTimeout(() => { msg.style.display = 'none'; }, 3000); }
+  showToast('Alertas de vigência atualizados.', 'success');
 }
 
 // ─── KEYBOARD SHORTCUTS ───────────────────────────────────────
