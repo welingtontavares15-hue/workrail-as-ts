@@ -1713,8 +1713,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
                   <div class="ir-item"><div class="il">Nº Pedido</div><div class="iv" id="info-pedido-05">—</div></div>
                 </div>
                 <div class="timeline">
-                  <div class="tl-row"><div class="tl-dot" style="background:#2e7d32">✓</div><div class="tl-body"><div class="tl-label">Pedido emitido ao fornecedor</div><div class="tl-time">12/06/2025 09:14</div></div></div>
-                  <div class="tl-row"><div class="tl-dot" style="background:#2e7d32">✓</div><div class="tl-body"><div class="tl-label">Máquina expedida</div><div class="tl-time">15/06/2025 14:30</div></div></div>
+                  <div class="tl-row"><div class="tl-dot" style="background:#2e7d32">✓</div><div class="tl-body"><div class="tl-label">Pedido emitido ao fornecedor</div><div class="tl-time" id="tl-data-pedido">—</div></div></div>
+                  <div class="tl-row"><div class="tl-dot" style="background:#2e7d32">✓</div><div class="tl-body"><div class="tl-label">Máquina expedida</div><div class="tl-time" id="tl-data-expedicao">—</div></div></div>
                   <div class="tl-row"><div class="tl-dot" style="background:#0e7b82">→</div><div class="tl-body"><div class="tl-label">Em coleta / entrega</div><div class="tl-meta">ADM deve acionar a logística para coleta e entrega ao cliente</div></div></div>
                   <div class="tl-row"><div class="tl-dot" style="background:#cfd8dc">4</div><div class="tl-body"><div class="tl-label" style="color:var(--text-muted)">Instalação (pendente)</div></div></div>
                 </div>
@@ -1724,9 +1724,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
               <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 5.5-5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="fc-title">Acionamento da Logística</span></div>
               <div class="fc-body c2">
                 <div class="field"><label>Data de Liberação Confirmada <span class="req">*</span></label><input type="date" id="dataColetaConfirmada"></div>
-                <div class="field"><label>Responsável / Transportadora</label><input type="text" placeholder="Nome do responsável"></div>
+                <div class="field"><label>Responsável / Transportadora</label><input type="text" id="inputResponsavelColeta" placeholder="Nome do responsável ou transportadora"></div>
                 <div class="field"><label>Supervisor AS&TS notificado?</label><div class="toggle-field"><label class="toggle"><input type="checkbox" id="tSupv" onchange="updateTL('tSupv','lSupv')"><span class="toggle-slider"></span></label><span class="toggle-lbl" id="lSupv">Não</span></div></div>
-                <div class="field"><label>Observações</label><input type="text" placeholder="Informações sobre coleta e entrega"></div>
+                <div class="field"><label>Observações</label><input type="text" id="inputObsLogistica" placeholder="Informações sobre coleta e entrega"></div>
               </div>
             </div>
           </div>
@@ -1749,9 +1749,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
             <div class="fcard">
               <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.1"/><path d="M6.5 3.5v3l2 2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg><span class="fc-title">Programação da Instalação</span></div>
               <div class="fc-body c3">
-                <div class="field"><label>Data <span class="req">*</span></label><input type="date"></div>
-                <div class="field"><label>Horário <span class="req">*</span></label><input type="time"></div>
-                <div class="field"><label>Responsável da Instalação <span class="req">*</span></label><select><option value="">Selecionar...</option><option>João P. Ferreira</option><option>Carlos A. Lima</option><option>Marcos R. Santos</option></select></div>
+                <div class="field"><label>Data <span class="req">*</span></label><input type="date" id="inputDataInstalacao"></div>
+                <div class="field"><label>Horário <span class="req">*</span></label><input type="time" id="inputHorarioInstalacao"></div>
+                <div class="field"><label>Responsável da Instalação <span class="req">*</span></label><select id="selectResponsavelInstalacao"><option value="">Selecionar...</option><option>João P. Ferreira</option><option>Carlos A. Lima</option><option>Marcos R. Santos</option></select></div>
               </div>
             </div>
             <div class="fcard">
@@ -1780,7 +1780,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
               <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M8 1v3h3M4.5 7h4M4.5 9h4M4.5 11h2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg><span class="fc-title">Relatório de Instalação</span></div>
               <div class="fc-body c2">
                 <div class="field s2"><label>Relatório de Instalação <span class="req">*</span></label><label class="file-drop" id="fRel"><input type="file" onchange="setFile(this,'fRel','fRelA')"><svg viewBox="0 0 18 18" fill="none"><path d="M9 4v8M5 8l4-4 4 4M3 14h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Anexar relatório (PDF ou imagem)</span></label><div class="file-attached" id="fRelA"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1"/><path d="M8 1v3h3" stroke="currentColor" stroke-width="1"/></svg><span></span></div></div>
-                <div class="field s2"><label>Observações de Encerramento</label><textarea placeholder="Observações adicionais sobre a instalação (opcional)..."></textarea></div>
+                <div class="field s2"><label>Observações de Encerramento</label><textarea id="textareaObsRelatorio" placeholder="Observações adicionais sobre a instalação (opcional)..."></textarea></div>
               </div>
             </div>
           </div>
@@ -3063,11 +3063,10 @@ function validateStep_Logistica() {
 
 function validateStep_Instalacao() {
   const erros = [];
-  const sc = '#screen-instalacao ';
 
-  if (!document.querySelector(sc + 'input[type="date"]')?.value) erros.push('Data da Instalação');
-  if (!document.querySelector(sc + 'input[type="time"]')?.value) erros.push('Horário');
-  if (!document.querySelector(sc + 'select')?.value)             erros.push('Técnico');
+  if (!document.getElementById('inputDataInstalacao')?.value)          erros.push('Data da Instalação');
+  if (!document.getElementById('inputHorarioInstalacao')?.value)       erros.push('Horário');
+  if (!document.getElementById('selectResponsavelInstalacao')?.value)  erros.push('Técnico Responsável');
 
   const checkboxes = document.querySelectorAll('#clWrap input[type="checkbox"]');
   const marcados   = document.querySelectorAll('#clWrap input[type="checkbox"]:checked').length;
@@ -3362,28 +3361,26 @@ function coletarDadosFornecedor() {
 function coletarDadosLogistica() {
   return {
     dataColetaConfirmada: document.getElementById('dataColetaConfirmada')?.value || '',
-    responsavelColeta:    lerInput('#screen-logistica input[placeholder*="Transportadora"]') || lerInput('#screen-logistica input[placeholder*="responsável"]'),
+    responsavelColeta:    document.getElementById('inputResponsavelColeta')?.value?.trim() || '',
     supervisorNotificado: document.getElementById('tSupv')?.checked ? 'Sim' : 'Não',
-    observacoes:          lerInput('#screen-logistica input[placeholder*="coleta e entrega"]')
+    observacoes:          document.getElementById('inputObsLogistica')?.value?.trim() || ''
   };
 }
 
 function coletarDadosInstalacao() {
-  const sc = '#screen-instalacao ';
   const marcados = [...document.querySelectorAll('#clWrap input[type="checkbox"]:checked')]
     .map(cb => cb.closest('.cl-item')?.querySelector('label')?.textContent || '');
   return {
-    dataInstalacao: document.querySelector(sc + 'input[type="date"]')?.value || '',
-    horario:        document.querySelector(sc + 'input[type="time"]')?.value || '',
-    tecnico:        document.querySelector(sc + 'select')?.value || '',
+    dataInstalacao: document.getElementById('inputDataInstalacao')?.value || '',
+    horario:        document.getElementById('inputHorarioInstalacao')?.value || '',
+    tecnico:        document.getElementById('selectResponsavelInstalacao')?.value || '',
     checklistMarcados: marcados
   };
 }
 
 function coletarDadosRelatorio() {
-  const sc = '#screen-relatorio ';
   return {
-    observacoesFinais: document.querySelector(sc + 'textarea')?.value?.trim() || ''
+    observacoesFinais: document.getElementById('textareaObsRelatorio')?.value?.trim() || ''
   };
 }
 
@@ -3593,6 +3590,8 @@ async function confirmFornecedor() {
         Pedido: dadosAdm.numeroPedido,
         Fornecedor: dadosAdm.fornecedor,
         Modelo: currentSolicitacao?.dadosSolicitacao?.modeloMaquina,
+        'ID Máquina': dadosAdm.maquina?.idMaquina || '—',
+        'Serial Máquina': dadosAdm.maquina?.serialMaquina || '—',
         EntregaPrevista: dadosAdm.entregaPrevista,
         Cliente: currentSolicitacao?.dadosCliente?.nomeCliente
       }
@@ -3648,6 +3647,8 @@ async function confirmExpedicao() {
       'Máquina Expedida — NF Disponível',
       `NF anexada e máquina liberada pelo fornecedor. A ADM deve acionar a logística para coleta e entrega.`,
       prot, { NF: dados.numeroNF, DataColeta: dados.dataColeta,
+              'ID Máquina': dados.maquinaConfirmada?.idMaquina || '—',
+              'Serial Máquina': dados.maquinaConfirmada?.serialMaquina || '—',
               Cliente: currentSolicitacao?.dadosCliente?.nomeCliente }
     );
     await enviarNotificacao(EMAIL_RECIPIENTS.gestor,
@@ -3944,6 +3945,47 @@ function go(id){
     const fornecedorRecomendado = currentSolicitacao?.parecerGestor?.especificacao?.fornecedorSugerido || currentSolicitacao?.dadosAdm?.fornecedor || '';
     const fornecedorAdm = document.getElementById('selectFornecedorAdm');
     if (fornecedorAdm && fornecedorRecomendado) fornecedorAdm.value = fornecedorRecomendado;
+
+    // Pré-preencher máquina se já salva (retorno à tela ADM)
+    const maqAdm = currentSolicitacao?.dadosAdm?.maquina;
+    if (maqAdm) {
+      const elId  = document.getElementById('inputIdMaquina');
+      const elSer = document.getElementById('inputSerialMaquina');
+      if (elId  && maqAdm.idMaquina)     elId.value  = maqAdm.idMaquina;
+      if (elSer && maqAdm.serialMaquina) elSer.value = maqAdm.serialMaquina;
+    }
+  }
+
+  // Ao entrar na tela Fornecedor, pré-preenche ID/Serial da máquina aprovada pelo ADM
+  if (id === 'fornecedor') {
+    const maqAdm = currentSolicitacao?.dadosAdm?.maquina;
+    if (maqAdm) {
+      const elId  = document.getElementById('inputIdMaquinaForn');
+      const elSer = document.getElementById('inputSerialMaquinaForn');
+      if (elId  && maqAdm.idMaquina     && !elId.value)  elId.value  = maqAdm.idMaquina;
+      if (elSer && maqAdm.serialMaquina && !elSer.value) elSer.value = maqAdm.serialMaquina;
+    }
+  }
+
+  // Ao entrar na tela Logística, popula painéis e timeline com dados reais
+  if (id === 'logistica') {
+    const _fmtData = s => s ? s.split('-').reverse().join('/') : '—';
+    const _fmtTs   = s => { try { return s ? new Date(s).toLocaleString('pt-BR') : '—'; } catch(e) { return s || '—'; } };
+    const forn = currentSolicitacao?.dadosAdm?.fornecedor || '—';
+    const nf   = currentSolicitacao?.dadosFornecedor?.numeroNF || '—';
+    const col  = _fmtData(currentSolicitacao?.dadosFornecedor?.dataColeta);
+    const ped  = currentSolicitacao?.dadosAdm?.numeroPedido || '—';
+    const setEl = (eid, val) => { const el = document.getElementById(eid); if (el) el.textContent = val; };
+    setEl('info-fornecedor-05', forn);
+    setEl('info-nf-05',         nf);
+    setEl('info-coleta-05',     col);
+    setEl('info-pedido-05',     ped);
+
+    // Timeline — data pedido e data expedição a partir do histórico
+    const tsAdm  = currentSolicitacao?.historico?.find(h => h.acao === 'ENVIADO_FORNECEDOR');
+    const tsForn = currentSolicitacao?.historico?.find(h => h.acao === 'NF_ANEXADA_EXPEDIDO');
+    setEl('tl-data-pedido',    tsAdm  ? _fmtTs(tsAdm.data)  : _fmtData(currentSolicitacao?.dadosAdm?.entregaPrevista));
+    setEl('tl-data-expedicao', tsForn ? _fmtTs(tsForn.data) : _fmtData(currentSolicitacao?.dadosFornecedor?.dataColeta));
   }
 }
 
