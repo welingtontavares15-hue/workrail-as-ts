@@ -2957,9 +2957,11 @@ async function carregarHistoricoFirebase() {
         .orderBy('criadoEm','desc').limit(200);
     }
 
-    // maquinas: busca simples sem orderBy para não exigir índice composto
-    const queryMaq = db.collection('maquinas').limit(1000);
-    const [snap, snapMaq] = await Promise.all([querySol.get(), queryMaq.get()]);
+    // maquinas: busca simples. Falha graciosamente se permissão não configurada.
+    const [snap, snapMaq] = await Promise.all([
+      querySol.get(),
+      db.collection('maquinas').limit(1000).get().catch(() => null)
+    ]);
 
     // ── Mapeia solicitações ────────────────────────────────
     let rows = snap.docs.map(d => {
@@ -2987,7 +2989,7 @@ async function carregarHistoricoFirebase() {
 
     // ── Mapeia máquinas importadas (sem duplicar serial já presente) ──
     const serialsEmSol = new Set(rows.map(r => r.serial).filter(s => s && s !== '—'));
-    const rowsMaq = snapMaq.docs
+    const rowsMaq = (snapMaq ? snapMaq.docs : [])
       .filter(d => {
         if (serialsEmSol.has(d.id)) return false;
         if (isFornecedor() && currentUser.fornecedor) {
@@ -4597,11 +4599,13 @@ async function carregarDashboard() {
   if (tbody) tbody.innerHTML = `<tr><td colspan="9"><div class="dash-loading"><div class="dash-spinner"></div>Carregando contratos…</div></td></tr>`;
 
   try {
-    // Busca solicitações e máquinas importadas em paralelo
-    const [snapSol, snapMaq] = await Promise.all([
+    // Busca solicitações e máquinas importadas em paralelo.
+    // maquinas pode falhar por permissão — não deve derrubar o dashboard.
+    const [snapSol, snapMaqResult] = await Promise.all([
       db.collection('solicitacoes').get(),
-      db.collection('maquinas').get()
+      db.collection('maquinas').get().catch(() => null)
     ]);
+    const snapMaq = snapMaqResult;
 
     // ── Helper para calcular vigência ──────────────────────
     function _calcVig(dataInst, meses) {
@@ -4631,7 +4635,7 @@ async function carregarDashboard() {
 
     // ── Processa máquinas importadas (evita duplicar seriais já em solicitações) ──
     const serialsEmSol = new Set(contratosSol.map(c => c.serial).filter(Boolean));
-    const contratosMaq = snapMaq.docs
+    const contratosMaq = (snapMaq ? snapMaq.docs : [])
       .filter(doc => !serialsEmSol.has(doc.id))
       .map(doc => {
         const m        = doc.data();
