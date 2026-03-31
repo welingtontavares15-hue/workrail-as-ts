@@ -1,0 +1,95 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function getUserProfile() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.perfil;
+    }
+
+    function isFornecedor() {
+      let perfil = getUserProfile();
+      return perfil == 'fornecedor_ebst' || perfil == 'fornecedor_hobart';
+    }
+
+    function getUserFornecedor() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.fornecedor;
+    }
+
+    function canViewSolicitacao() {
+      let doc = resource.data;
+      let perfil = getUserProfile();
+      let uid = request.auth.uid;
+      return perfil == 'super_admin'
+          || perfil == 'supervisor_asts'
+          || perfil == 'adm_vendas'
+          || (perfil == 'vendas' && doc.criadoPorUid == uid)
+          || (perfil == 'fornecedor_ebst' && doc.dadosAdm.encaminhadoFornecedor == 'EBST')
+          || (perfil == 'fornecedor_hobart' && doc.dadosAdm.encaminhadoFornecedor == 'Hobart Brasil');
+    }
+
+    function canEditEtapa(etapa) {
+      let perfil = getUserProfile();
+      return perfil == 'super_admin'
+          || (etapa == 'solicitacao' && perfil == 'vendas')
+          || (etapa == 'supervisor' && perfil == 'supervisor_asts')
+          || (etapa == 'adm_vendas' && perfil == 'adm_vendas')
+          || (etapa == 'fornecedor' && isFornecedor() && getUserFornecedor() == resource.data.dadosAdm.encaminhadoFornecedor)
+          || (etapa == 'logistica' && perfil == 'adm_vendas')
+          || (etapa == 'data_instalacao' && perfil == 'supervisor_asts')
+          || (etapa == 'relatorio_final' && perfil == 'supervisor_asts');
+    }
+
+    match /usuarios/{userId} {
+      allow read: if request.auth.uid == userId || getUserProfile() == 'super_admin';
+      allow create, update, delete: if getUserProfile() == 'super_admin';
+    }
+
+    match /fornecedores/{docId} {
+      allow read: if request.auth.uid != null;
+      allow create, update, delete: if getUserProfile() == 'super_admin';
+    }
+
+    match /modelos_maquinas/{docId} {
+      allow read: if request.auth.uid != null;
+      allow create, update, delete: if getUserProfile() == 'super_admin';
+    }
+
+    match /solicitacoes/{solicitacaoId} {
+      allow read: if canViewSolicitacao();
+      allow create: if request.auth.uid != null
+                    && getUserProfile() == 'vendas'
+                    && request.resource.data.criadoPorUid == request.auth.uid
+                    && request.resource.data.criadoPorPerfil == 'vendas'
+                    && request.resource.data.etapaAtual == 'solicitacao';
+      allow update: if canViewSolicitacao()
+                    && canEditEtapa(resource.data.etapaAtual)
+                    && request.resource.data.protocolo == resource.data.protocolo
+                    && request.resource.data.criadoPorUid == resource.data.criadoPorUid;
+      allow delete: if getUserProfile() == 'super_admin';
+
+      match /historico/{eventoId} {
+        allow read: if canViewSolicitacao();
+        allow create: if canViewSolicitacao()
+                      && request.resource.data.executadoPorUid == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
+
+    match /contadores/{docId} {
+      allow read: if request.auth.uid != null;
+      allow write: if getUserProfile() == 'super_admin';
+    }
+
+    // ── Base de máquinas importadas via Excel ──────────────
+    match /maquinas/{serialId} {
+      allow read: if request.auth.uid != null;
+      allow write, delete: if request.auth.uid != null
+                           && (getUserProfile() == 'super_admin'
+                               || getUserProfile() == 'adm_vendas');
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
