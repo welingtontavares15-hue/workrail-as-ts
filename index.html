@@ -5133,7 +5133,7 @@ async function salvarUsuarioAdmin() {
         await secondaryAuth.signOut();
       } catch(authErr) {
         // Limpar app secundário antes de propagar o erro
-        try { await secondaryApp.delete(); } catch(_) {}
+        try { await secondaryApp.delete(); } catch(cleanupErr) { console.warn('[ADMIN] Erro ao limpar app secundário:', cleanupErr); }
         if (authErr.code === 'auth/email-already-in-use') {
           erroEl.textContent = 'Este e-mail já está cadastrado no sistema de autenticação.';
         } else if (authErr.code === 'auth/invalid-email') {
@@ -5148,18 +5148,14 @@ async function salvarUsuarioAdmin() {
         btn.textContent = 'Criar Usuário';
         return;
       } finally {
-        try { await secondaryApp.delete(); } catch(_) {}
+        try { await secondaryApp.delete(); } catch(cleanupErr) { console.warn('[ADMIN] Erro ao limpar app secundário:', cleanupErr); }
       }
-
-      // Gerar hash de senha com bcryptjs (backup no Firestore)
-      const senhaHash = await bcrypt.hash(senha, 10);
 
       // Criar documento do usuário no Firestore usando o UID do Firebase Auth
       await db.collection('usuarios').doc(newUid).set({
         username,
         nome,
         email,
-        senhaHash,
         perfil,
         fornecedor: fornecedor || null,
         ativo: true,
