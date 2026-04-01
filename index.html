@@ -1932,7 +1932,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
         </select>
       </div>
       <div class="login-field" style="margin:0" id="admin-u-reset-wrap" style="display:none">
-        <button class="btn btn-clear" style="width:100%" onclick="resetarSenhaUsuario()">🔑 Gerar nova senha temporária</button>
+        <button class="btn btn-clear" style="width:100%" onclick="resetarSenhaUsuario()">📧 Enviar e-mail de redefinição de senha</button>
       </div>
       <div id="admin-u-erro" style="font-size:12px;color:var(--red);display:none"></div>
     </div>
@@ -2499,24 +2499,24 @@ async function enviarRecuperacao() {
     return;
   }
   btn.disabled = true;
-  btn.textContent = 'Verificando...';
+  btn.textContent = 'Enviando...';
   try {
-    // Verificar se email existe no Firestore
-    const snap = await db.collection('usuarios').where('email', '==', email).limit(1).get();
-    if (snap.empty) {
-      msgEl.style.color = '#c62828';
-      msgEl.textContent = 'Email não encontrado.';
-      btn.disabled = false;
-      btn.textContent = 'Solicitar Reset';
-      return;
-    }
-    const userData = snap.docs[0].data();
+    // Enviar e-mail de redefinição de senha via Firebase Auth
+    await firebase.auth().sendPasswordResetEmail(email);
     msgEl.style.color = '#2e7d32';
-    msgEl.innerHTML = '✔ Email encontrado!<br>Contate o administrador para resetar sua senha.<br><small style="color:#78909c">Usuário: ' + (userData.username || 'não informado') + '</small>';
-    setTimeout(() => { btn.disabled = false; btn.textContent = 'Solicitar Reset'; }, 3000);
+    msgEl.innerHTML = '✔ E-mail de redefinição de senha enviado!<br><small style="color:#78909c">Verifique sua caixa de entrada (e o spam) para o link de redefinição.</small>';
+    setTimeout(() => { btn.disabled = false; btn.textContent = 'Solicitar Reset'; }, 5000);
   } catch(e) {
-    msgEl.style.color = '#c62828';
-    msgEl.textContent = 'Erro ao verificar. Contate o administrador diretamente.';
+    if (e.code === 'auth/user-not-found') {
+      msgEl.style.color = '#c62828';
+      msgEl.textContent = 'Email não encontrado no sistema.';
+    } else if (e.code === 'auth/invalid-email') {
+      msgEl.style.color = '#c62828';
+      msgEl.textContent = 'Formato de e-mail inválido.';
+    } else {
+      msgEl.style.color = '#c62828';
+      msgEl.textContent = 'Erro ao enviar. Tente novamente ou contate o administrador.';
+    }
     btn.disabled = false;
     btn.textContent = 'Solicitar Reset';
   }
@@ -5039,7 +5039,7 @@ async function editarUsuarioAdmin(uid) {
     document.getElementById('admin-u-fornecedor').value = u.fornecedor || 'EBST';
     document.getElementById('admin-u-erro').style.display = 'none';
     document.getElementById('admin-u-senha-wrap').style.display = 'none'; // Esconder campo de senha na edição
-    document.getElementById('admin-u-reset-wrap').style.display = 'none'; // Esconder botão de reset por enquanto
+    document.getElementById('admin-u-reset-wrap').style.display = ''; // Mostrar botão de reset de senha para usuários existentes
     adminToggleFornecedor();
     document.getElementById('admin-u-salvar-btn').textContent = 'Salvar Alterações';
     showMod('modal-admin-usuario');
@@ -5115,16 +5115,51 @@ async function salvarUsuarioAdmin() {
         return;
       }
 
-      // Gerar hash de senha com bcryptjs
+      // ── Criar conta no Firebase Auth usando app secundário ────────
+      // Usa app secundário para não deslogar o admin atual
+      let secondaryApp;
+      try {
+        secondaryApp = firebase.initializeApp(FIREBASE_CONFIG, 'UserCreation');
+      } catch(appErr) {
+        // Se o app secundário já existe (ex: erro anterior), reutiliza
+        secondaryApp = firebase.app('UserCreation');
+      }
+
+      let newUid;
+      try {
+        const secondaryAuth = secondaryApp.auth();
+        const userCredential = await secondaryAuth.createUserWithEmailAndPassword(email, senha);
+        newUid = userCredential.user.uid;
+        await secondaryAuth.signOut();
+      } catch(authErr) {
+        // Limpar app secundário antes de propagar o erro
+        try { await secondaryApp.delete(); } catch(_) {}
+        if (authErr.code === 'auth/email-already-in-use') {
+          erroEl.textContent = 'Este e-mail já está cadastrado no sistema de autenticação.';
+        } else if (authErr.code === 'auth/invalid-email') {
+          erroEl.textContent = 'E-mail inválido para autenticação.';
+        } else if (authErr.code === 'auth/weak-password') {
+          erroEl.textContent = 'Senha muito fraca. Use no mínimo 6 caracteres.';
+        } else {
+          erroEl.textContent = 'Erro ao criar conta: ' + (authErr.message || authErr);
+        }
+        erroEl.style.display = '';
+        btn.disabled = false;
+        btn.textContent = 'Criar Usuário';
+        return;
+      } finally {
+        try { await secondaryApp.delete(); } catch(_) {}
+      }
+
+      // Gerar hash de senha com bcryptjs (backup no Firestore)
       const senhaHash = await bcrypt.hash(senha, 10);
 
-      // Criar documento do usuário no Firestore
-      const novoUsuarioRef = db.collection('usuarios').doc();
-      await novoUsuarioRef.set({
+      // Criar documento do usuário no Firestore usando o UID do Firebase Auth
+      await db.collection('usuarios').doc(newUid).set({
         username,
         nome,
         email,
-        senhaHash, // Armazenar apenas o hash, nunca a senha
+        senhaHash,
         perfil,
         fornecedor: fornecedor || null,
         ativo: true,
@@ -5159,10 +5194,11 @@ async function salvarUsuarioAdmin() {
 
     closeMod('modal-admin-usuario');
     carregarUsuariosAdmin();
+    atualizarAdminStats();
     btn.disabled = false;
   } catch(e) {
     const erros = {
-      'permission-denied': 'Sem permissão para realizar esta ação.',
+      'permission-denied': 'Sem permissão para realizar esta ação. Verifique se está autenticado como administrador.',
       'invalid-argument': 'Dados inválidos.'
     };
     erroEl.textContent = erros[e.code] || ('Erro: ' + e.message);
@@ -5188,23 +5224,26 @@ async function toggleAtivoUsuario(uid, atualmenteAtivo) {
 async function resetarSenhaUsuario() {
   const uid = document.getElementById('admin-uid-edit').value.trim();
   if (!uid) { showToast('Nenhum usuário selecionado.', 'error'); return; }
-  
-  // Gerar senha temporária aleatória
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-  let novaSenha = '';
-  for (let i = 0; i < 8; i++) novaSenha += chars.charAt(Math.floor(Math.random() * chars.length));
-  
-  if (!confirm('Será gerada uma nova senha temporária para este usuário:\n\nNova senha: ' + novaSenha + '\n\nAnote esta senha! Ela não será exibida novamente.\nDeseja continuar?')) return;
-  
+
   try {
-    const senhaHash = await bcrypt.hash(novaSenha, 10);
-    await db.collection('usuarios').doc(uid).update({ senhaHash });
-    showToast('✓ Senha resetada! Nova senha temporária: ' + novaSenha, 'success');
-    
-    // Mostrar a senha num prompt para o admin copiar
-    prompt('Senha temporária gerada (copie e envie ao usuário):', novaSenha);
+    // Buscar e-mail do usuário no Firestore
+    const userDoc = await db.collection('usuarios').doc(uid).get();
+    if (!userDoc.exists) { showToast('Usuário não encontrado.', 'error'); return; }
+    const userEmail = userDoc.data().email;
+    if (!userEmail) { showToast('Usuário não possui e-mail cadastrado.', 'error'); return; }
+
+    if (!confirm('Será enviado um e-mail de redefinição de senha para:\n\n' + userEmail + '\n\nO usuário receberá um link para criar uma nova senha.\nDeseja continuar?')) return;
+
+    // Enviar e-mail de redefinição via Firebase Auth
+    await firebase.auth().sendPasswordResetEmail(userEmail);
+    showToast('✓ E-mail de redefinição de senha enviado para ' + userEmail, 'success');
   } catch(e) {
-    showToast('Erro ao resetar senha: ' + e.message, 'error');
+    console.error('[ADMIN] Erro ao resetar senha:', e);
+    if (e.code === 'auth/user-not-found') {
+      showToast('E-mail não encontrado no sistema de autenticação.', 'error');
+    } else {
+      showToast('Erro ao enviar e-mail de redefinição: ' + (e.message || e), 'error');
+    }
   }
 }
 
