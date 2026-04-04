@@ -1008,33 +1008,26 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
     <!-- SOLICITAÇÕES -->
     <div class="sb-section">
       <div class="sb-section-label">Solicitações</div>
-      <div class="sb-item" onclick="go('solicitacao')" id="sb-solicitacao">
+      <div class="sb-item" onclick="goPage('solicitacoes')" id="sb-solicitacao">
         <svg viewBox="0 0 15 15" fill="none"><rect x="2" y="2" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M5 7.5h5M7.5 5v5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-        Nova Solicitação
+        Solicitações
+        <div class="sb-badge amber" id="badgeSolicitacoes" style="display:none">0</div>
       </div>
-      <div class="sb-item" onclick="openPendentes()" id="sb-pendentes">
+      <div class="sb-item" onclick="goPage('pendentes')" id="sb-pendentes">
         <svg viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M5 7.5l2 2 3-3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Pendentes Supervisor
-        <div class="sb-badge amber">3</div>
-      </div>
-      <div class="sb-item" style="opacity:.45;cursor:default">
-        <svg viewBox="0 0 15 15" fill="none"><path d="M3 2h7l3 3v8H3V2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M10 2v3h3M5.5 7h4M5.5 9h4M5.5 11h2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
-        Desinstalação
+        Pendentes
+        <div class="sb-badge amber" id="badgePendentes" style="display:none">0</div>
       </div>
     </div>
 
     <div class="sb-divider"></div>
 
-    <!-- ANÁLISE -->
+    <!-- RELATÓRIOS -->
     <div class="sb-section">
-      <div class="sb-section-label">Análise</div>
+      <div class="sb-section-label">Relatórios</div>
       <div class="sb-item" onclick="goPage('relatorios')" id="sb-relatorios">
         <svg viewBox="0 0 15 15" fill="none"><path d="M3 2h9v11H3z" stroke="currentColor" stroke-width="1.2"/><path d="M5 6h5M5 8h5M5 10h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
         Relatórios
-      </div>
-      <div class="sb-item" style="opacity:.45;cursor:default">
-        <svg viewBox="0 0 15 15" fill="none"><path d="M2 11L5.5 7l3 3L12 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Indicadores
       </div>
     </div>
 
@@ -1241,8 +1234,11 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
       <div class="screen" id="screen-notificacoes">
         <div class="panel-header">
           <div class="ph-icon"><svg viewBox="0 0 17 17" fill="none"><path d="M8.5 2.5a5.5 5.5 0 0 1 5.5 5.5v2l1.5 2h-14l1.5-2v-2A5.5 5.5 0 0 1 8.5 2.5z" stroke="currentColor" stroke-width="1.3"/><path d="M7 14.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.3"/></svg></div>
-          <div><div class="ph-title">Notificações</div><div class="ph-sub">4 não lidas</div></div>
-          <div class="ph-right"><button class="rc-btn" style="height:30px" onclick="marcarTodasLidas()">Marcar todas como lidas</button></div>
+          <div><div class="ph-title">Notificações</div><div class="ph-sub" id="notifSub">Sem notificações</div></div>
+          <div class="ph-right" style="display:flex;gap:8px">
+            <button class="rc-btn" style="height:30px" onclick="marcarTodasLidas()">Marcar como lidas</button>
+            <button class="rc-btn" style="height:30px;color:#c62828" onclick="limparNotificacoes()">Limpar tudo</button>
+          </div>
         </div>
         <div class="panel-body"><div class="notif-list" id="notifList"></div></div>
       </div>
@@ -1512,6 +1508,29 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
         </div>
 
       </div><!-- /screen-admin -->
+
+      <!-- ══ SOLICITAÇÕES ══ -->
+      <div class="screen" id="screen-solicitacoes">
+        <div class="panel-header">
+          <div class="ph-icon"><svg viewBox="0 0 17 17" fill="none"><rect x="2" y="2" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M5 6h7M5 8.5h7M5 11h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></div>
+          <div><div class="ph-title">Solicitações</div><div class="ph-sub" id="solicitacoesSub">Minhas solicitações</div></div>
+          <div class="ph-right" id="btnNovaSolicitacao"><button class="btn btn-primary" style="height:32px;font-size:12px;padding:0 14px" onclick="go('solicitacao')">+ Nova</button></div>
+        </div>
+        <div class="panel-body">
+          <div id="solicitacoesList" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+      </div>
+
+      <!-- ══ PENDENTES ══ -->
+      <div class="screen" id="screen-pendentes">
+        <div class="panel-header">
+          <div class="ph-icon"><svg viewBox="0 0 17 17" fill="none"><circle cx="8.5" cy="8.5" r="6.5" stroke="currentColor" stroke-width="1.3"/><path d="M6 8.5l2 2 3-3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div><div class="ph-title">Pendentes</div><div class="ph-sub" id="pendentesSub">Aguardando sua ação</div></div>
+        </div>
+        <div class="panel-body">
+          <div id="pendentesList" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+      </div>
 
       <!-- ══ FLOW SCREENS ══ -->
 
@@ -3250,6 +3269,7 @@ async function sincronizarMaquinasFirebase(lista) {
         dataInstalacao:    m.dataInstalacao    || '',
         endereco:          m.endereco          || '',
         responsavelVendas: m.responsavelVendas || '',
+        numeroPedido:      m.numeroPedido      || '',
         origem:            m.origem            || 'importada',
         vigenciaMeses:     m.vigenciaMeses     || 0,
         sincronizadoEm:    ts
@@ -3293,13 +3313,16 @@ function normalizarRegistroMaquina(reg) {
   const mesa              = _normSN(reg.mesa       || reg.Mesa            || '');
   const dosador           = _normSN(reg.dosador    || reg.Dosador         || '');
   const dataInstalacao    = _normData(reg.dataInstalacao || reg['Data de instalação'] || reg.DataInstalacao || '');
-  const endereco          = (reg.endereco          || reg.Endereço        || reg.Endereco        || '').toString().trim();
+  // "Cliente" é a nova coluna padrão (planilha cadastro_maquina_completa.xlsx)
+  const endereco          = (reg.endereco || reg.Cliente || reg.cliente || reg.Endereço || reg.Endereco || '').toString().trim();
   const responsavelVendas = (reg.responsavelVendas || reg['Responsável de vendas'] || reg.Responsavel || '').toString().trim();
+  // "N° do Pedido" — nova coluna padrão
+  const numeroPedido      = (reg.numeroPedido || reg['N° do Pedido'] || reg['Nº do Pedido'] || reg['N do Pedido'] || reg['No do Pedido'] || '').toString().trim();
   // vigenciaMeses: aceita coluna "Vigência (meses)", "Meses do contrato", "vigencia", inteiro
   const _vigRaw = reg.vigenciaMeses || reg['Vigência (meses)'] || reg['Vigencia (meses)'] || reg['Meses do contrato'] || reg['Meses'] || reg.vigencia || 0;
   const vigenciaMeses     = parseInt(String(_vigRaw).replace(/[^\d]/g, '')) || 0;
   const origem            = (reg.origem === 'importada') ? 'importada' : 'manual';
-  return { serialMaquina, modelo, fornecedor, mesa, dosador, dataInstalacao, endereco, responsavelVendas, vigenciaMeses, origem, chaveIdentificacao: serialMaquina };
+  return { serialMaquina, modelo, fornecedor, mesa, dosador, dataInstalacao, endereco, responsavelVendas, numeroPedido, vigenciaMeses, origem, chaveIdentificacao: serialMaquina };
 }
 
 /**
@@ -4057,14 +4080,7 @@ function updateTL(id, lbl) {
   document.getElementById(lbl).textContent = el && el.checked ? 'Sim' : 'Não';
 }
 
-const HISTORY = [
-  {code:'WR-2026-0101',client:'Rede Bistro Central',model:'Ecomax 503',resp:'W. Bastos',date:'12/03/2026',status:'c-transit',statusTxt:'Logística'},
-  {code:'WR-2026-0102',client:'Hospital Vida Sul',model:'HD-80 Nova',resp:'A. Souza',date:'14/03/2026',status:'c-install',statusTxt:'Ag. Instalação'},
-  {code:'WR-2026-0103',client:'Universidade Delta',model:'CCR 200 C NR-12',resp:'W. Bastos',date:'16/03/2026',status:'c-done',statusTxt:'Concluído'},
-  {code:'WR-2026-0104',client:'Hotel Mont Serrat',model:'HD-50 Remanufaturada',resp:'L. Costa',date:'18/03/2026',status:'c-pending',statusTxt:'Ag. Supervisor'},
-  {code:'WR-2026-0105',client:'Indústria Alfa',model:'CCR 260 S NR-12',resp:'R. Lima',date:'21/03/2026',status:'c-approved',statusTxt:'ADM'},
-  {code:'WR-2026-0106',client:'Cozinha Popular Norte',model:'HD-200 MOB',resp:'J. Pinto',date:'23/03/2026',status:'c-supplier',statusTxt:'Fornecedor'},
-];
+const HISTORY = [];
 const CHECKLIST_ITEMS = [
   'Posicionamento e nivelamento da máquina',
   'Conexões hidráulicas (entrada e saída)',
@@ -4077,14 +4093,7 @@ const CHECKLIST_ITEMS = [
   'Confirmação da data com o cliente',
   'Registro fotográfico e aceite do cliente',
 ];
-const NOTIFS = [
-  {icon:'#e65100',bg:'#fff3e0',title:'Aprovação pendente — WR-2025-0834',desc:'Buffet Estrela · HD-80 Nova aguarda aprovação do Supervisor AS&TS há 2 dias.',time:'Hoje 09:14',unread:true},
-  {icon:'#1565c0',bg:'#e3f2fd',title:'Máquina expedida — WR-2025-0832',desc:'Hospital Santa Cruz · CCR 200 C NR-12 em trânsito. Entrega prevista 20/06.',time:'Hoje 08:30',unread:true},
-  {icon:'#2e7d32',bg:'#e8f5e9',title:'Instalação concluída — WR-2025-0831',desc:'Colégio São Paulo · Ecomax 503 instalado e relatório assinado.',time:'Ontem 17:45',unread:true},
-  {icon:'#c62828',bg:'#ffebee',title:'Solicitação reprovada — WR-2025-0837',desc:'Colégio Beta · Supervisor AS&TS rejeitou. Revisar modelo e proposta comercial.',time:'Ontem 15:20',unread:true},
-  {icon:'#4527a0',bg:'#ede7f6',title:'Pedido enviado ao fornecedor — WR-2025-0838',desc:'Clínica Vida · HD-80 Nova em preparação. Previsão 18/06.',time:'08/06 11:10',unread:false},
-  {icon:'#0e7b82',bg:'#e0f4f5',title:'Nova solicitação registrada — WR-2025-0840',desc:'Indústria ABC · CCR 260 S NR-12 aguarda análise do Supervisor AS&TS.',time:'13/06 10:05',unread:false},
-];
+const NOTIFS = [];
 const RELATORIOS = [
   {icon:'#0e7b82',bg:'#e0f4f5',name:'Solicitações por Período',desc:'Exportar histórico completo com filtros de data, status e responsável.',meta:'Último: 13/06/2025'},
   {icon:'#2e7d32',bg:'#e8f5e9',name:'Relatórios de Instalação',desc:'Todos os relatórios de instalação assinados por técnico e cliente.',meta:'18 arquivos'},
@@ -4107,11 +4116,7 @@ const DASH_TL = [
   {label:'WR-0834 · Buffet Estrela — Ag. aprovação',meta:'Pendente há 2 dias',time:'Ontem',color:'#e65100'},
   {label:'WR-0831 · Colégio São Paulo — Concluído',meta:'Relatório assinado e arquivado',time:'Ontem 17:45',color:'#2e7d32'},
 ];
-const PENDING_DATA = [
-  {code:'WR-2025-0834',client:'Buffet Estrela',model:'HD-80 Nova',days:2},
-  {code:'WR-2025-0835',client:'Hotel Horizonte',model:'HD-50 Remanufaturada',days:1},
-  {code:'WR-2025-0836',client:'Refeitório SABESP',model:'Ecomax 503',days:1},
-];
+const PENDING_DATA = [];
 const FILTER_OPTIONS = ['Todos','Concluído','Em andamento','Ag. aprovação','Em Trânsito','Reprovado'];
 let activeFilter = 'Todos';
 
@@ -4121,19 +4126,22 @@ function goPage(id){
   document.getElementById('screen-'+currentPage)?.classList.remove('active');
   document.getElementById('screen-'+id)?.classList.add('active');
   currentPage = id;
-  // sidebar highlights
+  // sidebar highlights — solicitacoes e pendentes reusam IDs existentes
   document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
-  const sb = document.getElementById('sb-'+id);
+  const sbId = id === 'solicitacoes' ? 'solicitacao' : id;
+  const sb = document.getElementById('sb-'+sbId);
   if(sb) sb.classList.add('active');
   // progress nav
   const pn = document.getElementById('progressNav');
   pn.style.display = 'none';
   currentFlow = null;
   // breadcrumb
-  const bcMap = {home:'Início',dashboard:'Dashboard',historico:'Histórico',notificacoes:'Notificações',relatorios:'Relatórios',configuracoes:'Configurações',admin:'Admin Sistema'};
+  const bcMap = {home:'Início',dashboard:'Dashboard',historico:'Histórico',notificacoes:'Notificações',relatorios:'Relatórios',configuracoes:'Configurações',admin:'Admin Sistema',solicitacoes:'Solicitações',pendentes:'Pendentes'};
   setBreadcrumb(bcMap[id]||id);
-  if (id === 'admin')     onEnterAdmin();
-  if (id === 'dashboard') carregarDashboard();
+  if (id === 'admin')        onEnterAdmin();
+  if (id === 'dashboard')    carregarDashboard();
+  if (id === 'solicitacoes') carregarSolicitacoesPendentes();
+  if (id === 'pendentes')    carregarPendentesEquipe();
 }
 
 function go(id){
@@ -4221,20 +4229,157 @@ function buildProgressNav(){
   });
 }
 
-function openPendentes(){
-  const list=document.getElementById('pendList');
-  list.innerHTML=PENDING_DATA.map(p=>`
-    <div style="padding:10px 12px;background:#fff;border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:space-between;gap:12px">
-      <div>
-        <div style="font-size:11.5px;font-weight:600;color:var(--teal-dark);font-family:'DM Mono',monospace">${p.code}</div>
-        <div style="font-size:12.5px;color:var(--text);margin-top:2px">${p.client} · ${p.model}</div>
-      </div>
-      <div style="text-align:right">
-        <div class="chip c-pending"><div class="chip-dot"></div>Ag. ${p.days}d</div>
-        <button class="btn btn-approve" style="margin-top:6px;height:26px;font-size:11px;padding:0 10px" onclick="closeMod('mPendentes');go('gestor')">Aprovar</button>
-      </div>
-    </div>`).join('');
-  showMod('mPendentes');
+function openPendentes(){ goPage('pendentes'); }
+
+// ─── SOLICITAÇÕES DO USUÁRIO LOGADO ────────────────────────
+async function carregarSolicitacoesPendentes() {
+  if (!firebaseOk || !currentUser) return;
+  const listEl = document.getElementById('solicitacoesList');
+  const subEl  = document.getElementById('solicitacoesSub');
+  const perfil = currentUser.perfil;
+  const uid    = currentUser.uid;
+
+  // Botão "Nova" só aparece para vendas e super_admin
+  const btnEl = document.getElementById('btnNovaSolicitacao');
+  if (btnEl) btnEl.style.display = (perfil === 'vendas' || perfil === 'super_admin') ? '' : 'none';
+  if (listEl) listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Carregando...</div>';
+
+  try {
+    let query;
+    if (perfil === 'vendas') {
+      query = db.collection('solicitacoes').where('criadoPorUid','==',uid).orderBy('criadoEm','desc').limit(50);
+    } else if (perfil === 'supervisor_asts' || perfil === 'gestor') {
+      query = db.collection('solicitacoes').where('etapaAtual','in',['gestor','solicitacao']).orderBy('criadoEm','desc').limit(50);
+    } else if (perfil === 'adm_vendas' || perfil === 'adm') {
+      query = db.collection('solicitacoes').where('etapaAtual','in',['adm','gestor']).orderBy('criadoEm','desc').limit(50);
+    } else if (perfil === 'fornecedor_ebst') {
+      query = db.collection('solicitacoes').where('etapaAtual','==','fornecedor').where('dadosAdm.encaminhadoFornecedor','==','EBST').orderBy('criadoEm','desc').limit(50);
+    } else if (perfil === 'fornecedor_hobart') {
+      query = db.collection('solicitacoes').where('etapaAtual','==','fornecedor').where('dadosAdm.encaminhadoFornecedor','==','Hobart Brasil').orderBy('criadoEm','desc').limit(50);
+    } else {
+      query = db.collection('solicitacoes').orderBy('criadoEm','desc').limit(100);
+    }
+
+    const snap = await query.get();
+    const docs = snap.docs;
+    if (subEl) subEl.textContent = `${docs.length} solicitaç${docs.length===1?'ão':'ões'} encontrada${docs.length===1?'':'s'}`;
+
+    if (!listEl) return;
+    if (!docs.length) {
+      listEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:13px">Nenhuma solicitação encontrada.</div>';
+      return;
+    }
+
+    listEl.innerHTML = docs.map(d => {
+      const data  = d.data();
+      const st    = STATUS[data.status] || STATUS.RASCUNHO;
+      const prot  = data.protocolo || d.id.slice(0,8);
+      const client= data.dadosSolicitacao?.nomeCliente || data.dadosSolicitacao?.cliente || '—';
+      const model = data.dadosSolicitacao?.modeloMaquina || data.dadosSolicitacao?.modelo || '—';
+      const resp  = data.criadoPorNome || data.dadosSolicitacao?.responsavelVendas || '—';
+      const dt    = data.criadoEm?.toDate ? data.criadoEm.toDate().toLocaleDateString('pt-BR') : '—';
+      return `<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer" onclick="abrirSolicitacao('${d.id}')">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="font-size:11.5px;font-weight:700;color:var(--teal-dark);font-family:'DM Mono',monospace">${prot}</span>
+            <div class="chip ${st.chip}" style="height:20px;font-size:10px;padding:0 7px"><div class="chip-dot"></div>${st.label}</div>
+          </div>
+          <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${client}</div>
+          <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">${model} · ${resp} · ${dt}</div>
+        </div>
+        <svg viewBox="0 0 13 13" fill="none" style="flex-shrink:0;opacity:.35"><path d="M4.5 2.5l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>`;
+    }).join('');
+
+    // Badge no sidebar
+    const badgeEl = document.getElementById('badgeSolicitacoes');
+    if (badgeEl) {
+      const n = docs.filter(d => !['ENCERRADO','INSTALACAO_CONCLUIDA'].includes(d.data().status)).length;
+      badgeEl.textContent = n; badgeEl.style.display = n > 0 ? '' : 'none';
+    }
+  } catch(e) {
+    console.error('[WORKRAIL] Erro ao carregar solicitações:', e);
+    if (listEl) listEl.innerHTML = '<div style="padding:24px;text-align:center;color:#c62828;font-size:13px">Erro ao carregar. Verifique sua conexão.</div>';
+  }
+}
+
+// ─── PENDENTES DA EQUIPE ────────────────────────────────────
+async function carregarPendentesEquipe() {
+  if (!firebaseOk || !currentUser) return;
+  const listEl = document.getElementById('pendentesList');
+  const subEl  = document.getElementById('pendentesSub');
+  const perfil = currentUser.perfil;
+  const uid    = currentUser.uid;
+
+  if (listEl) listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Carregando...</div>';
+
+  try {
+    let query;
+    if (perfil === 'vendas') {
+      query = db.collection('solicitacoes').where('criadoPorUid','==',uid).where('etapaAtual','==','solicitacao').orderBy('criadoEm','desc').limit(30);
+    } else if (perfil === 'supervisor_asts' || perfil === 'gestor') {
+      query = db.collection('solicitacoes').where('etapaAtual','==','gestor').orderBy('criadoEm','desc').limit(50);
+    } else if (perfil === 'adm_vendas' || perfil === 'adm') {
+      query = db.collection('solicitacoes').where('etapaAtual','==','adm').orderBy('criadoEm','desc').limit(50);
+    } else if (perfil === 'fornecedor_ebst') {
+      query = db.collection('solicitacoes').where('etapaAtual','==','fornecedor').where('dadosAdm.encaminhadoFornecedor','==','EBST').orderBy('criadoEm','desc').limit(50);
+    } else if (perfil === 'fornecedor_hobart') {
+      query = db.collection('solicitacoes').where('etapaAtual','==','fornecedor').where('dadosAdm.encaminhadoFornecedor','==','Hobart Brasil').orderBy('criadoEm','desc').limit(50);
+    } else {
+      query = db.collection('solicitacoes').where('etapaAtual','not-in',['relatorio','concluido']).orderBy('etapaAtual').orderBy('criadoEm','desc').limit(100);
+    }
+
+    const snap = await query.get();
+    const docs = snap.docs;
+    if (subEl) subEl.textContent = `${docs.length} item${docs.length===1?'':'s'} aguardando sua ação`;
+
+    const badgeEl = document.getElementById('badgePendentes');
+    if (badgeEl) { badgeEl.textContent = docs.length; badgeEl.style.display = docs.length > 0 ? '' : 'none'; }
+
+    if (!listEl) return;
+    if (!docs.length) {
+      listEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:13px">Nenhuma pendência no momento. ✓</div>';
+      return;
+    }
+
+    listEl.innerHTML = docs.map(d => {
+      const data  = d.data();
+      const st    = STATUS[data.status] || STATUS.RASCUNHO;
+      const prot  = data.protocolo || d.id.slice(0,8);
+      const client= data.dadosSolicitacao?.nomeCliente || data.dadosSolicitacao?.cliente || '—';
+      const model = data.dadosSolicitacao?.modeloMaquina || data.dadosSolicitacao?.modelo || '—';
+      const dt    = data.criadoEm?.toDate ? data.criadoEm.toDate().toLocaleDateString('pt-BR') : '—';
+      return `<div style="background:#fff;border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:8px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer" onclick="abrirSolicitacao('${d.id}')">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="font-size:11.5px;font-weight:700;color:var(--teal-dark);font-family:'DM Mono',monospace">${prot}</span>
+            <div class="chip ${st.chip}" style="height:20px;font-size:10px;padding:0 7px"><div class="chip-dot"></div>${st.label}</div>
+          </div>
+          <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${client}</div>
+          <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">${model} · ${dt}</div>
+        </div>
+        <button class="btn btn-approve" style="height:28px;font-size:11.5px;padding:0 12px;flex-shrink:0" onclick="event.stopPropagation();abrirSolicitacao('${d.id}')">Abrir</button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.error('[WORKRAIL] Erro ao carregar pendentes:', e);
+    if (listEl) listEl.innerHTML = '<div style="padding:24px;text-align:center;color:#c62828;font-size:13px">Erro ao carregar pendências.</div>';
+  }
+}
+
+// Abre uma solicitação existente pelo ID do Firestore
+async function abrirSolicitacao(solicitacaoId) {
+  if (!firebaseOk || !solicitacaoId) return;
+  try {
+    const doc = await db.collection('solicitacoes').doc(solicitacaoId).get();
+    if (!doc.exists) { showToast('Solicitação não encontrada.', 'error'); return; }
+    currentSolicitacaoId = solicitacaoId;
+    currentSolicitacao   = doc.data();
+    go(currentSolicitacao.etapaAtual || 'solicitacao');
+  } catch(e) {
+    console.error('[WORKRAIL] Erro ao abrir solicitação:', e);
+    showToast('Erro ao abrir solicitação.', 'error');
+  }
 }
 
 // ─── MODALS ─────────────────────────────────────────────────
@@ -4271,7 +4416,8 @@ function marcarTodasLidas() {
   // Atualiza badge
   const dot = document.querySelector('.notif-dot');
   if (dot) dot.style.display = 'none';
-  document.querySelector('#screen-notificacoes .ph-sub').textContent = 'Todas as notificações lidas';
+  const subEl = document.getElementById('notifSub');
+  if (subEl) subEl.textContent = 'Todas lidas';
   showToast('Todas as notificações marcadas como lidas.', 'success');
 }
 
@@ -4343,8 +4489,17 @@ function filtrarHistorico(termo) {
 
 // ─── BUILD NOTIFICATIONS ────────────────────────────────────
 function buildNotifications(){
-  const el=document.getElementById('notifList');
-  el.innerHTML=NOTIFS.map(n=>`
+  const el  = document.getElementById('notifList');
+  const sub = document.getElementById('notifSub');
+  if (!el) return;
+  if (!NOTIFS.length) {
+    el.innerHTML = '<div style="padding:48px;text-align:center;color:var(--text-muted);font-size:13px">Nenhuma notificação.</div>';
+    if (sub) sub.textContent = 'Sem notificações';
+    return;
+  }
+  const unread = NOTIFS.filter(n => n.unread).length;
+  if (sub) sub.textContent = unread > 0 ? `${unread} não lida${unread===1?'':'s'}` : 'Todas lidas';
+  el.innerHTML = NOTIFS.map(n=>`
     <div class="notif-item${n.unread?' unread':''}">
       <div class="ni-icon" style="background:${n.bg}"><svg viewBox="0 0 17 17" fill="none" style="color:${n.icon}"><path d="M8.5 2.5a5.5 5.5 0 0 1 5.5 5.5v2l1.5 2h-14l1.5-2v-2A5.5 5.5 0 0 1 8.5 2.5z" stroke="currentColor" stroke-width="1.3"/><path d="M7 14.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.3"/></svg></div>
       <div class="ni-body">
@@ -4354,6 +4509,14 @@ function buildNotifications(){
       </div>
       ${n.unread?'<div class="ni-dot"></div>':''}
     </div>`).join('');
+}
+
+function limparNotificacoes(){
+  NOTIFS.length = 0;
+  buildNotifications();
+  const dot = document.querySelector('.notif-dot');
+  if (dot) dot.style.display = 'none';
+  showToast('Notificações limpas.', 'success');
 }
 
 // ─── BUILD REPORTS ──────────────────────────────────────────
