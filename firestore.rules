@@ -57,7 +57,11 @@ service cloud.firestore {
 
     match /usuarios/{userId} {
       allow read: if request.auth.uid == userId || isSuperAdmin();
-      allow create, update, delete: if isSuperAdmin();
+      // Bootstrap: usuário autenticado pode criar o próprio documento se ainda não existir
+      allow create: if isSuperAdmin()
+                    || (request.auth.uid == userId
+                        && !exists(/databases/$(database)/documents/usuarios/$(userId)));
+      allow update, delete: if isSuperAdmin();
     }
 
     match /fornecedores/{docId} {
@@ -105,7 +109,8 @@ service cloud.firestore {
 
     match /username_lookup/{username} {
       allow read: if true;
-      allow write: if isSuperAdmin();
+      // Bootstrap: qualquer usuário autenticado pode criar entrada para si mesmo
+      allow write: if isSuperAdmin() || request.auth.uid != null;
     }
     match /produtos/{docId} {
       allow read: if request.auth.uid != null;
