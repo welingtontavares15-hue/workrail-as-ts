@@ -3027,12 +3027,16 @@ function entradaHistorico(acao, responsavel, etapa, observacao) {
 
 async function criarSolicitacao(dados) {
   const protocolo = gerarProtocolo();
+  const perfil = currentUser?.perfil || 'vendas';
+  // etapaAtual DEVE ser 'solicitacao' na criação para satisfazer a regra Firestore.
+  // Logo após o .add(), fazemos um .update() para avançar para 'gestor'.
   const doc = {
     protocolo,
     ...dados,
-    status:      STATUS.AGUARDANDO_GESTOR.key,
-    etapaAtual:  'gestor',
-    historico: [entradaHistorico('SOLICITACAO_CRIADA','Vendas','solicitacao',
+    criadoPorPerfil: perfil,                   // campo exigido pela regra de criação
+    status:          STATUS.AGUARDANDO_GESTOR.key,
+    etapaAtual:      'solicitacao',             // valor aceito pela regra Firestore
+    historico: [entradaHistorico('SOLICITACAO_CRIADA', currentUser?.nome || 'Vendas', 'solicitacao',
       `Solicitação criada. Cliente: ${dados.dadosCliente?.nomeCliente}`)],
     documentos:  [],
     criadoEm:    firebaseOk ? firebase.firestore.FieldValue.serverTimestamp() : new Date().toISOString(),
@@ -3043,9 +3047,15 @@ async function criarSolicitacao(dados) {
     const ref = await db.collection('solicitacoes').add(doc);
     currentSolicitacaoId = ref.id;
     currentSolicitacao   = { ...doc, id: ref.id };
+    // Avançar para a etapa do gestor após a criação bem-sucedida
+    await db.collection('solicitacoes').doc(ref.id).update({
+      etapaAtual:   'gestor',
+      atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    currentSolicitacao.etapaAtual = 'gestor';
   } else {
     currentSolicitacaoId  = 'offline-' + Date.now();
-    currentSolicitacao    = { ...doc, id: currentSolicitacaoId };
+    currentSolicitacao    = { ...doc, id: currentSolicitacaoId, etapaAtual: 'gestor' };
   }
   return currentSolicitacaoId;
 }
@@ -3996,49 +4006,82 @@ function coletarDadosRelatorio() {
 
 // 01 → VENDAS envia para Supervisor AS&TS
 async function confirmEnviarGestor() {
-  if (!validateStep_Solicitacao()) return;
+  // Revalida antes de processar (garante que não bypassa a validação)
+  if (!validateStep_Solicitacao()) {
+    closeMod('mEnviar');
+    showToast('Corrija os campos destacados para prosseguir.', 'error');
+    return;
+  }
+
+  // Garante que o usuário está autenticado
+  if (!currentUser?.uid) {
+    closeMod('mEnviar');
+    showToast('Sessão expirada. Faça login novamente.', 'error');
+    return;
+  }
+
   closeMod('mEnviar');
   showLoading(true);
+
   try {
     const dados = coletarDadosSolicitacao();
 
-    // Upload contrato
-    const uploads = await uploadMultiplos(
-      [['fProp','CONTRATO']], 'contratos'
-    );
+    // Upload do contrato (antes de criar a solicitação)
+    const uploads = await uploadMultiplos([['fProp','CONTRATO']], 'contratos');
 
+    // Criar solicitação no Firestore
     await criarSolicitacao(dados);
+
+    // Anexar documentos se enviados
     if (uploads.length > 0) {
       await adicionarDocumentos(currentSolicitacaoId,
-        uploads.map(u => ({ ...u, etapa:'solicitacao', responsavel: currentUser?.nome || 'Vendas' })));
+        uploads.map(u => ({ ...u, etapa: 'solicitacao', responsavel: currentUser?.nome || 'Vendas' })));
     }
 
+    // Notificações
     const prot = currentSolicitacao?.protocolo;
-    await enviarNotificacao(EMAIL_RECIPIENTS.gestor,
-      'Nova Solicitação Aguardando Aprovação',
-      `Solicitação criada por Vendas e aguarda seu parecer.`,
-      prot,
-      { Cliente: dados.dadosCliente.nomeCliente, Modelo: dados.dadosSolicitacao.modeloMaquina,
-        Representante: dados.dadosSolicitacao.representante }
-    );
-    await enviarNotificacao(FORMSUBMIT_EMAIL,
-      'Nova Solicitação Criada',
-      `Nova solicitação registrada no sistema.`,
-      prot,
-      { Cliente: dados.dadosCliente.nomeCliente, Modelo: dados.dadosSolicitacao.modeloMaquina }
-    );
+    try {
+      await enviarNotificacao(EMAIL_RECIPIENTS.gestor,
+        'Nova Solicitação Aguardando Aprovação',
+        `Solicitação criada por ${currentUser?.nome || 'Vendas'} aguarda seu parecer.`,
+        prot,
+        { Cliente: dados.dadosCliente.nomeCliente, Modelo: dados.dadosSolicitacao.modeloMaquina,
+          Representante: dados.dadosSolicitacao.representante }
+      );
+      await enviarNotificacao(FORMSUBMIT_EMAIL,
+        'Nova Solicitação Criada',
+        `Nova solicitação registrada no sistema.`,
+        prot,
+        { Cliente: dados.dadosCliente.nomeCliente, Modelo: dados.dadosSolicitacao.modeloMaquina }
+      );
+    } catch(notifErr) {
+      // Notificação falhou mas solicitação já foi salva — não bloqueia o fluxo
+      console.warn('[WORKRAIL] Erro ao enviar notificação (não crítico):', notifErr);
+    }
 
     pendingFiles = {};
     _limparErrosScreen('solicitacao');
-    showToast('✓ Solicitação iniciada com sucesso! Protocolo: ' + prot, 'success');
+    showToast('✓ Solicitação confirmada com sucesso! Protocolo: ' + prot, 'success');
     go('gestor');
+
   } catch(e) {
     console.error('[WORKRAIL] Erro ao enviar solicitação:', e);
     const msgs = {
-      'permission-denied': 'Sem permissão para criar solicitação. Verifique seu perfil.',
-      'unavailable':       'Firebase temporariamente indisponível. Tente novamente.',
+      'permission-denied': 'Sem permissão para criar solicitação. Verifique seu perfil de acesso.',
+      'unavailable':       'Firebase temporariamente indisponível. Aguarde e tente novamente.',
+      'not-found':         'Recurso não encontrado. Recarregue a página e tente novamente.',
+      'unauthenticated':   'Sessão expirada. Faça login novamente.',
     };
-    showToast(msgs[e.code] || ('Erro ao enviar solicitação: ' + (e.message || 'Tente novamente.')), 'error');
+    const msg = msgs[e.code] || ('Erro ao salvar solicitação: ' + (e.message || 'Tente novamente.'));
+    showToast(msg, 'error');
+
+    // Exibir também no banner do formulário para não passar despercebido
+    const banner = document.getElementById('validacaoBannerSolic');
+    if (banner) {
+      banner.innerHTML = `<strong>Erro ao enviar:</strong> ${msg}`;
+      banner.style.display = '';
+      banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   } finally {
     showLoading(false);
   }
@@ -6014,7 +6057,8 @@ async function carregarUsuariosAdmin() {
         <td>${statusBadge}</td>
         <td style="display:flex;gap:5px;flex-wrap:wrap">
           <button class="btn-mini" onclick="editarUsuarioAdmin('${doc.id}')">Editar</button>
-          <button class="btn-mini" onclick="toggleAtivoUsuario('${doc.id}', ${u.ativo !== false})">${u.ativo !== false ? 'Desativar' : 'Ativar'}</button>
+          <button class="btn-mini" style="background:${u.ativo !== false ? 'var(--amber-l)' : 'var(--green-l)'};color:${u.ativo !== false ? 'var(--amber)' : 'var(--green)'}" onclick="toggleAtivoUsuario('${doc.id}', ${u.ativo !== false})">${u.ativo !== false ? 'Desativar' : 'Ativar'}</button>
+          <button class="btn-mini btn-mini-red" style="background:var(--red-l)" onclick="excluirUsuarioAdmin('${doc.id}', '${(u.nome||'').replace(/'/g,'')}')">Excluir</button>
         </td>
       </tr>`;
     });
@@ -6257,6 +6301,36 @@ async function toggleAtivoUsuario(uid, atualmenteAtivo) {
   }
 }
 
+async function excluirUsuarioAdmin(uid, nome) {
+  if (!confirm(`⚠️ EXCLUIR o usuário "${nome}" permanentemente?\n\nEsta ação não pode ser desfeita.\nO usuário será removido do sistema.\n\nClique OK para confirmar.`)) return;
+  try {
+    showLoading(true);
+    // Verificar se tem solicitações vinculadas
+    const solSnap = await db.collection('solicitacoes').where('criadoPorUid', '==', uid).limit(1).get();
+    if (!solSnap.empty) {
+      showToast(`⚠️ Não é possível excluir "${nome}": possui solicitações vinculadas. Use "Desativar" para bloquear o acesso sem apagar o histórico.`, 'error');
+      return;
+    }
+    // Buscar username para remover lookup
+    const userDoc = await db.collection('usuarios').doc(uid).get();
+    if (!userDoc.exists) { showToast('Usuário não encontrado.', 'error'); return; }
+    const u = userDoc.data();
+    const batch = db.batch();
+    batch.delete(db.collection('usuarios').doc(uid));
+    if (u.username) batch.delete(db.collection('username_lookup').doc(u.username.toLowerCase()));
+    await batch.commit();
+    showToast(`✓ Usuário "${nome}" excluído com sucesso.`, 'success');
+    carregarUsuariosAdmin();
+    atualizarAdminStats();
+  } catch(e) {
+    console.error('[ADMIN] Erro ao excluir usuário:', e);
+    const msgs = { 'permission-denied': 'Sem permissão para excluir usuários.' };
+    showToast(msgs[e.code] || ('Erro ao excluir: ' + (e.message || e)), 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
 async function resetarSenhaUsuario() {
   const uid = document.getElementById('admin-uid-edit').value.trim();
   if (!uid) { showToast('Nenhum usuário selecionado.', 'error'); return; }
@@ -6302,9 +6376,10 @@ async function carregarFornecedoresAdmin() {
         <td>${f.contato || '—'}</td>
         <td style="color:var(--text-mid)">${f.email || '—'}</td>
         <td>${statusBadge}</td>
-        <td style="display:flex;gap:5px">
+        <td style="display:flex;gap:5px;flex-wrap:wrap">
           <button class="btn-mini" onclick="editarFornecedorAdmin('${doc.id}')">Editar</button>
-          <button class="btn-mini btn-mini-red" onclick="toggleAtivoFornecedor('${doc.id}', ${f.ativo !== false})">${f.ativo !== false ? 'Desativar' : 'Ativar'}</button>
+          <button class="btn-mini" style="background:${f.ativo !== false ? 'var(--amber-l)' : 'var(--green-l)'};color:${f.ativo !== false ? 'var(--amber)' : 'var(--green)'}" onclick="toggleAtivoFornecedor('${doc.id}', ${f.ativo !== false})">${f.ativo !== false ? 'Desativar' : 'Ativar'}</button>
+          <button class="btn-mini btn-mini-red" style="background:var(--red-l)" onclick="excluirFornecedorAdmin('${doc.id}', '${(f.nome||'').replace(/'/g,'')}')">Excluir</button>
         </td>
       </tr>`;
     });
@@ -6383,6 +6458,29 @@ async function toggleAtivoFornecedor(id, atualmenteAtivo) {
   }
 }
 
+async function excluirFornecedorAdmin(id, nome) {
+  if (!confirm(`⚠️ EXCLUIR o fornecedor "${nome}" permanentemente?\n\nEsta ação não pode ser desfeita.\nVerifique se não há solicitações vinculadas.\n\nClique OK para confirmar.`)) return;
+  try {
+    showLoading(true);
+    // Verificar solicitações vinculadas a este fornecedor
+    const snap = await db.collection('solicitacoes').where('dadosAdm.encaminhadoFornecedor', '==', nome).limit(1).get();
+    if (!snap.empty) {
+      showToast(`⚠️ Não é possível excluir "${nome}": existem solicitações encaminhadas a este fornecedor. Use "Desativar" para ocultá-lo sem perder o histórico.`, 'error');
+      return;
+    }
+    await db.collection('fornecedores').doc(id).delete();
+    showToast(`✓ Fornecedor "${nome}" excluído com sucesso.`, 'success');
+    carregarFornecedoresAdmin();
+    atualizarAdminStats();
+  } catch(e) {
+    console.error('[ADMIN] Erro ao excluir fornecedor:', e);
+    const msgs = { 'permission-denied': 'Sem permissão para excluir fornecedores.' };
+    showToast(msgs[e.code] || ('Erro ao excluir: ' + (e.message || e)), 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
 // ─── MODELOS DE MÁQUINAS ─────────────────────────────────────
 async function carregarModelosAdmin() {
   const tbody = document.getElementById('admin-lista-modelos');
@@ -6402,9 +6500,10 @@ async function carregarModelosAdmin() {
         <td>${m.capacidade ? m.capacidade + ' cestas/h' : '—'}</td>
         <td>${m.voltagem || '—'}</td>
         <td>${statusBadge}</td>
-        <td style="display:flex;gap:5px">
+        <td style="display:flex;gap:5px;flex-wrap:wrap">
           <button class="btn-mini" onclick="editarModeloAdmin('${doc.id}')">Editar</button>
-          <button class="btn-mini btn-mini-red" onclick="toggleAtivoModelo('${doc.id}', ${m.ativo !== false})">${m.ativo !== false ? 'Desativar' : 'Ativar'}</button>
+          <button class="btn-mini" style="background:${m.ativo !== false ? 'var(--amber-l)' : 'var(--green-l)'};color:${m.ativo !== false ? 'var(--amber)' : 'var(--green)'}" onclick="toggleAtivoModelo('${doc.id}', ${m.ativo !== false})">${m.ativo !== false ? 'Desativar' : 'Ativar'}</button>
+          <button class="btn-mini btn-mini-red" style="background:var(--red-l)" onclick="excluirModeloAdmin('${doc.id}', '${(m.modelo||'').replace(/'/g,'')}')">Excluir</button>
         </td>
       </tr>`;
     });
@@ -6483,6 +6582,29 @@ async function toggleAtivoModelo(id, atualmenteAtivo) {
     atualizarAdminStats();
   } catch(e) {
     showToast('Erro ao alterar status.', 'error');
+  }
+}
+
+async function excluirModeloAdmin(id, modelo) {
+  if (!confirm(`⚠️ EXCLUIR o modelo "${modelo}" permanentemente?\n\nEsta ação não pode ser desfeita.\n\nClique OK para confirmar.`)) return;
+  try {
+    showLoading(true);
+    // Verificar se há solicitações utilizando este modelo
+    const snap = await db.collection('solicitacoes').where('dadosSolicitacao.modeloMaquina', '==', modelo).limit(1).get();
+    if (!snap.empty) {
+      showToast(`⚠️ Não é possível excluir "${modelo}": está sendo utilizado em solicitações. Use "Desativar" para ocultá-lo dos novos formulários.`, 'error');
+      return;
+    }
+    await db.collection('modelos_maquinas').doc(id).delete();
+    showToast(`✓ Modelo "${modelo}" excluído com sucesso.`, 'success');
+    carregarModelosAdmin();
+    atualizarAdminStats();
+  } catch(e) {
+    console.error('[ADMIN] Erro ao excluir modelo:', e);
+    const msgs = { 'permission-denied': 'Sem permissão para excluir modelos.' };
+    showToast(msgs[e.code] || ('Erro ao excluir: ' + (e.message || e)), 'error');
+  } finally {
+    showLoading(false);
   }
 }
 

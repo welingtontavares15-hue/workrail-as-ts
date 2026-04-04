@@ -77,9 +77,8 @@ service cloud.firestore {
     match /solicitacoes/{solicitacaoId} {
       allow read: if canViewSolicitacao();
       allow create: if request.auth.uid != null
-                    && getUserProfile() == 'vendas'
+                    && (isSuperAdmin() || (getUserProfile() == 'vendas' && request.resource.data.criadoPorPerfil == 'vendas'))
                     && request.resource.data.criadoPorUid == request.auth.uid
-                    && request.resource.data.criadoPorPerfil == 'vendas'
                     && request.resource.data.etapaAtual == 'solicitacao';
       allow update: if canViewSolicitacao()
                     && canEditEtapa(resource.data.etapaAtual)
