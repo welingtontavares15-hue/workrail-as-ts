@@ -6,6 +6,21 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.perfil;
     }
 
+    // Aceita tanto o nome canônico quanto aliases legados
+    function isSuperAdmin() {
+      return getUserProfile() == 'super_admin';
+    }
+
+    function isSupervisorASTS() {
+      let p = getUserProfile();
+      return p == 'supervisor_asts' || p == 'gestor';
+    }
+
+    function isAdmVendas() {
+      let p = getUserProfile();
+      return p == 'adm_vendas' || p == 'adm';
+    }
+
     function isFornecedor() {
       let perfil = getUserProfile();
       return perfil == 'fornecedor_ebst' || perfil == 'fornecedor_hobart';
@@ -19,39 +34,40 @@ service cloud.firestore {
       let doc = resource.data;
       let perfil = getUserProfile();
       let uid = request.auth.uid;
-      return perfil == 'super_admin'
-          || perfil == 'supervisor_asts'
-          || perfil == 'adm_vendas'
+      return isSuperAdmin()
+          || isSupervisorASTS()
+          || isAdmVendas()
           || (perfil == 'vendas' && doc.criadoPorUid == uid)
           || (perfil == 'fornecedor_ebst' && doc.dadosAdm.encaminhadoFornecedor == 'EBST')
           || (perfil == 'fornecedor_hobart' && doc.dadosAdm.encaminhadoFornecedor == 'Hobart Brasil');
     }
 
     function canEditEtapa(etapa) {
-      let perfil = getUserProfile();
-      return perfil == 'super_admin'
-          || (etapa == 'solicitacao' && perfil == 'vendas')
-          || (etapa == 'supervisor' && perfil == 'supervisor_asts')
-          || (etapa == 'adm_vendas' && perfil == 'adm_vendas')
+      // etapa vem do campo etapaAtual nos documentos Firestore
+      // FLOW = ['solicitacao','gestor','adm','fornecedor','logistica','instalacao','relatorio']
+      return isSuperAdmin()
+          || (etapa == 'solicitacao' && getUserProfile() == 'vendas')
+          || ((etapa == 'gestor' || etapa == 'supervisor') && isSupervisorASTS())
+          || ((etapa == 'adm' || etapa == 'adm_vendas') && isAdmVendas())
           || (etapa == 'fornecedor' && isFornecedor() && getUserFornecedor() == resource.data.dadosAdm.encaminhadoFornecedor)
-          || (etapa == 'logistica' && perfil == 'adm_vendas')
-          || (etapa == 'data_instalacao' && perfil == 'supervisor_asts')
-          || (etapa == 'relatorio_final' && perfil == 'supervisor_asts');
+          || ((etapa == 'logistica') && isAdmVendas())
+          || ((etapa == 'instalacao' || etapa == 'data_instalacao') && isSupervisorASTS())
+          || ((etapa == 'relatorio' || etapa == 'relatorio_final') && isSupervisorASTS());
     }
 
     match /usuarios/{userId} {
-      allow read: if request.auth.uid == userId || getUserProfile() == 'super_admin';
-      allow create, update, delete: if getUserProfile() == 'super_admin';
+      allow read: if request.auth.uid == userId || isSuperAdmin();
+      allow create, update, delete: if isSuperAdmin();
     }
 
     match /fornecedores/{docId} {
       allow read: if request.auth.uid != null;
-      allow create, update, delete: if getUserProfile() == 'super_admin';
+      allow create, update, delete: if isSuperAdmin() || isAdmVendas();
     }
 
     match /modelos_maquinas/{docId} {
       allow read: if request.auth.uid != null;
-      allow create, update, delete: if getUserProfile() == 'super_admin';
+      allow create, update, delete: if isSuperAdmin() || isAdmVendas();
     }
 
     match /solicitacoes/{solicitacaoId} {
@@ -65,7 +81,7 @@ service cloud.firestore {
                     && canEditEtapa(resource.data.etapaAtual)
                     && request.resource.data.protocolo == resource.data.protocolo
                     && request.resource.data.criadoPorUid == resource.data.criadoPorUid;
-      allow delete: if getUserProfile() == 'super_admin';
+      allow delete: if isSuperAdmin();
 
       match /historico/{eventoId} {
         allow read: if canViewSolicitacao();
@@ -77,15 +93,14 @@ service cloud.firestore {
 
     match /contadores/{docId} {
       allow read: if request.auth.uid != null;
-      allow write: if getUserProfile() == 'super_admin';
+      allow write: if isSuperAdmin();
     }
 
     // ── Base de máquinas importadas via Excel ──────────────
     match /maquinas/{serialId} {
       allow read: if request.auth.uid != null;
       allow write, delete: if request.auth.uid != null
-                           && (getUserProfile() == 'super_admin'
-                               || getUserProfile() == 'adm_vendas');
+                           && (isSuperAdmin() || isAdmVendas());
     }
 
     match /{document=**} {
