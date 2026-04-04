@@ -4111,12 +4111,12 @@ const CHECKLIST_ITEMS = [
 ];
 const NOTIFS = [];
 const RELATORIOS = [
-  {icon:'#0e7b82',bg:'#e0f4f5',name:'Solicitações por Período',desc:'Exportar histórico completo com filtros de data, status e responsável.',meta:'Último: 13/06/2025'},
-  {icon:'#2e7d32',bg:'#e8f5e9',name:'Relatórios de Instalação',desc:'Todos os relatórios de instalação assinados por técnico e cliente.',meta:'18 arquivos'},
-  {icon:'#4527a0',bg:'#ede7f6',name:'Performance por Técnico',desc:'Tempo médio de instalação, taxa de conclusão e qualidade por técnico.',meta:'Jun 2025'},
-  {icon:'#e65100',bg:'#fff3e0',name:'Pendências e Gargalos',desc:'Solicitações paradas, aprovações atrasadas e etapas com atraso.',meta:'Atualizado hoje'},
-  {icon:'#1565c0',bg:'#e3f2fd',name:'Contratos Vigentes',desc:'Lista de comodatos e locações ativos com datas de vencimento.',meta:'12 vigentes'},
-  {icon:'#880e4f',bg:'#fce4ec',name:'Relatório Gerencial',desc:'Dashboard executivo completo para apresentação à diretoria.',meta:'Mensal'},
+  {tipo:'solicitacoes', icon:'#0e7b82',bg:'#e0f4f5',name:'Solicitações por Período',   desc:'Exportar histórico completo de solicitações com status e responsável.',      meta:'Exportar Excel'},
+  {tipo:'instalacoes',  icon:'#2e7d32',bg:'#e8f5e9',name:'Relatórios de Instalação',   desc:'Máquinas instaladas com data, serial, modelo e responsável.',                meta:'Exportar Excel'},
+  {tipo:'performance',  icon:'#4527a0',bg:'#ede7f6',name:'Performance por Responsável',desc:'Agrupamento por responsável de vendas com quantidade de máquinas.',          meta:'Exportar Excel'},
+  {tipo:'pendencias',   icon:'#e65100',bg:'#fff3e0',name:'Pendências e Gargalos',      desc:'Solicitações paradas, aprovações atrasadas e etapas com atraso.',            meta:'Exportar Excel'},
+  {tipo:'contratos',    icon:'#1565c0',bg:'#e3f2fd',name:'Contratos Vigentes',         desc:'Lista de contratos ativos com vigência, vencimento e progresso.',            meta:'Exportar Excel'},
+  {tipo:'gerencial',    icon:'#880e4f',bg:'#fce4ec',name:'Relatório Gerencial',        desc:'Visão consolidada: KPIs, contratos, pendências e base de máquinas.',         meta:'Exportar Excel'},
 ];
 const BAR_DATA = [
   {m:'Jan',ab:4,cn:3},{m:'Fev',ab:5,cn:4},{m:'Mar',ab:3,cn:5},{m:'Abr',ab:7,cn:6},{m:'Mai',ab:8,cn:7},{m:'Jun',ab:6,cn:4}
@@ -4546,9 +4546,179 @@ function buildRelatorios(){
       </div>
       <div class="rc-footer">
         <div class="rc-meta">${r.meta}</div>
-        <button class="rc-btn"><svg viewBox="0 0 12 12" fill="none"><path d="M6 2v7M3 7l3 3 3-3M2 10h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Exportar</button>
+        <button class="rc-btn" onclick="exportarRelatorio('${r.tipo}',this)">
+          <svg viewBox="0 0 12 12" fill="none"><path d="M6 2v7M3 7l3 3 3-3M2 10h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Exportar
+        </button>
       </div>
     </div>`).join('');
+}
+
+// ─── EXPORTAR RELATÓRIOS ─────────────────────────────────────
+async function exportarRelatorio(tipo, btnEl) {
+  if (typeof XLSX === 'undefined') {
+    showToast('Biblioteca Excel não carregada.', 'error'); return;
+  }
+  const orig = btnEl ? btnEl.textContent : '';
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Gerando...'; }
+
+  try {
+    const hoje = new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
+    let wb, nomeArq;
+
+    if (tipo === 'solicitacoes') {
+      const snap = await db.collection('solicitacoes').orderBy('criadoEm','desc').limit(500).get();
+      const rows = snap.docs.map(d => {
+        const data = d.data();
+        return {
+          'Protocolo':          data.protocolo || d.id,
+          'N° do Pedido':       data.dadosSolicitacao?.numeroPedido || '',
+          'Cliente':            data.dadosSolicitacao?.nomeCliente  || '',
+          'Modelo':             data.dadosSolicitacao?.modeloMaquina || '',
+          'Status':             STATUS[data.status]?.label || data.status || '',
+          'Etapa Atual':        data.etapaAtual || '',
+          'Responsável':        data.criadoPorNome || '',
+          'Criado Em':          data.criadoEm?.toDate ? data.criadoEm.toDate().toLocaleDateString('pt-BR') : '',
+        };
+      });
+      wb = _xlsxFromRows('Solicitações', rows);
+      nomeArq = `WORKRAIL_Solicitacoes_${hoje}.xlsx`;
+
+    } else if (tipo === 'instalacoes') {
+      const snap = await db.collection('maquinas').orderBy('dataInstalacao','desc').limit(1000).get();
+      const rows = snap.docs.map(d => {
+        const m = d.data();
+        return {
+          'N° do Pedido':       m.numeroPedido       || '',
+          'Serial':             m.serialMaquina       || '',
+          'Modelo':             m.modelo              || '',
+          'Fornecedor':         m.fornecedor          || '',
+          'Cliente':            m.endereco            || '',
+          'Mesa':               m.mesa                || '',
+          'Dosador':            m.dosador             || '',
+          'Data Instalação':    fmtDate(m.dataInstalacao),
+          'Vigência (meses)':   m.vigenciaMeses       || '',
+          'Responsável Vendas': m.responsavelVendas   || '',
+          'Origem':             m.origem              || '',
+        };
+      });
+      wb = _xlsxFromRows('Instalações', rows);
+      nomeArq = `WORKRAIL_Instalacoes_${hoje}.xlsx`;
+
+    } else if (tipo === 'performance') {
+      const snap = await db.collection('maquinas').limit(1000).get();
+      const por = {};
+      snap.docs.forEach(d => {
+        const m = d.data();
+        const resp = m.responsavelVendas || 'Não informado';
+        if (!por[resp]) por[resp] = { responsavel: resp, total: 0, comVigencia: 0 };
+        por[resp].total++;
+        if (m.vigenciaMeses > 0) por[resp].comVigencia++;
+      });
+      const rows = Object.values(por).sort((a,b) => b.total - a.total).map(r => ({
+        'Responsável de Vendas': r.responsavel,
+        'Total de Máquinas':     r.total,
+        'Com Vigência':          r.comVigencia,
+        'Sem Vigência':          r.total - r.comVigencia,
+      }));
+      wb = _xlsxFromRows('Performance', rows);
+      nomeArq = `WORKRAIL_Performance_${hoje}.xlsx`;
+
+    } else if (tipo === 'pendencias') {
+      const snap = await db.collection('solicitacoes')
+        .where('etapaAtual','not-in',['relatorio','concluido'])
+        .orderBy('etapaAtual').orderBy('criadoEm','desc').limit(200).get();
+      const rows = snap.docs.map(d => {
+        const data = d.data();
+        const dt = data.criadoEm?.toDate ? data.criadoEm.toDate() : null;
+        const diasAberto = dt ? Math.floor((Date.now() - dt.getTime()) / 86400000) : '';
+        return {
+          'Protocolo':      data.protocolo || d.id,
+          'Cliente':        data.dadosSolicitacao?.nomeCliente  || '',
+          'Modelo':         data.dadosSolicitacao?.modeloMaquina || '',
+          'Etapa Atual':    data.etapaAtual || '',
+          'Status':         STATUS[data.status]?.label || data.status || '',
+          'Responsável':    data.criadoPorNome || '',
+          'Dias em Aberto': diasAberto,
+          'Criado Em':      dt ? dt.toLocaleDateString('pt-BR') : '',
+        };
+      });
+      wb = _xlsxFromRows('Pendências', rows);
+      nomeArq = `WORKRAIL_Pendencias_${hoje}.xlsx`;
+
+    } else if (tipo === 'contratos') {
+      const snap = await db.collection('maquinas').limit(1000).get();
+      const rows = snap.docs
+        .filter(d => d.data().vigenciaMeses > 0)
+        .map(d => {
+          const m = d.data();
+          const { dataVenc, dias } = _calcVig(m.dataInstalacao, m.vigenciaMeses);
+          return {
+            'N° do Pedido':     m.numeroPedido     || '',
+            'Serial':           m.serialMaquina    || '',
+            'Cliente':          m.endereco         || '',
+            'Modelo':           m.modelo           || '',
+            'Fornecedor':       m.fornecedor       || '',
+            'Data Instalação':  fmtDate(m.dataInstalacao),
+            'Vigência (meses)': m.vigenciaMeses    || '',
+            'Vencimento':       dataVenc ? fmtDate(dataVenc) : '',
+            'Dias Restantes':   dias !== null ? dias : '',
+            'Situação':         dias === null ? 'Sem vigência' : dias < 0 ? 'Vencido' : dias <= 30 ? 'Crítico' : dias <= 90 ? 'Atenção' : 'Vigente',
+          };
+        });
+      wb = _xlsxFromRows('Contratos Vigentes', rows);
+      nomeArq = `WORKRAIL_Contratos_${hoje}.xlsx`;
+
+    } else if (tipo === 'gerencial') {
+      const [snapSol, snapMaq] = await Promise.all([
+        db.collection('solicitacoes').get(),
+        db.collection('maquinas').get(),
+      ]);
+      const totalSol  = snapSol.size;
+      const totalMaq  = snapMaq.size;
+      const pendentes = snapSol.docs.filter(d => !['relatorio','concluido'].includes(d.data().etapaAtual)).length;
+      const vencidos  = snapMaq.docs.filter(d => {
+        const m = d.data();
+        const { dias } = _calcVig(m.dataInstalacao, m.vigenciaMeses);
+        return dias !== null && dias < 0;
+      }).length;
+      const kpis = [
+        { 'KPI': 'Total de Solicitações',      'Valor': totalSol },
+        { 'KPI': 'Total de Máquinas',          'Valor': totalMaq },
+        { 'KPI': 'Solicitações Pendentes',     'Valor': pendentes },
+        { 'KPI': 'Contratos Vencidos',         'Valor': vencidos },
+        { 'KPI': 'Data do Relatório',          'Valor': new Date().toLocaleDateString('pt-BR') },
+      ];
+      wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(kpis), 'KPIs');
+      const rowsMaq = snapMaq.docs.map(d => {
+        const m = d.data();
+        const { dataVenc, dias } = _calcVig(m.dataInstalacao, m.vigenciaMeses);
+        return {
+          'N° do Pedido':   m.numeroPedido || '', 'Serial': m.serialMaquina || '',
+          'Cliente':        m.endereco || '',     'Modelo': m.modelo || '',
+          'Vencimento':     dataVenc ? fmtDate(dataVenc) : '', 'Dias': dias !== null ? dias : '',
+        };
+      });
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rowsMaq), 'Máquinas');
+      nomeArq = `WORKRAIL_Gerencial_${hoje}.xlsx`;
+    }
+
+    XLSX.writeFile(wb, nomeArq);
+    showToast(`✓ ${nomeArq} gerado com sucesso!`, 'success');
+  } catch(e) {
+    console.error('[WORKRAIL] Erro ao exportar:', e);
+    showToast('Erro ao gerar relatório: ' + e.message, 'error');
+  } finally {
+    if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<svg viewBox="0 0 12 12" fill="none"><path d="M6 2v7M3 7l3 3 3-3M2 10h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Exportar'; }
+  }
+}
+
+// Utilitário: cria workbook XLSX a partir de array de objetos
+function _xlsxFromRows(sheetName, rows) {
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ 'Info': 'Sem dados para exportar' }]);
+  XLSX.utils.book_append_sheet(wb, ws, sheetName.substring(0,31));
+  return wb;
 }
 
 // ─── BUILD CONFIG ────────────────────────────────────────────
@@ -4840,11 +5010,11 @@ async function carregarDashboard() {
         const { dataVenc, dias, pctDecorrido } = _calcVig(dataInst, meses);
         return {
           id:           doc.id,
-          protocolo:    m.serialMaquina,
-          numeroPedido: m.serialMaquina,
+          protocolo:    m.numeroPedido  || m.serialMaquina,
+          numeroPedido: m.numeroPedido  || m.serialMaquina,
           serial:       m.serialMaquina,
-          nomeCliente:  m.endereco || 'Importada',
-          modelo:       m.modelo   || '',
+          nomeCliente:  m.endereco      || 'Importada',
+          modelo:       m.modelo        || '',
           dataInst,
           meses,
           dataVenc,
