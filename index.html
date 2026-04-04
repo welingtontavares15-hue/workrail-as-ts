@@ -554,6 +554,26 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
 }
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--teal);box-shadow:0 0 0 2px rgba(14,123,130,.12)}
 .field textarea{height:72px;padding:7px 9px;resize:vertical;line-height:1.5}
+/* ── Estados de Validação ── */
+.field.field-error input,.field.field-error select,.field.field-error textarea,
+.field.field-error .file-drop{
+  border-color:#ef5350!important;background:#fff8f8!important;
+  box-shadow:0 0 0 2px rgba(239,83,80,.13)!important;
+  animation:shake .3s ease;
+}
+.field.field-error label{color:#c62828}
+.field-msg{font-size:11px;line-height:1.4;margin-top:1px;display:none}
+.field-msg.show{display:block}
+.field-msg.err{color:#c62828}
+.field-msg.ok{color:#2e7d32}
+.form-validation-banner{
+  background:#ffebee;border:1px solid #ef9a9a;color:#c62828;
+  border-radius:6px;padding:11px 14px;font-size:13px;font-weight:500;
+  display:none;margin-bottom:12px;line-height:1.5;
+}
+.form-validation-banner.show{display:flex;align-items:flex-start;gap:8px}
+.form-validation-banner svg{flex-shrink:0;width:16px;height:16px;margin-top:1px}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 .field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23607d8b' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center}
 
 .toggle-field{display:flex;align-items:center;gap:8px;height:32px}
@@ -1595,6 +1615,10 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
             <div class="fh-status"><div class="chip c-pending"><div class="chip-dot"></div>Aguardando Envio</div></div>
           </div>
           <div class="form-body">
+            <div id="validacaoBannerSolic" class="form-validation-banner">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M8 3L1.5 13h13L8 3z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 7v3M8 11.5v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+              <span id="validacaoBannerSolicMsg">Corrija os campos destacados para prosseguir.</span>
+            </div>
             <div class="fcard">
               <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="4" r="2.5" stroke="currentColor" stroke-width="1.1"/><path d="M1 12c0-3.04 2.46-5.5 5.5-5.5S12 8.96 12 12" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg><span class="fc-title">Dados do Cliente</span></div>
               <div class="fc-body c4">
@@ -1706,9 +1730,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
           <div class="action-bar">
             <div class="ab-left">
               <button class="btn btn-back" onclick="goPage('home')"><svg viewBox="0 0 13 13" fill="none"><path d="M8 2L4 6.5 8 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Voltar</button>
-              <button class="btn btn-clear"><svg viewBox="0 0 13 13" fill="none"><path d="M2 2l9 9M11 2L2 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Limpar</button>
+              <button class="btn btn-clear" onclick="limparFormSolicitacao()"><svg viewBox="0 0 13 13" fill="none"><path d="M2 2l9 9M11 2L2 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Limpar</button>
             </div>
-            <div class="ab-right"><button class="btn btn-send" onclick="showMod('mEnviar')"><svg viewBox="0 0 13 13" fill="none"><path d="M11 6.5H2M7.5 3l3.5 3.5L7.5 10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Enviar para Supervisor</button></div>
+            <div class="ab-right"><button class="btn btn-send" onclick="validarEAbrirModalEnvio()"><svg viewBox="0 0 13 13" fill="none"><path d="M11 6.5H2M7.5 3l3.5 3.5L7.5 10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Enviar para Supervisor</button></div>
           </div>
         </div>
       </div>
@@ -3262,34 +3286,173 @@ function arquivoAnexado(dropId) {
   return pendingFiles[dropId] || (el && el.style.display && el.style.display !== 'none');
 }
 
+// ─── VALIDAÇÃO VISUAL — helpers ─────────────────────────────
+function _erroField(id, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const field = el.closest('.field');
+  if (field) {
+    field.classList.add('field-error');
+    let msgEl = field.querySelector('.field-msg');
+    if (!msgEl) {
+      msgEl = document.createElement('span');
+      msgEl.className = 'field-msg err show';
+      field.appendChild(msgEl);
+    } else {
+      msgEl.className = 'field-msg err show';
+    }
+    msgEl.textContent = msg || 'Campo obrigatório.';
+    // Remove erro ao digitar/selecionar
+    el.addEventListener('input',  () => _okField(id), { once: true });
+    el.addEventListener('change', () => _okField(id), { once: true });
+  }
+  return el;
+}
+
+function _okField(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const field = el.closest('.field');
+  if (field) {
+    field.classList.remove('field-error');
+    const msgEl = field.querySelector('.field-msg');
+    if (msgEl) msgEl.classList.remove('show');
+  }
+}
+
+function _limparErrosScreen(screenId) {
+  const screen = document.getElementById('screen-' + screenId);
+  if (!screen) return;
+  screen.querySelectorAll('.field-error').forEach(f => f.classList.remove('field-error'));
+  screen.querySelectorAll('.field-msg').forEach(m => m.classList.remove('show'));
+  const banner = document.getElementById('validacaoBanner' + screenId.charAt(0).toUpperCase() + screenId.slice(1));
+  if (banner) banner.classList.remove('show');
+}
+
+function _mostrarBannerErro(bannerId, erros) {
+  const banner = document.getElementById(bannerId);
+  const msg    = document.getElementById(bannerId + 'Msg');
+  if (!banner) return;
+  if (erros.length === 0) { banner.classList.remove('show'); return; }
+  if (msg) msg.textContent = erros.length === 1
+    ? 'Campo obrigatório: ' + erros[0]
+    : erros.length + ' campos precisam ser corrigidos: ' + erros.join(', ') + '.';
+  banner.classList.add('show');
+  banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function validarEAbrirModalEnvio() {
+  if (validateStep_Solicitacao()) {
+    showMod('mEnviar');
+  }
+}
+
+function limparFormSolicitacao() {
+  if (!confirm('Limpar todos os campos da solicitação?')) return;
+  ['inputShipTo','inputNomeCliente','inputCnpj','inputEmailCliente',
+   'inputEnderecoInstalacao','inputRefeicoesDia','inputRefeicoesHora',
+   'textareaComentariosSolic'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['tipoSolicitacao','modeloMaquinaSelect','selectDetergente','selectSecante'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const tMesa = document.getElementById('tMesa');
+  if (tMesa) { tMesa.checked = false; updateTL('tMesa','lMesa'); }
+  // Limpar arquivo
+  const fPropA = document.getElementById('fPropA');
+  if (fPropA) fPropA.style.display = 'none';
+  delete pendingFiles['fProp'];
+  _limparErrosScreen('solicitacao');
+  showToast('Formulário limpo.', 'info');
+}
+
 function validateStep_Solicitacao() {
+  _limparErrosScreen('solicitacao');
   const erros = [];
-  if (!document.getElementById('inputShipTo')?.value?.trim())           erros.push('Ship To');
-  if (!document.getElementById('inputNomeCliente')?.value?.trim())      erros.push('Nome do Cliente');
+
+  if (!document.getElementById('inputShipTo')?.value?.trim()) {
+    _erroField('inputShipTo', 'O campo Ship To é obrigatório.');
+    erros.push('Ship To');
+  }
+  if (!document.getElementById('inputNomeCliente')?.value?.trim()) {
+    _erroField('inputNomeCliente', 'O campo Nome do Cliente é obrigatório.');
+    erros.push('Nome do Cliente');
+  }
   const cnpjVal = document.getElementById('inputCnpj')?.value?.trim();
-  if (!cnpjVal) erros.push('CNPJ');
-  else if (!validarCNPJ(cnpjVal)) erros.push('CNPJ inválido');
-  if (!document.getElementById('inputEmailCliente')?.value?.trim())     erros.push('E-mail do Cliente');
-  if (!document.getElementById('inputEnderecoInstalacao')?.value?.trim()) erros.push('Endereço de Instalação');
-  if (!document.getElementById('inputRefeicoesDia')?.value)             erros.push('Refeições/Dia');
-  if (!document.getElementById('inputRefeicoesHora')?.value)            erros.push('Refeições/Hora');
-  if (!document.getElementById('tipoSolicitacao')?.value)               erros.push('Tipo da Solicitação');
-  if (!document.getElementById('modeloMaquinaSelect')?.value)           erros.push('Modelo da Máquina');
-  if (!arquivoAnexado('fProp')) erros.push('Contrato (arquivo obrigatório)');
+  if (!cnpjVal) {
+    _erroField('inputCnpj', 'O campo CNPJ é obrigatório.');
+    erros.push('CNPJ');
+  } else if (!validarCNPJ(cnpjVal)) {
+    _erroField('inputCnpj', 'CNPJ inválido. Verifique o número informado.');
+    erros.push('CNPJ (inválido)');
+  }
+  const emailVal = document.getElementById('inputEmailCliente')?.value?.trim();
+  if (!emailVal) {
+    _erroField('inputEmailCliente', 'O campo E-mail do Cliente é obrigatório.');
+    erros.push('E-mail do Cliente');
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+    _erroField('inputEmailCliente', 'E-mail inválido. Ex: contato@empresa.com.br');
+    erros.push('E-mail (inválido)');
+  }
+  if (!document.getElementById('inputEnderecoInstalacao')?.value?.trim()) {
+    _erroField('inputEnderecoInstalacao', 'O campo Endereço de Instalação é obrigatório.');
+    erros.push('Endereço de Instalação');
+  }
+  if (!document.getElementById('tipoSolicitacao')?.value) {
+    _erroField('tipoSolicitacao', 'Selecione o Tipo da Solicitação.');
+    erros.push('Tipo da Solicitação');
+  }
+  if (!document.getElementById('modeloMaquinaSelect')?.value) {
+    _erroField('modeloMaquinaSelect', 'Selecione o Modelo da Máquina.');
+    erros.push('Modelo da Máquina');
+  }
+  const refDia = document.getElementById('inputRefeicoesDia')?.value;
+  if (!refDia || Number(refDia) <= 0) {
+    _erroField('inputRefeicoesDia', 'Informe a quantidade de Refeições/Dia.');
+    erros.push('Refeições/Dia');
+  }
+  const refHora = document.getElementById('inputRefeicoesHora')?.value;
+  if (!refHora || Number(refHora) <= 0) {
+    _erroField('inputRefeicoesHora', 'Informe a quantidade de Refeições/Hora.');
+    erros.push('Refeições/Hora');
+  }
+  if (!arquivoAnexado('fProp')) {
+    _erroField('fProp', 'Anexe o arquivo de Contrato.');
+    erros.push('Contrato (arquivo)');
+  }
 
   if (erros.length > 0) {
-    showToast('Campos obrigatórios não preenchidos: ' + erros.join(' · '), 'error');
+    _mostrarBannerErro('validacaoBannerSolic', erros);
+    // Scroll ao primeiro campo com erro
+    const primeiro = document.querySelector('#screen-solicitacao .field-error input, #screen-solicitacao .field-error select');
+    if (primeiro) primeiro.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return false;
   }
   return true;
 }
 
 function validateStep_Gestor(tipo) {
-  const obs = document.getElementById('textareaParecerGestor')?.value?.trim();
+  const erros = [];
+  const obs      = document.getElementById('textareaParecerGestor')?.value?.trim();
   const fornecedor = document.getElementById('supervisorFornecedor')?.value;
-  const modelo = document.getElementById('supervisorModeloValidado')?.value?.trim();
-  if (!fornecedor || !modelo || !obs) {
-    showToast('Fornecedor recomendado, modelo validado e observações do Supervisor AS&TS são obrigatórios.', 'error');
+  const modelo   = document.getElementById('supervisorModeloValidado')?.value?.trim();
+  if (!fornecedor) {
+    _erroField('supervisorFornecedor', 'Selecione o Fornecedor recomendado.');
+    erros.push('Fornecedor recomendado');
+  }
+  if (!modelo) {
+    _erroField('supervisorModeloValidado', 'Informe o Modelo validado.');
+    erros.push('Modelo validado');
+  }
+  if (!obs) {
+    _erroField('textareaParecerGestor', 'Informe as observações do Supervisor AS&TS.');
+    erros.push('Observações');
+  }
+  if (erros.length > 0) {
+    showToast('Preencha os campos obrigatórios: ' + erros.join(' · '), 'error');
     return false;
   }
   return true;
@@ -3297,17 +3460,26 @@ function validateStep_Gestor(tipo) {
 
 function validateStep_Adm() {
   const erros = [];
-
-  if (!document.getElementById('selectTipoContrato')?.value)   erros.push('Tipo de Contrato');
-  if (!document.getElementById('selectFornecedorAdm')?.value)  erros.push('Fornecedor');
-  if (!document.getElementById('inputVigenciaAdm')?.value?.trim()) erros.push('Vigência');
-  if (!arquivoAnexado('fContrato')) erros.push('Contrato Assinado (arquivo)');
-
-  // Serial é opcional no ADM — fornecedor pode ainda não ter separado a máquina
-  // (Serial obrigatório somente na etapa do Fornecedor ao anexar NF)
-
+  if (!document.getElementById('selectTipoContrato')?.value) {
+    _erroField('selectTipoContrato', 'Selecione o Tipo de Contrato.');
+    erros.push('Tipo de Contrato');
+  }
+  if (!document.getElementById('selectFornecedorAdm')?.value) {
+    _erroField('selectFornecedorAdm', 'Selecione o Fornecedor.');
+    erros.push('Fornecedor');
+  }
+  if (!document.getElementById('inputVigenciaAdm')?.value?.trim()) {
+    _erroField('inputVigenciaAdm', 'Informe a Vigência do contrato.');
+    erros.push('Vigência');
+  }
+  if (!arquivoAnexado('fContrato')) {
+    _erroField('fContrato', 'Anexe o Contrato Assinado.');
+    erros.push('Contrato Assinado (arquivo)');
+  }
   if (erros.length > 0) {
-    showToast('Campos obrigatórios: ' + erros.join(' · '), 'error');
+    showToast('Preencha os campos obrigatórios: ' + erros.join(' · '), 'error');
+    const primeiro = document.querySelector('#screen-adm .field-error input, #screen-adm .field-error select');
+    if (primeiro) primeiro.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return false;
   }
   return true;
@@ -3315,14 +3487,26 @@ function validateStep_Adm() {
 
 function validateStep_Fornecedor() {
   const erros = [];
-
-  if (!document.getElementById('inputNumeroNF')?.value?.trim())        erros.push('Número da NF');
-  if (!document.getElementById('dataColeta')?.value)                   erros.push('Data de Liberação');
-  if (!arquivoAnexado('fNF'))                                          erros.push('Nota Fiscal (arquivo obrigatório)');
-  if (!document.getElementById('inputSerialMaquinaForn')?.value?.trim()) erros.push('Serial da Máquina (obrigatório ao emitir NF)');
-
+  if (!document.getElementById('inputSerialMaquinaForn')?.value?.trim()) {
+    _erroField('inputSerialMaquinaForn', 'O Serial da Máquina é obrigatório.');
+    erros.push('Serial da Máquina');
+  }
+  if (!document.getElementById('inputNumeroNF')?.value?.trim()) {
+    _erroField('inputNumeroNF', 'Informe o Número da Nota Fiscal.');
+    erros.push('Número da NF');
+  }
+  if (!document.getElementById('dataColeta')?.value) {
+    _erroField('dataColeta', 'Informe a Data de Liberação da máquina.');
+    erros.push('Data de Liberação');
+  }
+  if (!arquivoAnexado('fNF')) {
+    erros.push('Nota Fiscal (arquivo obrigatório)');
+    showToast('Anexe a Nota Fiscal antes de prosseguir.', 'error');
+  }
   if (erros.length > 0) {
-    showToast('Campos obrigatórios: ' + erros.join(' · '), 'error');
+    showToast('Preencha os campos obrigatórios: ' + erros.join(' · '), 'error');
+    const primeiro = document.querySelector('#screen-fornecedor .field-error input, #screen-fornecedor .field-error select');
+    if (primeiro) primeiro.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return false;
   }
   return true;
@@ -3331,7 +3515,8 @@ function validateStep_Fornecedor() {
 function validateStep_Logistica() {
   const dataColeta = document.getElementById('dataColetaConfirmada')?.value;
   if (!dataColeta) {
-    showToast('Informe a data prevista de coleta para prosseguir.', 'error');
+    _erroField('dataColetaConfirmada', 'Informe a data prevista de coleta para prosseguir.');
+    showToast('O campo "Data prevista de coleta" é obrigatório.', 'error');
     return false;
   }
   return true;
@@ -3339,19 +3524,28 @@ function validateStep_Logistica() {
 
 function validateStep_Instalacao() {
   const erros = [];
-
-  if (!document.getElementById('inputDataInstalacao')?.value)          erros.push('Data da Instalação');
-  if (!document.getElementById('inputHorarioInstalacao')?.value)       erros.push('Horário');
-  if (!document.getElementById('selectResponsavelInstalacao')?.value)  erros.push('Técnico Responsável');
-
+  if (!document.getElementById('inputDataInstalacao')?.value) {
+    _erroField('inputDataInstalacao', 'Informe a Data da Instalação.');
+    erros.push('Data da Instalação');
+  }
+  if (!document.getElementById('inputHorarioInstalacao')?.value) {
+    _erroField('inputHorarioInstalacao', 'Informe o Horário da instalação.');
+    erros.push('Horário');
+  }
+  if (!document.getElementById('selectResponsavelInstalacao')?.value) {
+    _erroField('selectResponsavelInstalacao', 'Selecione o Técnico Responsável.');
+    erros.push('Técnico Responsável');
+  }
   const checkboxes = document.querySelectorAll('#clWrap input[type="checkbox"]');
   const marcados   = document.querySelectorAll('#clWrap input[type="checkbox"]:checked').length;
   if (checkboxes.length > 0 && marcados < checkboxes.length) {
     erros.push(`Checklist incompleto (${marcados}/${checkboxes.length} itens marcados)`);
+    showToast(`Checklist incompleto: ${marcados} de ${checkboxes.length} itens marcados.`, 'warn');
   }
-
   if (erros.length > 0) {
     showToast('Preencha todos os requisitos: ' + erros.join(' · '), 'error');
+    const primeiro = document.querySelector('#screen-instalacao .field-error input, #screen-instalacao .field-error select');
+    if (primeiro) primeiro.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return false;
   }
   return true;
@@ -3825,11 +4019,16 @@ async function confirmEnviarGestor() {
     );
 
     pendingFiles = {};
-    showToast('Solicitação enviada ao Supervisor AS&TS! Protocolo: ' + prot, 'success');
+    _limparErrosScreen('solicitacao');
+    showToast('✓ Solicitação iniciada com sucesso! Protocolo: ' + prot, 'success');
     go('gestor');
   } catch(e) {
-    console.error(e);
-    showToast('Erro ao enviar solicitação. Tente novamente.', 'error');
+    console.error('[WORKRAIL] Erro ao enviar solicitação:', e);
+    const msgs = {
+      'permission-denied': 'Sem permissão para criar solicitação. Verifique seu perfil.',
+      'unavailable':       'Firebase temporariamente indisponível. Tente novamente.',
+    };
+    showToast(msgs[e.code] || ('Erro ao enviar solicitação: ' + (e.message || 'Tente novamente.')), 'error');
   } finally {
     showLoading(false);
   }
