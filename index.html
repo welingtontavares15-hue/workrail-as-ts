@@ -889,10 +889,10 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
     </div>
     <div class="login-body">
       <div class="login-title">Acesso ao Sistema</div>
-      <div class="login-sub">Use seu email e senha cadastrados pelo administrador.</div>
+      <div class="login-sub">Use seu usuário (username) e senha cadastrados pelo administrador.</div>
       <div class="login-field">
-        <label>Email</label>
-        <input type="email" id="loginEmail" placeholder="seu.email@example.com" autocomplete="email">
+        <label>Usuário</label>
+        <input type="text" id="loginUsername" placeholder="ex: joao.silva" autocomplete="username" style="font-family:'DM Mono',monospace;font-size:13px" onkeydown="if(event.key==='Enter')document.getElementById('loginSenha').focus()">
       </div>
       <div class="login-field">
         <label>Senha</label>
@@ -923,11 +923,11 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
       <button onclick="fecharRecuperarSenha()" style="background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:20px;line-height:1">&times;</button>
     </div>
     <div style="padding:22px 24px">
-      <p style="font-size:13px;color:#546e7a;margin-bottom:16px">Informe seu email para verificar sua conta. O administrador poderá resetar sua senha.</p>
+      <p style="font-size:13px;color:#546e7a;margin-bottom:16px">Informe seu <strong>usuário (username)</strong> para identificar sua conta. O administrador será notificado para resetar sua senha.</p>
       <div style="margin-bottom:14px">
-        <label style="font-size:12px;font-weight:600;color:#455a64;display:block;margin-bottom:6px">Email</label>
-        <input type="email" id="recSenhaEmail" placeholder="seu.email@example.com" autocomplete="email"
-          style="width:100%;padding:9px 12px;border:1px solid #cfd8dc;border-radius:5px;font-size:13.5px;font-family:inherit;outline:none;transition:border-color .15s"
+        <label style="font-size:12px;font-weight:600;color:#455a64;display:block;margin-bottom:6px">Usuário (username)</label>
+        <input type="text" id="recSenhaUsername" placeholder="ex: joao.silva" autocomplete="username"
+          style="width:100%;padding:9px 12px;border:1px solid #cfd8dc;border-radius:5px;font-size:13.5px;font-family:'DM Mono',monospace;outline:none;transition:border-color .15s"
           onkeydown="if(event.key==='Enter')enviarRecuperacao()">
       </div>
       <div id="recSenhaMsg" style="font-size:12.5px;margin-bottom:12px;min-height:18px"></div>
@@ -959,7 +959,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
     </button>
     <button class="tb-icon-btn" title="Notificações" onclick="goPage('notificacoes')">
       <svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2H1.5L3 9V7a5 5 0 0 1 5-5z" stroke="currentColor" stroke-width="1.3"/><path d="M6.5 13a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.3"/></svg>
-      <div class="notif-dot"></div>
+      <div class="notif-dot" style="display:none"></div>
     </button>
     <button class="tb-icon-btn" title="Ajuda">
       <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M6 6.5a2 2 0 1 1 2 2v1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="12" r=".8" fill="currentColor"/></svg>
@@ -994,12 +994,12 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
       <div class="sb-item" onclick="goPage('historico')" id="sb-historico">
         <svg viewBox="0 0 15 15" fill="none"><path d="M7.5 3v4.5l2.5 2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="1.3"/></svg>
         Histórico
-        <div class="sb-badge">18</div>
+        <div class="sb-badge" id="badgeHistorico" style="display:none">0</div>
       </div>
       <div class="sb-item" onclick="goPage('notificacoes')" id="sb-notificacoes">
         <svg viewBox="0 0 15 15" fill="none"><path d="M7.5 2a4.5 4.5 0 0 1 4.5 4.5v2l1.5 2H2L3.5 8.5v-2A4.5 4.5 0 0 1 7.5 2z" stroke="currentColor" stroke-width="1.2"/><path d="M6 12.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.2"/></svg>
         Notificações
-        <div class="sb-badge red">4</div>
+        <div class="sb-badge red" id="badgeNotificacoes" style="display:none">0</div>
       </div>
     </div>
 
@@ -1197,9 +1197,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
       <div class="screen" id="screen-historico">
         <div class="panel-header">
           <div class="ph-icon"><svg viewBox="0 0 17 17" fill="none"><path d="M8.5 3v5.5l3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8.5" cy="8.5" r="6.5" stroke="currentColor" stroke-width="1.3"/></svg></div>
-          <div><div class="ph-title">Histórico de Solicitações</div><div class="ph-sub">18 registros · ordenados por data</div></div>
+          <div><div class="ph-title">Histórico de Solicitações</div><div class="ph-sub" id="historicoSub">Carregando registros...</div></div>
           <div class="ph-right">
-            <button class="rc-btn" style="height:30px">
+            <button class="rc-btn" style="height:30px" onclick="exportarHistorico()">
               <svg viewBox="0 0 13 13" fill="none"><path d="M2 4h9M4 6.5h5M6 9h1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Exportar
             </button>
           </div>
@@ -1309,6 +1309,10 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
           <button class="admin-tab" data-tab="maquinas" onclick="adminTab('maquinas')">
             <svg viewBox="0 0 13 13" fill="none"><rect x="1" y="4" width="8" height="7" rx="1.2" stroke="currentColor" stroke-width="1.1"/><path d="M9 6h2l1.5 2.5V11H9V6z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><circle cx="3.5" cy="11.5" r=".8" stroke="currentColor" stroke-width="1"/><circle cx="11" cy="11.5" r=".8" stroke="currentColor" stroke-width="1"/></svg>
             Máquinas
+          </button>
+          <button class="admin-tab" data-tab="produtos" onclick="adminTab('produtos')">
+            <svg viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.1"/><rect x="7" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.1"/><rect x="1" y="7" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.1"/><rect x="7" y="7" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.1"/></svg>
+            Produtos SEC/DET
           </button>
           <button class="admin-tab" data-tab="sistema" onclick="adminTab('sistema')">
             <svg viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="2" stroke="currentColor" stroke-width="1.1"/><path d="M6.5 1.5v1M6.5 10v1M1.5 6.5h1M10 6.5h1M3.1 3.1l.7.7M9.2 9.2l.7.7M3.1 9.9l.7-.7M9.2 3.8l.7-.7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
@@ -1420,6 +1424,35 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
             <code>Mesa</code> (Sim/Não), <code>Dosador</code> (Sim/Não),
             <code>Data de instalação</code>, <code>Responsável de vendas</code>, <code>Vigência (meses)</code>.
             Linhas sem Serial são ignoradas. Duplicatas por Serial são descartadas.
+          </div>
+        </div>
+
+        <!-- ── ABA PRODUTOS SEC/DET ── -->
+        <div class="admin-pane" id="admin-pane-produtos" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px">
+            <div style="display:flex;gap:8px;align-items:center">
+              <div class="search-bar" style="min-width:220px">
+                <svg viewBox="0 0 15 15" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.3"/><path d="M10 10l3.5 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                <input type="text" id="prodBusca" placeholder="Buscar produto..." oninput="filtrarTabelaAdmin('admin-lista-produtos', this.value)">
+              </div>
+              <select id="prodFiltroTipo" onchange="filtrarProdutosAdmin()" style="padding:7px 10px;border:1px solid var(--input-border);border-radius:6px;font-size:13px;background:#fff;height:36px">
+                <option value="">Todos os tipos</option>
+                <option value="SEC">SEC (Secante)</option>
+                <option value="DET">DET (Detergente)</option>
+              </select>
+            </div>
+            <button class="btn-primary" onclick="abrirModalNovoProduto()">
+              <svg viewBox="0 0 13 13" fill="none" style="width:11px;height:11px;margin-right:5px"><path d="M6.5 2v9M2 6.5h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Novo Produto
+            </button>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>Nome do Produto</th><th>Tipo</th><th>Descrição</th><th>Status</th><th style="width:140px">Ações</th></tr></thead>
+              <tbody id="admin-lista-produtos"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:28px">Carregando...</td></tr></tbody>
+            </table>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--text-muted)">
+            Produtos SEC (secante) e DET (detergente) são cadastros globais visíveis para todos os usuários autorizados.
           </div>
         </div>
 
@@ -2089,6 +2122,34 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
 <div id="mRelatorio" class="modal-overlay"><div class="modal m-advance"><h3>Confirmar Programação da Instalação?</h3><p>Confirme a data de instalação. Depois da execução, o relatório poderá ser anexado para encerramento.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mRelatorio')">Cancelar</button><button class="btn btn-advance" onclick="confirmIniciarRelatorio()">Avançar</button></div></div></div>
 <div id="mConcluir" class="modal-overlay"><div class="modal m-approve"><h3>Encerrar Processo?</h3><p>O processo será encerrado definitivamente. O relatório de instalação será anexado ao histórico e a solicitação será encerrada.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mConcluir')">Cancelar</button><button class="btn btn-conclude" onclick="confirmConcluir()"><svg viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Encerrar</button></div></div></div>
 <div id="mSuccess" class="modal-overlay"><div class="modal m-approve" style="text-align:center;padding:32px 24px"><div style="width:58px;height:58px;border-radius:50%;background:#e8f5e9;border:2px solid #a5d6a7;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:26px">✓</div><h3 style="font-size:17px;margin-bottom:8px">Processo Concluído!</h3><p>Todos os documentos foram registrados e as partes notificadas.</p><div style="margin:14px 0 18px;padding:10px;background:#e8f5e9;border-radius:6px;font-size:11.5px;color:#2e7d32;font-family:'DM Mono',monospace">Protocolo: WR-2025-0847 · 20/06/2025</div><button class="btn btn-secondary" onclick="closeMod('mSuccess');goPage('home')">Voltar ao Início</button></div></div>
+<!-- ══ MODAL PRODUTO SEC/DET ══ -->
+<div id="modal-admin-produto" class="modal-overlay">
+  <div class="modal m-advance" style="width:420px">
+    <h3 id="modal-prod-title">Novo Produto SEC/DET</h3>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-top:14px">
+      <div class="login-field" style="margin:0">
+        <label style="font-size:12px;font-weight:600;color:var(--text-mid)">Nome do Produto *</label>
+        <input type="text" id="prod-nome" class="field-input" placeholder="Ex: Secante Premium XL">
+      </div>
+      <div class="login-field" style="margin:0">
+        <label style="font-size:12px;font-weight:600;color:var(--text-mid)">Tipo *</label>
+        <select id="prod-tipo" class="field-input">
+          <option value="SEC">SEC — Secante</option>
+          <option value="DET">DET — Detergente</option>
+        </select>
+      </div>
+      <div class="login-field" style="margin:0">
+        <label style="font-size:12px;font-weight:600;color:var(--text-mid)">Descrição (opcional)</label>
+        <input type="text" id="prod-descricao" class="field-input" placeholder="Descrição ou observações">
+      </div>
+      <div id="prod-erro" style="display:none;font-size:12px;color:#c62828;background:#ffebee;border-radius:4px;padding:8px 12px"></div>
+    </div>
+    <div class="modal-btns" style="margin-top:20px">
+      <button class="btn btn-secondary" onclick="closeMod('modal-admin-produto')">Cancelar</button>
+      <button class="btn btn-advance" id="prod-salvar-btn" onclick="salvarProduto()">Criar Produto</button>
+    </div>
+  </div>
+</div>
 <div id="mPendentes" class="modal-overlay"><div class="modal m-advance" style="width:520px;max-width:95vw"><h3>Pendentes de Aprovação</h3><p style="margin-bottom:14px">3 solicitações aguardam parecer do Supervisor AS&TS.</p><div id="pendList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px"></div><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mPendentes')">Fechar</button></div></div></div>
 
 <script>
@@ -2507,35 +2568,44 @@ function fecharRecuperarSenha() {
   if (m) m.style.display = 'none';
 }
 async function enviarRecuperacao() {
-  const emailEl = document.getElementById('recSenhaEmail');
-  const msgEl   = document.getElementById('recSenhaMsg');
-  const btn     = document.getElementById('recSenhaBtn');
-  const email = emailEl ? emailEl.value.trim() : '';
+  const usernameEl = document.getElementById('recSenhaUsername');
+  const msgEl    = document.getElementById('recSenhaMsg');
+  const btn      = document.getElementById('recSenhaBtn');
+  if (!usernameEl || !msgEl) return;
+  const username = usernameEl.value.trim().toLowerCase();
+  msgEl.style.color = '#546e7a';
   msgEl.textContent = '';
-  if (!email) {
+
+  if (!username) {
     msgEl.style.color = '#c62828';
-    msgEl.textContent = 'Informe seu email.';
+    msgEl.textContent = 'Informe seu username.';
     return;
   }
+
   btn.disabled = true;
-  btn.textContent = 'Enviando...';
+  btn.textContent = 'Verificando...';
+
   try {
-    // Enviar e-mail de redefinição de senha via Firebase Auth
+    // Verificar se o username existe no lookup
+    const lookupDoc = await db.collection('username_lookup').doc(username).get();
+    if (!lookupDoc.exists) {
+      msgEl.style.color = '#c62828';
+      msgEl.textContent = 'Usuário não encontrado. Verifique o username ou contate o administrador.';
+      return;
+    }
+    const email = lookupDoc.data().email;
     await firebase.auth().sendPasswordResetEmail(email);
     msgEl.style.color = '#2e7d32';
-    msgEl.innerHTML = '✔ E-mail de redefinição de senha enviado!<br><small style="color:#78909c">Verifique sua caixa de entrada (e o spam) para o link de redefinição.</small>';
-    setTimeout(() => { btn.disabled = false; btn.textContent = 'Solicitar Reset'; }, 5000);
+    msgEl.textContent = 'E-mail de recuperação enviado! Verifique sua caixa de entrada.';
+    usernameEl.value = '';
   } catch(e) {
+    msgEl.style.color = '#c62828';
     if (e.code === 'auth/user-not-found') {
-      msgEl.style.color = '#c62828';
-      msgEl.textContent = 'Email não encontrado no sistema.';
-    } else if (e.code === 'auth/invalid-email') {
-      msgEl.style.color = '#c62828';
-      msgEl.textContent = 'Formato de e-mail inválido.';
+      msgEl.textContent = 'Usuário não encontrado no sistema de autenticação.';
     } else {
-      msgEl.style.color = '#c62828';
-      msgEl.textContent = 'Erro ao enviar. Tente novamente ou contate o administrador.';
+      msgEl.textContent = 'Erro ao enviar recuperação. Contate o administrador.';
     }
+  } finally {
     btn.disabled = false;
     btn.textContent = 'Solicitar Reset';
   }
@@ -2546,14 +2616,14 @@ async function enviarRecuperacao() {
 // ════════════════════════════════════════════════════════════
 
 async function fazerLogin() {
-  const email = document.getElementById('loginEmail').value.trim();
+  const username = (document.getElementById('loginUsername')?.value || '').trim().toLowerCase();
   const senha  = document.getElementById('loginSenha').value;
   const btn    = document.getElementById('loginBtn');
   const errEl  = document.getElementById('loginError');
 
   errEl.classList.remove('show');
-  if (!email || !senha) {
-    errEl.textContent = 'Preencha email e senha.';
+  if (!username || !senha) {
+    errEl.textContent = 'Preencha usuário e senha.';
     errEl.classList.add('show');
     return;
   }
@@ -2574,11 +2644,24 @@ async function fazerLogin() {
     // PASSO 1: Autenticar via Firebase Authentication (request.auth)
     // Este é o ÚNICO lugar onde fazemos requisição sem ter request.auth
     // ══════════════════════════════════════════════════════════════════
+    // PASSO 1a: Buscar email pelo username (coleção pública username_lookup)
+    let emailParaAuth;
+    try {
+      const lookupDoc = await db.collection('username_lookup').doc(username).get();
+      if (!lookupDoc.exists || !lookupDoc.data().email) {
+        throw { code: 'user-not-found', message: 'Usuário não encontrado. Verifique o username.' };
+      }
+      emailParaAuth = lookupDoc.data().email;
+    } catch(lookupErr) {
+      if (lookupErr.code === 'user-not-found') throw lookupErr;
+      throw { code: 'auth-error', message: 'Erro ao verificar usuário. Tente novamente.' };
+    }
+
     let authUser;
     try {
-      const authResult = await firebase.auth().signInWithEmailAndPassword(email, senha);
+      const authResult = await firebase.auth().signInWithEmailAndPassword(emailParaAuth, senha);
       authUser = authResult.user;
-      console.log('[WORKRAIL] Autenticação Firebase bem-sucedida para:', email);
+      console.log('[WORKRAIL] Autenticação Firebase bem-sucedida para:', username);
     } catch (authError) {
       if (authError.code === 'auth/wrong-password') {
         throw { code: 'wrong-password', message: 'Senha incorreta.' };
@@ -2637,7 +2720,7 @@ async function fazerLogin() {
     // Atualizar interface
     atualizarInterfaceAposPerfil();
 
-    console.log('[WORKRAIL] Login bem-sucedido para:', email);
+    console.log('[WORKRAIL] Login bem-sucedido para:', username);
 
   } catch(e) {
     // Se conseguiu autenticar mas depois falhou, fazer logout
@@ -2671,7 +2754,7 @@ async function fazerLogout() {
     localStorage.removeItem('WORKRAIL_SESSION');
     currentUser = null;
     document.getElementById('login-overlay').classList.remove('hidden');
-    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginUsername').value = '';
     document.getElementById('loginSenha').value = '';
     document.getElementById('loginBtn').disabled = false;
     document.getElementById('loginBtn').textContent = 'Entrar';
@@ -3041,14 +3124,36 @@ async function carregarHistoricoFirebase() {
 
     rows = [...rows, ...rowsMaq];
 
-    if (currentUser?.perfil === 'vendas') {
-      rows = rows.filter(r => r.createdByUid === currentUser.uid || r.resp === currentUser.nome);
+    const podeVerTudoHist = ['gestor','supervisor_asts','adm','adm_vendas','super_admin'].includes(currentUser?.perfil);
+    if (!podeVerTudoHist) {
+      if (currentUser?.perfil === 'vendas') {
+        const nomeUser = currentUser.nome || '';
+        rows = rows.filter(r =>
+          r.createdByUid === currentUser.uid ||
+          (r.resp && r.resp === nomeUser)
+        );
+      } else if (isFornecedor() && currentUser.fornecedor) {
+        rows = rows.filter(r => r.fornecedor === currentUser.fornecedor);
+      }
     }
 
     HISTORY.splice(0, HISTORY.length, ...rows);
     buildHistoryTable();
     buildFilters();
     buildSbHistory();
+    // Atualizar contador do histórico
+    const badgeHist = document.getElementById('badgeHistorico');
+    if (badgeHist) {
+      if (rows.length > 0) {
+        badgeHist.textContent = rows.length;
+        badgeHist.style.display = '';
+      } else {
+        badgeHist.style.display = 'none';
+      }
+    }
+    // Atualizar subtítulo do histórico
+    const histSub = document.querySelector('#screen-historico .ph-sub');
+    if (histSub) histSub.textContent = rows.length + ' registro' + (rows.length !== 1 ? 's' : '') + ' · ordenados por data';
   } catch(e) {
     console.error('[WORKRAIL] Erro ao carregar histórico:', e);
   }
@@ -3081,6 +3186,27 @@ async function enviarNotificacao(destinatario, assunto, mensagem, protocolo, det
   } catch(e) {
     console.warn('[WORKRAIL] Falha ao enviar notificação por e-mail:', e);
   }
+}
+
+// ─── NOTIFICAÇÃO AUTOMÁTICA POR ETAPA ────────────────────────
+async function notificarTransicaoEtapa(etapaAnterior, etapaAtual, dados) {
+  if (!FORMSUBMIT_EMAIL) return;
+  const emailSalvo = localStorage.getItem('wr_formsubmit_email') || FORMSUBMIT_EMAIL;
+  const etapaLabels = {
+    solicitacao: 'Solicitação', gestor: 'Supervisor AS&TS', adm: 'ADM Vendas',
+    fornecedor: 'Fornecedor', logistica: 'Logística', instalacao: 'Instalação',
+    relatorio: 'Relatório Final', concluido: 'Concluído'
+  };
+  const assunto = `Avanço de Etapa: ${etapaLabels[etapaAnterior]||etapaAnterior} → ${etapaLabels[etapaAtual]||etapaAtual}`;
+  await enviarNotificacao(emailSalvo, assunto, `Solicitação avançou de etapa no sistema WORKRAIL.`, dados?.protocolo || '', {
+    'Etapa Anterior':  etapaLabels[etapaAnterior] || etapaAnterior,
+    'Nova Etapa':      etapaLabels[etapaAtual] || etapaAtual,
+    'Cliente':         dados?.cliente || '',
+    'Modelo':          dados?.modelo || '',
+    'Serial':          dados?.serial || '',
+    'Responsável':     dados?.responsavel || currentUser?.nome || '',
+    'Data/Hora':       new Date().toLocaleString('pt-BR'),
+  });
 }
 
 // ════════════════════════════════════════════════════════════
@@ -4154,10 +4280,12 @@ function goPage(id){
   // breadcrumb
   const bcMap = {home:'Início',dashboard:'Dashboard',historico:'Histórico',notificacoes:'Notificações',relatorios:'Relatórios',configuracoes:'Configurações',admin:'Admin Sistema',solicitacoes:'Solicitações',pendentes:'Pendentes'};
   setBreadcrumb(bcMap[id]||id);
-  if (id === 'admin')        onEnterAdmin();
-  if (id === 'dashboard')    carregarDashboard();
-  if (id === 'solicitacoes') carregarSolicitacoesPendentes();
-  if (id === 'pendentes')    carregarPendentesEquipe();
+  if (id === 'admin')          onEnterAdmin();
+  if (id === 'dashboard')      carregarDashboard();
+  if (id === 'historico')      carregarHistoricoFirebase();
+  if (id === 'notificacoes')   carregarNotificacoesFirebase();
+  if (id === 'solicitacoes')   carregarSolicitacoesPendentes();
+  if (id === 'pendentes')      carregarPendentesEquipe();
 }
 
 function go(id){
@@ -4507,14 +4635,28 @@ function filtrarHistorico(termo) {
 function buildNotifications(){
   const el  = document.getElementById('notifList');
   const sub = document.getElementById('notifSub');
+  // Atualizar badge na sidebar
+  const badgeNotif = document.getElementById('badgeNotificacoes');
+  const notifDot   = document.querySelector('.notif-dot');
   if (!el) return;
   if (!NOTIFS.length) {
     el.innerHTML = '<div style="padding:48px;text-align:center;color:var(--text-muted);font-size:13px">Nenhuma notificação.</div>';
     if (sub) sub.textContent = 'Sem notificações';
+    if (badgeNotif) badgeNotif.style.display = 'none';
+    if (notifDot)   notifDot.style.display = 'none';
     return;
   }
   const unread = NOTIFS.filter(n => n.unread).length;
   if (sub) sub.textContent = unread > 0 ? `${unread} não lida${unread===1?'':'s'}` : 'Todas lidas';
+  if (badgeNotif) {
+    if (unread > 0) {
+      badgeNotif.textContent = unread;
+      badgeNotif.style.display = '';
+    } else {
+      badgeNotif.style.display = 'none';
+    }
+  }
+  if (notifDot) notifDot.style.display = unread > 0 ? '' : 'none';
   el.innerHTML = NOTIFS.map(n=>`
     <div class="notif-item${n.unread?' unread':''}">
       <div class="ni-icon" style="background:${n.bg}"><svg viewBox="0 0 17 17" fill="none" style="color:${n.icon}"><path d="M8.5 2.5a5.5 5.5 0 0 1 5.5 5.5v2l1.5 2h-14l1.5-2v-2A5.5 5.5 0 0 1 8.5 2.5z" stroke="currentColor" stroke-width="1.3"/><path d="M7 14.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.3"/></svg></div>
@@ -4533,6 +4675,82 @@ function limparNotificacoes(){
   const dot = document.querySelector('.notif-dot');
   if (dot) dot.style.display = 'none';
   showToast('Notificações limpas.', 'success');
+}
+
+// ─── EXPORTAR HISTÓRICO ──────────────────────────────────────
+async function exportarHistorico() {
+  if (typeof XLSX === 'undefined') { showToast('Biblioteca Excel não carregada.', 'error'); return; }
+  if (!HISTORY.length) { showToast('Nenhum dado para exportar.', 'warn'); return; }
+  const rows = HISTORY.map(h => ({
+    'N° do Pedido':        h.code || '',
+    'Cliente':             h.client || '',
+    'Serial':              h.serial || '',
+    'Modelo':              h.model || '',
+    'Fornecedor':          h.fornecedor || '',
+    'Mesa':                h.mesa || '',
+    'Dosador':             h.dosador || '',
+    'Data de Instalação':  h.dataInstalacao || '',
+    'Responsável Vendas':  h.resp || '',
+    'Status':              h.statusTxt || '',
+    'Data Registro':       h.date || '',
+  }));
+  const hoje = new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
+  const wb = _xlsxFromRows('Histórico', rows);
+  XLSX.writeFile(wb, `WORKRAIL_Historico_${hoje}.xlsx`);
+  showToast('Exportação concluída!', 'success');
+}
+
+// ─── NOTIFICAÇÕES DO FIREBASE ────────────────────────────────
+async function carregarNotificacoesFirebase() {
+  if (!firebaseOk || !currentUser) { buildNotifications(); return; }
+  try {
+    // Gera notificações a partir do histórico: contratos vencidos/a vencer
+    const hoje = new Date();
+    const novosNotifs = [];
+
+    if (_baseMaquinas.length > 0 || firebaseOk) {
+      // Busca máquinas com vencimento próximo ou vencidas
+      const snapMaq = await db.collection('maquinas').limit(500).get().catch(() => null);
+      if (snapMaq) {
+        const podeVerTudo = ['gestor','supervisor_asts','adm','adm_vendas','super_admin'].includes(currentUser?.perfil);
+
+        snapMaq.docs.forEach(doc => {
+          const m = doc.data();
+          // Filtro por responsável para perfil vendas
+          if (!podeVerTudo && m.responsavelVendas && m.responsavelVendas !== (currentUser.nome || currentUser.username)) return;
+          if (!m.dataInstalacao || !m.vigenciaMeses) return;
+          const dataVenc = addMeses(m.dataInstalacao, m.vigenciaMeses);
+          if (!dataVenc) return;
+          const dias = diasAte(dataVenc);
+          if (dias !== null && dias < 0) {
+            novosNotifs.push({
+              id: doc.id + '_vencido',
+              title: 'Contrato Vencido',
+              desc: (m.endereco || m.serialMaquina || '—') + ' · Venceu há ' + Math.abs(dias) + ' dia(s)',
+              time: fmtDate(dataVenc),
+              icon: '#c62828', bg: '#ffebee',
+              unread: true
+            });
+          } else if (dias !== null && dias <= 30) {
+            novosNotifs.push({
+              id: doc.id + '_vencendo',
+              title: 'Contrato a Vencer em ' + dias + ' dia(s)',
+              desc: (m.endereco || m.serialMaquina || '—') + ' · Vence em ' + fmtDate(dataVenc),
+              time: fmtDate(dataVenc),
+              icon: '#e65100', bg: '#fff3e0',
+              unread: true
+            });
+          }
+        });
+      }
+    }
+
+    NOTIFS.splice(0, NOTIFS.length, ...novosNotifs);
+    buildNotifications();
+  } catch(e) {
+    console.error('[WORKRAIL] Erro ao carregar notificações:', e);
+    buildNotifications();
+  }
 }
 
 // ─── BUILD REPORTS ──────────────────────────────────────────
@@ -4606,21 +4824,58 @@ async function exportarRelatorio(tipo, btnEl) {
 
     } else if (tipo === 'performance') {
       const snap = await db.collection('maquinas').limit(1000).get();
+      const hoje_ = new Date();
+      // Filtro por perfil: vendas vê apenas os próprios
+      const podeVerTudoPerf = ['gestor','supervisor_asts','adm','adm_vendas','super_admin'].includes(currentUser?.perfil);
       const por = {};
+      const detalhes = [];
       snap.docs.forEach(d => {
         const m = d.data();
+        if (!podeVerTudoPerf && m.responsavelVendas !== (currentUser?.nome || currentUser?.username)) return;
         const resp = m.responsavelVendas || 'Não informado';
-        if (!por[resp]) por[resp] = { responsavel: resp, total: 0, comVigencia: 0 };
+        if (!por[resp]) por[resp] = { responsavel: resp, total: 0, comVigencia: 0, vencidos: 0, aVencer30: 0, vigentes: 0 };
         por[resp].total++;
-        if (m.vigenciaMeses > 0) por[resp].comVigencia++;
+        if (m.vigenciaMeses > 0) {
+          por[resp].comVigencia++;
+          const { dias } = _calcVig(m.dataInstalacao, m.vigenciaMeses);
+          if (dias !== null) {
+            if (dias < 0) por[resp].vencidos++;
+            else if (dias <= 30) por[resp].aVencer30++;
+            else por[resp].vigentes++;
+            detalhes.push({
+              'Responsável':       resp,
+              'Cliente':           m.endereco || '',
+              'Serial':            m.serialMaquina || '',
+              'Modelo':            m.modelo || '',
+              'N° do Pedido':      m.numeroPedido || '',
+              'Data Instalação':   fmtDate(m.dataInstalacao),
+              'Vigência (meses)':  m.vigenciaMeses || '',
+              'Vencimento':        dias !== null ? fmtDate(addMeses(m.dataInstalacao, m.vigenciaMeses)) : '',
+              'Dias Restantes':    dias !== null ? dias : '',
+              'Status':            dias === null ? 'Sem vigência' : dias < 0 ? 'Vencido' : dias <= 30 ? 'A vencer ≤30d' : 'Vigente',
+            });
+          }
+        } else {
+          detalhes.push({
+            'Responsável': resp, 'Cliente': m.endereco || '', 'Serial': m.serialMaquina || '',
+            'Modelo': m.modelo || '', 'N° do Pedido': m.numeroPedido || '',
+            'Data Instalação': fmtDate(m.dataInstalacao), 'Vigência (meses)': '',
+            'Vencimento': '', 'Dias Restantes': '', 'Status': 'Sem vigência',
+          });
+        }
       });
       const rows = Object.values(por).sort((a,b) => b.total - a.total).map(r => ({
         'Responsável de Vendas': r.responsavel,
         'Total de Máquinas':     r.total,
         'Com Vigência':          r.comVigencia,
         'Sem Vigência':          r.total - r.comVigencia,
+        'Vencidos':              r.vencidos,
+        'A vencer ≤30 dias':     r.aVencer30,
+        'Vigentes':              r.vigentes,
       }));
-      wb = _xlsxFromRows('Performance', rows);
+      wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.length ? rows : [{'Info':'Sem dados'}]), 'Resumo por Responsável');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detalhes.length ? detalhes : [{'Info':'Sem dados'}]), 'Detalhes');
       nomeArq = `WORKRAIL_Performance_${hoje}.xlsx`;
 
     } else if (tipo === 'pendencias') {
@@ -4935,6 +5190,17 @@ function filtrarContratos(termo) {
 }
 
 // ─── FUNÇÃO PRINCIPAL DO DASHBOARD ───────────────────────────
+// ── Helper global para calcular vigência (usado em relatórios e dashboard) ──
+function _calcVig(dataInst, meses) {
+  if (!dataInst || meses <= 0) return { dataVenc: null, dias: null, pctDecorrido: null };
+  const dataVenc    = addMeses(dataInst, meses);
+  const dias        = diasAte(dataVenc);
+  const totalDias   = meses * 30.4375;
+  const vividos     = totalDias + dias;
+  const pctDecorrido = (vividos / totalDias) * 100;
+  return { dataVenc, dias, pctDecorrido };
+}
+
 async function carregarDashboard() {
   // Reset search
   const srch = document.getElementById('ctdSearch');
@@ -4943,8 +5209,9 @@ async function carregarDashboard() {
   // Atualiza subtítulo
   const subEl = document.getElementById('dash-sub');
   const hoje  = new Date();
-  if (subEl) subEl.textContent = 'Parque de máquinas · ' +
-    hoje.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const podeVerTudoSub = ['gestor','supervisor_asts','adm','adm_vendas','super_admin'].includes(currentUser?.perfil);
+  if (subEl) subEl.textContent = (podeVerTudoSub ? 'Parque de máquinas' : 'Seus contratos') +
+    ' · ' + hoje.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
 
   // Se Firebase não disponível, mostra estado vazio com aviso
   if (!db) {
@@ -5024,7 +5291,39 @@ async function carregarDashboard() {
         };
       });
 
-    const contratos = [...contratosSol, ...contratosMaq];
+    // ── Filtro por perfil: vendas vê apenas os próprios contratos ──
+    const podeVerTudo = ['gestor','supervisor_asts','adm','adm_vendas','super_admin'].includes(currentUser?.perfil);
+    let filtradosSol = contratosSol;
+    let filtradosMaq = contratosMaq;
+    if (!podeVerTudo && currentUser?.perfil === 'vendas') {
+      const nomeUsuario = currentUser.nome || currentUser.username || '';
+      filtradosSol = contratosSol.filter(c => !c.nomeCliente || c.criadoPorUid === currentUser.uid);
+      // Para máquinas importadas, filtrar por responsavelVendas
+      filtradosMaq = (snapMaq ? snapMaq.docs : [])
+        .filter(doc => {
+          if (serialsEmSol.has(doc.id)) return false;
+          const m = doc.data();
+          return m.responsavelVendas === nomeUsuario;
+        })
+        .map(doc => {
+          const m        = doc.data();
+          const dataInst = m.dataInstalacao || '';
+          const meses    = m.vigenciaMeses  || 0;
+          const { dataVenc, dias, pctDecorrido } = _calcVig(dataInst, meses);
+          return {
+            id: doc.id,
+            protocolo:    m.numeroPedido  || m.serialMaquina,
+            numeroPedido: m.numeroPedido  || m.serialMaquina,
+            serial:       m.serialMaquina,
+            nomeCliente:  m.endereco      || 'Importada',
+            modelo:       m.modelo        || '',
+            dataInst, meses, dataVenc, dias, pctDecorrido,
+            status: 'IMPORTADA',
+            responsavelVendas: m.responsavelVendas || ''
+          };
+        });
+    }
+    const contratos = [...filtradosSol, ...filtradosMaq];
 
     // ── KPIs ───────────────────────────────────────────────
     const cfg         = _cfgVigencia();
@@ -5158,7 +5457,7 @@ function adminTab(tab) {
   document.querySelectorAll('.admin-tab').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === tab);
   });
-  ['usuarios','fornecedores','modelos','maquinas','sistema'].forEach(t => {
+  ['usuarios','fornecedores','modelos','maquinas','produtos','sistema'].forEach(t => {
     const el = document.getElementById('admin-pane-' + t);
     if (el) el.style.display = t === tab ? '' : 'none';
   });
@@ -5166,6 +5465,7 @@ function adminTab(tab) {
   if (tab === 'fornecedores') carregarFornecedoresAdmin();
   if (tab === 'modelos')      carregarModelosAdmin();
   if (tab === 'maquinas')     carregarTabelaMaquinasAdmin();
+  if (tab === 'produtos')     carregarProdutosAdmin();
   if (tab === 'sistema')      carregarInfoSistema();
 }
 
@@ -5269,6 +5569,115 @@ async function atualizarAdminStats() {
     document.getElementById('astat-ultima-atualiz').textContent =
       'Atualizado: ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
   } catch(e) { /* silencioso */ }
+}
+
+// ─── ABA PRODUTOS SEC/DET ────────────────────────────────────
+async function carregarProdutosAdmin() {
+  const tbody = document.getElementById('admin-lista-produtos');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px">Carregando...</td></tr>';
+  if (!db) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px">Firebase não configurado.</td></tr>'; return; }
+  try {
+    const snap = await db.collection('produtos').orderBy('tipo').get();
+    const filtroTipo = document.getElementById('prodFiltroTipo')?.value || '';
+    const docs = snap.docs.filter(d => !filtroTipo || d.data().tipo === filtroTipo);
+    if (!docs.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px">Nenhum produto cadastrado.</td></tr>'; return; }
+    tbody.innerHTML = docs.map(doc => {
+      const p = doc.data();
+      const ativo = p.ativo !== false;
+      const tipoBadge = p.tipo === 'SEC'
+        ? '<span class="chip c-transit" style="font-size:10px;padding:2px 8px">SEC · Secante</span>'
+        : '<span class="chip c-analysis" style="font-size:10px;padding:2px 8px">DET · Detergente</span>';
+      return `<tr>
+        <td><strong>${p.nome || '—'}</strong></td>
+        <td>${tipoBadge}</td>
+        <td style="font-size:11.5px;color:var(--text-mid)">${p.descricao || '—'}</td>
+        <td>${ativo ? '<span class="badge-ativo">Ativo</span>' : '<span class="badge-inativo">Inativo</span>'}</td>
+        <td style="text-align:center">
+          <button class="btn-mini" onclick="editarProduto('${doc.id}')" style="margin-right:4px">Editar</button>
+          <button class="btn-mini" onclick="alterarStatusProduto('${doc.id}',${ativo})" style="background:${ativo?'var(--amber-l)':'var(--green-l)'};color:${ativo?'var(--amber)':'var(--green)'}">
+            ${ativo ? 'Inativar' : 'Ativar'}
+          </button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:20px;text-align:center;color:#c62828">Erro ao carregar produtos: ' + e.message + '</td></tr>';
+  }
+}
+
+function filtrarProdutosAdmin() { carregarProdutosAdmin(); }
+
+let _produtoEditId = null;
+function abrirModalNovoProduto() {
+  _produtoEditId = null;
+  document.getElementById('modal-prod-title').textContent = 'Novo Produto SEC/DET';
+  document.getElementById('prod-nome').value = '';
+  document.getElementById('prod-tipo').value = 'SEC';
+  document.getElementById('prod-descricao').value = '';
+  document.getElementById('prod-erro').style.display = 'none';
+  document.getElementById('prod-salvar-btn').textContent = 'Criar Produto';
+  showMod('modal-admin-produto');
+}
+
+async function editarProduto(docId) {
+  try {
+    const doc = await db.collection('produtos').doc(docId).get();
+    if (!doc.exists) { showToast('Produto não encontrado.', 'error'); return; }
+    const p = doc.data();
+    _produtoEditId = docId;
+    document.getElementById('modal-prod-title').textContent = 'Editar Produto';
+    document.getElementById('prod-nome').value = p.nome || '';
+    document.getElementById('prod-tipo').value = p.tipo || 'SEC';
+    document.getElementById('prod-descricao').value = p.descricao || '';
+    document.getElementById('prod-erro').style.display = 'none';
+    document.getElementById('prod-salvar-btn').textContent = 'Salvar Alterações';
+    showMod('modal-admin-produto');
+  } catch(e) { showToast('Erro ao carregar produto.', 'error'); }
+}
+
+async function salvarProduto() {
+  const nome = document.getElementById('prod-nome').value.trim();
+  const tipo = document.getElementById('prod-tipo').value;
+  const descricao = document.getElementById('prod-descricao').value.trim();
+  const erroEl = document.getElementById('prod-erro');
+  erroEl.style.display = 'none';
+  if (!nome || !tipo) { erroEl.textContent = 'Nome e tipo são obrigatórios.'; erroEl.style.display = ''; return; }
+  if (!['SEC','DET'].includes(tipo)) { erroEl.textContent = 'Tipo deve ser SEC ou DET.'; erroEl.style.display = ''; return; }
+  try {
+    const btn = document.getElementById('prod-salvar-btn');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+    const data = { nome, tipo, descricao, ativo: true, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp() };
+    if (_produtoEditId) {
+      await db.collection('produtos').doc(_produtoEditId).update(data);
+      showToast('Produto atualizado!', 'success');
+    } else {
+      // Verificar duplicidade
+      const existe = await db.collection('produtos').where('nome','==',nome).where('tipo','==',tipo).limit(1).get();
+      if (!existe.empty) { erroEl.textContent = 'Já existe um produto com esse nome e tipo.'; erroEl.style.display = ''; btn.disabled = false; btn.textContent = _produtoEditId ? 'Salvar Alterações' : 'Criar Produto'; return; }
+      data.criadoEm = firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection('produtos').add(data);
+      showToast('Produto criado!', 'success');
+    }
+    closeMod('modal-admin-produto');
+    carregarProdutosAdmin();
+    btn.disabled = false;
+  } catch(e) {
+    document.getElementById('prod-erro').textContent = 'Erro: ' + e.message;
+    document.getElementById('prod-erro').style.display = '';
+    document.getElementById('prod-salvar-btn').disabled = false;
+    document.getElementById('prod-salvar-btn').textContent = _produtoEditId ? 'Salvar Alterações' : 'Criar Produto';
+  }
+}
+
+async function alterarStatusProduto(docId, ativoAtual) {
+  const acao = ativoAtual ? 'inativar' : 'ativar';
+  if (!confirm(`Confirma ${acao} este produto?`)) return;
+  try {
+    await db.collection('produtos').doc(docId).update({ ativo: !ativoAtual, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp() });
+    showToast(`Produto ${ativoAtual ? 'inativado' : 'ativado'}!`, 'success');
+    carregarProdutosAdmin();
+  } catch(e) { showToast('Erro ao alterar status: ' + e.message, 'error'); }
 }
 
 // ─── ABA SISTEMA — Informações e FormSubmit ──────────────────
@@ -5503,7 +5912,8 @@ async function salvarUsuarioAdmin() {
       }
 
       // Criar documento do usuário no Firestore usando o UID do Firebase Auth
-      await db.collection('usuarios').doc(newUid).set({
+      const batch = db.batch();
+      batch.set(db.collection('usuarios').doc(newUid), {
         username,
         nome,
         email,
@@ -5513,6 +5923,14 @@ async function salvarUsuarioAdmin() {
         criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
         criadoPor: currentUser?.uid || 'admin'
       });
+      // Criar lookup público username → email
+      batch.set(db.collection('username_lookup').doc(username.toLowerCase()), {
+        email,
+        uid: newUid,
+        ativo: true,
+        criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await batch.commit();
 
       showToast('✓ Usuário criado com sucesso!', 'success');
     } else {
@@ -5530,6 +5948,12 @@ async function salvarUsuarioAdmin() {
           return;
         }
         updateData.username = username;
+        // Atualizar lookup de username
+        const originalUsername = document.getElementById('admin-u-username').getAttribute('data-original');
+        if (originalUsername && originalUsername !== username) {
+          await db.collection('username_lookup').doc(originalUsername.toLowerCase()).delete();
+        }
+        await db.collection('username_lookup').doc(username.toLowerCase()).set({ email: updateData.email || email, uid, ativo: true });
       }
 
       // Se mudou fornecedor

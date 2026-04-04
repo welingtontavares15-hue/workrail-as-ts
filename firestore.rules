@@ -103,6 +103,14 @@ service cloud.firestore {
                            && (isSuperAdmin() || isAdmVendas());
     }
 
+    match /username_lookup/{username} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+    match /produtos/{docId} {
+      allow read: if request.auth.uid != null;
+      allow create, update, delete: if isSuperAdmin() || isAdmVendas();
+    }
     match /{document=**} {
       allow read, write: if false;
     }
