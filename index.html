@@ -1379,7 +1379,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <div class="search-bar" style="min-width:220px">
                 <svg viewBox="0 0 15 15" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.3"/><path d="M10 10l3.5 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                <input type="text" id="adminBuscaMaquina" placeholder="Buscar por Serial, Modelo ou Fornecedor..." oninput="filtrarTabelaMaquinasAdmin()">
+                <input type="text" id="adminBuscaMaquina" placeholder="Buscar por N° Pedido, Cliente, Serial, Modelo ou Fornecedor..." oninput="filtrarTabelaMaquinasAdmin()">
               </div>
               <select id="adminFiltroFornecedor" onchange="filtrarTabelaMaquinasAdmin()" style="padding:7px 10px;border:1px solid var(--input-border);border-radius:6px;font-size:13px;background:#fff;height:36px">
                 <option value="">Todos os fornecedores</option>
@@ -1403,11 +1403,11 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
           </div>
           <div id="adminMaquinasStatus" style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px"></div>
           <div style="overflow-x:auto">
-          <table class="admin-table" style="min-width:1000px">
+          <table class="admin-table" style="min-width:1150px">
             <thead><tr>
-              <th>Serial</th><th>Modelo</th><th>Fornecedor</th>
-              <th>Mesa</th><th>Dosador</th><th>Data instalação</th>
-              <th>Vigência</th><th>Endereço</th><th>Responsável vendas</th><th>Origem</th>
+              <th>N° do Pedido</th><th>Cliente</th><th>Serial</th><th>Modelo</th><th>Fornecedor</th>
+              <th>Mesa</th><th>Dosador</th><th>Data de instalação</th>
+              <th>Responsável de vendas</th><th>Vigência (meses)</th>
               <th style="width:90px">Ações</th>
             </tr></thead>
             <tbody id="admin-lista-maquinas"><tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:28px">Nenhuma máquina na base. Importe um arquivo Excel.</td></tr></tbody>
@@ -5188,9 +5188,11 @@ function filtrarTabelaMaquinasAdmin() {
   const lista = _baseMaquinas.filter(m => {
     const matchForn  = !fornFilt || m.fornecedor === fornFilt;
     const matchTermo = !termo ||
-      m.serialMaquina.toLowerCase().includes(termo) ||
-      m.modelo.toLowerCase().includes(termo) ||
-      m.fornecedor.toLowerCase().includes(termo);
+      (m.numeroPedido || '').toLowerCase().includes(termo) ||
+      (m.endereco || '').toLowerCase().includes(termo) ||
+      (m.serialMaquina || '').toLowerCase().includes(termo) ||
+      (m.modelo || '').toLowerCase().includes(termo) ||
+      (m.fornecedor || '').toLowerCase().includes(termo);
     return matchForn && matchTermo;
   });
 
@@ -5201,16 +5203,16 @@ function filtrarTabelaMaquinasAdmin() {
 
   tbody.innerHTML = lista.map((m) => `
     <tr>
-      <td style="font-family:'DM Mono',monospace;font-size:11.5px;color:var(--teal-dark)">${m.serialMaquina || '—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11.5px;color:var(--teal-dark)">${m.numeroPedido || '—'}</td>
+      <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${m.endereco||''}">${m.endereco || '—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11.5px">${m.serialMaquina || '—'}</td>
       <td style="font-size:12px">${m.modelo || '—'}</td>
       <td style="font-size:12px">${m.fornecedor || '—'}</td>
       <td style="font-size:12px;text-align:center">${m.mesa || '—'}</td>
       <td style="font-size:12px;text-align:center">${m.dosador || '—'}</td>
       <td style="font-size:11.5px;font-family:'DM Mono',monospace;white-space:nowrap">${fmtDate(m.dataInstalacao)}</td>
-      <td style="font-size:12px;text-align:center">${m.vigenciaMeses ? m.vigenciaMeses + 'm' : '—'}</td>
-      <td style="font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${m.endereco||''}">${m.endereco || '—'}</td>
       <td style="font-size:12px">${m.responsavelVendas || '—'}</td>
-      <td><span class="chip" style="font-size:10px;padding:2px 7px">${m.origem || 'importada'}</span></td>
+      <td style="font-size:12px;text-align:center">${m.vigenciaMeses ? m.vigenciaMeses + 'm' : '—'}</td>
       <td style="text-align:center">
         <button class="btn-mini" style="background:var(--red-l);color:var(--red)" onclick="removerMaquinaAdmin(${_baseMaquinas.indexOf(m)})">Remover</button>
       </td>
