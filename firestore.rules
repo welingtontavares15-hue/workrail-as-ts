@@ -57,7 +57,9 @@ service cloud.firestore {
                     || (request.auth.uid == userId
                         && !exists(/databases/$(database)/documents/usuarios/$(userId))
                         && camposUsuarioPermitidos()
-                        && perfilAutoPermitido());
+                        && perfilAutoPermitido()
+                        // Sessão anônima (ponte para login por username) não pode criar perfil
+                        && request.auth.token.firebase.sign_in_provider != 'anonymous');
 
       // Apenas super_admin pode alterar perfil, ativo, fornecedor ou excluir.
       allow update, delete: if isSuperAdmin();
@@ -185,18 +187,16 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════
 
     match /username_lookup/{username} {
-      // Leitura pública mantida: necessária para login por username antes da autenticação.
-      // O documento contém apenas {email, uid, ativo, criadoEm} — sem dados sensíveis além do email.
-      // Limitação aceita: enumeração de usernames é possível. Mitigação: não exibir usernames
-      // existentes na UI; login via username não confirma existência antes do auth.
-      allow read: if true;
+      // Leitura restrita a usuários autenticados (incluindo sessão anônima transitória).
+      // O frontend usa signInAnonymously() como ponte antes de ler o lookup,
+      // garantindo que nunca há leitura sem token válido de curta duração.
+      // Isso elimina a enumeração pública de usernames/emails por não autenticados.
+      allow read: if request.auth.uid != null;
 
-      // Escrita restrita a super_admin apenas.
-      // Razão: usuários são criados pelo admin (salvarUsuarioAdmin), não por auto-registro.
-      //        Qualquer escrita de cliente autenticado poderia contaminar ou sequestrar
-      //        o mapeamento username → uid/email de outro usuário.
-      // NOTA: o bootstrap do primeiro super_admin deve criar este mapeamento
-      //       via Firebase Console ou Admin SDK — não via cliente autenticado.
+      // Escrita exclusiva do super_admin.
+      // Usuários são criados pelo admin (salvarUsuarioAdmin).
+      // O mapeamento username→email não pode ser alterado por nenhum cliente comum.
+      // NOTA: bootstrap do primeiro super_admin via Firebase Console ou Admin SDK.
       allow write: if isSuperAdmin();
     }
 

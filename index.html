@@ -2627,6 +2627,10 @@ function _initializeFirebaseApp() {
 
     // ── Observa estado de autenticação ──────────────────────────
     auth.onAuthStateChanged(async (user) => {
+      // Sessão anônima é usada apenas como ponte para lookup de username durante login.
+      // Não deve disparar carregamento de perfil nem alterar estado da UI.
+      if (user && user.isAnonymous) return;
+
       if (!currentUser && user) {
         // Sessão Firebase ativa mas sem sessão local — carrega perfil
         await carregarPerfilUsuario(user);
@@ -2804,7 +2808,18 @@ async function fazerLogin() {
     // PASSO 1: Autenticar via Firebase Authentication (request.auth)
     // Este é o ÚNICO lugar onde fazemos requisição sem ter request.auth
     // ══════════════════════════════════════════════════════════════════
-    // PASSO 1a: Buscar email pelo username (coleção pública username_lookup)
+    // PASSO 1a: Autenticar anonimamente para obter token válido antes do lookup.
+    // username_lookup não é mais público — exige request.auth.uid != null.
+    // A sessão anônima é substituída automaticamente pelo login real no passo 1b.
+    // onAuthStateChanged ignora sessões anônimas (user.isAnonymous == true).
+    try {
+      await firebase.auth().signInAnonymously();
+    } catch(anonErr) {
+      console.warn('[WORKRAIL] signInAnonymously falhou (Anonymous Auth habilitado no Console?):', anonErr);
+      throw { code: 'auth-error', message: 'Erro ao preparar autenticação. Verifique a configuração do Firebase.' };
+    }
+
+    // PASSO 1b: Buscar email pelo username (exige auth — não é mais leitura pública)
     let emailParaAuth;
     try {
       const lookupDoc = await db.collection('username_lookup').doc(username).get();
