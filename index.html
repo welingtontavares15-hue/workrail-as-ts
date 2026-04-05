@@ -3475,6 +3475,8 @@ async function criarSolicitacao(dados) {
     protocolo,
     ...dados,
     criadoPorPerfil: perfil,                   // campo exigido pela regra de criação
+    criadoPorNome:   currentUser?.nome || '',
+    criadoPorEmail:  currentUser?.email || '',
     status:          STATUS.AGUARDANDO_GESTOR.key,
     etapaAtual:      'solicitacao',             // valor aceito pela regra Firestore
     historico: [entradaHistorico('SOLICITACAO_CRIADA', currentUser?.nome || 'Vendas', 'solicitacao',
@@ -4420,8 +4422,8 @@ function coletarDadosSolicitacao() {
       shipTo:      document.getElementById('inputShipTo')?.value?.trim() || '',
       nomeCliente: document.getElementById('inputNomeCliente')?.value?.trim() || '',
       cnpj:        document.getElementById('inputCnpj')?.value?.trim() || '',
-      email:       document.getElementById('inputEmailCliente')?.value?.trim() || '',
-      endereco:    document.getElementById('inputEnderecoInstalacao')?.value?.trim() || ''
+      emailCliente: document.getElementById('inputEmailCliente')?.value?.trim() || '',
+      enderecoInstalacao: document.getElementById('inputEnderecoInstalacao')?.value?.trim() || ''
     },
     dadosSolicitacao: {
       numeroPedido:    document.getElementById('numeroPedidoSolic')?.value || '',
@@ -5082,7 +5084,8 @@ async function confirmConcluir() {
 
 // ─── FILE HANDLER (com rastreio de pendingFiles e validação de tipo) ──────────────
 const TIPOS_PERMITIDOS = ['application/pdf','image/jpeg','image/png','image/webp',
-  'application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+  'application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
 const TAMANHO_MAX_MB = 20;
 
 function setFile(input, labelId, attachedId) {
@@ -5256,8 +5259,8 @@ function go(id){
       _setVal('inputShipTo', dc.shipTo);
       _setVal('inputNomeCliente', dc.nomeCliente);
       _setVal('inputCnpj', dc.cnpj);
-      _setVal('inputEmailCliente', dc.emailCliente);
-      _setVal('inputEnderecoInstalacao', dc.enderecoInstalacao);
+      _setVal('inputEmailCliente', dc.emailCliente || dc.email);
+      _setVal('inputEnderecoInstalacao', dc.enderecoInstalacao || dc.endereco);
       _setVal('tipoSolicitacao', ds.tipoSolicitacao);
       _setVal('modeloMaquinaSelect', ds.modeloMaquina);
       _setVal('inputRefeicoesDia', ds.refeicoesDia);

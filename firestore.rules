@@ -6,8 +6,14 @@ service cloud.firestore {
     // HELPERS — perfil e papel do usuário autenticado
     // ═══════════════════════════════════════════════
 
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
     function getUserProfile() {
-      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.perfil;
+      return isSignedIn()
+             ? get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.perfil
+             : null;
     }
 
     function isSuperAdmin() {
@@ -44,7 +50,7 @@ service cloud.firestore {
     }
 
     match /usuarios/{userId} {
-      allow read: if request.auth.uid == userId || isSuperAdmin();
+      allow read: if (isSignedIn() && request.auth.uid == userId) || isSuperAdmin();
 
       // Criação pelo próprio usuário:
       //   1. documento ainda não existe
@@ -54,7 +60,8 @@ service cloud.firestore {
       // NOTA: bootstrap do primeiro super_admin deve ser feito via Firebase Console
       //       ou Admin SDK — nunca via bootstrap-admin.html em produção.
       allow create: if isSuperAdmin()
-                    || (request.auth.uid == userId
+                    || (isSignedIn()
+                        && request.auth.uid == userId
                         && !exists(/databases/$(database)/documents/usuarios/$(userId))
                         && camposUsuarioPermitidos()
                         && perfilAutoPermitido()
@@ -72,18 +79,21 @@ service cloud.firestore {
     function canViewSolicitacao() {
       let doc = resource.data;
       let perfil = getUserProfile();
-      let uid = request.auth.uid;
+      let uid = isSignedIn() ? request.auth.uid : null;
       // Acesso seguro — dadosAdm não existe em etapas iniciais.
       let enc  = doc.get(['dadosAdm', 'encaminhadoFornecedor'], '');
       let forn = doc.get(['dadosAdm', 'fornecedor'], '');
       let fornecedorEBST   = enc == 'EBST'         || forn == 'EBST';
       let fornecedorHobart = enc == 'Hobart Brasil' || forn == 'Hobart Brasil';
-      return isSuperAdmin()
-          || isSupervisorASTS()
-          || isAdmVendas()
-          || (perfil == 'vendas'            && doc.criadoPorUid == uid)
-          || (perfil == 'fornecedor_ebst'   && fornecedorEBST)
-          || (perfil == 'fornecedor_hobart' && fornecedorHobart);
+      return isSignedIn()
+          && (
+            isSuperAdmin()
+            || isSupervisorASTS()
+            || isAdmVendas()
+            || (perfil == 'vendas'            && doc.criadoPorUid == uid)
+            || (perfil == 'fornecedor_ebst'   && fornecedorEBST)
+            || (perfil == 'fornecedor_hobart' && fornecedorHobart)
+          );
     }
 
     function canEditEtapa(etapa) {
@@ -153,7 +163,7 @@ service cloud.firestore {
       // Criar: somente vendas ou super_admin.
       // criadoPorUid deve ser o UID do usuário logado.
       // etapaAtual deve iniciar em 'solicitacao'.
-      allow create: if request.auth.uid != null
+      allow create: if isSignedIn()
                     && request.resource.data.criadoPorUid == request.auth.uid
                     && request.resource.data.etapaAtual == 'solicitacao'
                     && (isSuperAdmin() || getUserProfile() == 'vendas');
@@ -202,21 +212,21 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════
 
     match /fornecedores/{docId} {
-      allow read: if request.auth.uid != null;
+      allow read: if isSignedIn();
       allow create, update, delete: if isSuperAdmin() || isAdmVendas();
     }
 
     match /modelos_maquinas/{docId} {
-      allow read: if request.auth.uid != null;
+      allow read: if isSignedIn();
       allow create, update, delete: if isSuperAdmin() || isAdmVendas();
     }
 
     match /contadores/{docId} {
-      allow read: if request.auth.uid != null;
+      allow read: if isSignedIn();
       // Qualquer usuário autenticado pode incrementar (geração de protocolo WR).
       // Limitação aceita: usuário poderia incrementar o contador sem criar solicitação.
       // Mitigação P1: mover geração de protocolo para Cloud Function.
-      allow write: if request.auth.uid != null;
+      allow write: if isSignedIn();
     }
 
     match /maquinas/{serialId} {
@@ -225,12 +235,12 @@ service cloud.firestore {
                   || isAdmVendas()
                   || (getUserProfile() == 'fornecedor_ebst'   && resource.data.fornecedor == 'EBST')
                   || (getUserProfile() == 'fornecedor_hobart' && resource.data.fornecedor == 'Hobart Brasil');
-      allow write, delete: if request.auth.uid != null
+      allow write, delete: if isSignedIn()
                            && (isSuperAdmin() || isAdmVendas());
     }
 
     match /produtos/{docId} {
-      allow read: if request.auth.uid != null;
+      allow read: if isSignedIn();
       allow create, update, delete: if isSuperAdmin() || isAdmVendas();
     }
 
