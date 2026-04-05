@@ -2339,12 +2339,14 @@ let currentUser = null;
 
 // ─── MAPEAMENTO DE PERFIS ─────────────────────────────────────
 const PERFIS = {
-  super_admin:       { label:'Administrador',   chip:'c-admin',    cor:'#b71c1c' },
-  vendas:            { label:'Vendas',         chip:'c-pending',  cor:'#e65100' },
+  super_admin:       { label:'Administrador',    chip:'c-admin',    cor:'#b71c1c' },
+  vendas:            { label:'Vendas',           chip:'c-pending',  cor:'#e65100' },
   gestor:            { label:'Supervisor AS&TS', chip:'c-analysis', cor:'#1565c0' },
-  adm:               { label:'ADM Vendas',      chip:'c-approved', cor:'#2e7d32' },
-  fornecedor_ebst:   { label:'Fornecedor EBST', chip:'c-supplier', cor:'#4527a0' },
-  fornecedor_hobart: { label:'Fornecedor Hobart',chip:'c-supplier',cor:'#4527a0' }
+  supervisor_asts:   { label:'Supervisor AS&TS', chip:'c-analysis', cor:'#1565c0' }, // alias
+  adm:               { label:'ADM Vendas',       chip:'c-approved', cor:'#2e7d32' },
+  adm_vendas:        { label:'ADM Vendas',       chip:'c-approved', cor:'#2e7d32' }, // alias
+  fornecedor_ebst:   { label:'Fornecedor EBST',  chip:'c-supplier', cor:'#4527a0' },
+  fornecedor_hobart: { label:'Fornecedor Hobart',chip:'c-supplier', cor:'#4527a0' }
 };
 
 // Retorna o nome do fornecedor a partir do perfil
@@ -5063,22 +5065,31 @@ async function carregarPendentesEquipe() {
 
   try {
     let query;
+    // Ordenação feita no client-side para evitar índices compostos no Firestore
     if (perfil === 'vendas') {
-      query = db.collection('solicitacoes').where('criadoPorUid','==',uid).where('etapaAtual','==','solicitacao').orderBy('criadoEm','desc').limit(30);
+      query = db.collection('solicitacoes').where('criadoPorUid','==',uid).where('etapaAtual','==','solicitacao').limit(30);
     } else if (perfil === 'supervisor_asts' || perfil === 'gestor') {
-      query = db.collection('solicitacoes').where('etapaAtual','==','gestor').orderBy('criadoEm','desc').limit(50);
+      query = db.collection('solicitacoes').where('etapaAtual','==','gestor').limit(50);
     } else if (perfil === 'adm_vendas' || perfil === 'adm') {
-      query = db.collection('solicitacoes').where('etapaAtual','==','adm').orderBy('criadoEm','desc').limit(50);
+      query = db.collection('solicitacoes').where('etapaAtual','==','adm').limit(50);
     } else if (perfil === 'fornecedor_ebst') {
-      query = db.collection('solicitacoes').where('etapaAtual','==','fornecedor').where('dadosAdm.encaminhadoFornecedor','==','EBST').orderBy('criadoEm','desc').limit(50);
+      query = db.collection('solicitacoes').where('etapaAtual','==','fornecedor').where('dadosAdm.encaminhadoFornecedor','==','EBST').limit(50);
     } else if (perfil === 'fornecedor_hobart') {
-      query = db.collection('solicitacoes').where('etapaAtual','==','fornecedor').where('dadosAdm.encaminhadoFornecedor','==','Hobart Brasil').orderBy('criadoEm','desc').limit(50);
+      query = db.collection('solicitacoes').where('etapaAtual','==','fornecedor').where('dadosAdm.encaminhadoFornecedor','==','Hobart Brasil').limit(50);
     } else {
-      query = db.collection('solicitacoes').where('etapaAtual','not-in',['relatorio','concluido']).orderBy('etapaAtual').orderBy('criadoEm','desc').limit(100);
+      // super_admin: vê tudo que não está concluído
+      query = db.collection('solicitacoes').limit(100);
     }
 
     const snap = await query.get();
-    const docs = snap.docs;
+    // Ordena por data decrescente no client-side (mais recente primeiro)
+    const docs = snap.docs
+      .filter(d => perfil === 'super_admin' ? !['concluido'].includes(d.data().etapaAtual) : true)
+      .sort((a, b) => {
+        const ta = a.data().criadoEm?.toMillis ? a.data().criadoEm.toMillis() : 0;
+        const tb = b.data().criadoEm?.toMillis ? b.data().criadoEm.toMillis() : 0;
+        return tb - ta;
+      });
     if (subEl) subEl.textContent = `${docs.length} item${docs.length===1?'':'s'} aguardando sua ação`;
 
     const badgeEl = document.getElementById('badgePendentes');
