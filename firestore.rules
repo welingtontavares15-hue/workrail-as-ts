@@ -21,15 +21,6 @@ service cloud.firestore {
       return p == 'adm_vendas' || p == 'adm';
     }
 
-    function isFornecedor() {
-      let perfil = getUserProfile();
-      return perfil == 'fornecedor_ebst' || perfil == 'fornecedor_hobart';
-    }
-
-    function getUserFornecedor() {
-      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.fornecedor;
-    }
-
     function canViewSolicitacao() {
       let doc = resource.data;
       let perfil = getUserProfile();
