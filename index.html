@@ -1000,6 +1000,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
       <span id="user-role-chip">—</span>
       <div class="tb-user" id="tb-user-avatar" title="Usuário logado">?</div>
     </div>
+    <button class="tb-icon-btn" id="alterarSenhaBtn" title="Alterar minha senha" onclick="showMod('modal-alterar-senha')" style="display:none">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 7V5a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>
+    </button>
     <button class="tb-icon-btn" id="logoutBtn" title="Sair do sistema" onclick="fazerLogout()" style="display:none">
       <svg viewBox="0 0 16 16" fill="none"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M10 11l3-3-3-3M13 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -1994,8 +1997,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
         <input type="email" id="admin-u-email" class="field-input" placeholder="email@empresa.com">
       </div>
       <div class="login-field" style="margin:0" id="admin-u-senha-wrap">
-        <label style="font-size:12px;font-weight:600;color:var(--text-mid)">Senha inicial *</label>
-        <input type="password" id="admin-u-senha" class="field-input" placeholder="Mín. 6 caracteres">
+        <label style="font-size:12px;font-weight:600;color:var(--text-mid)">Senha inicial <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+        <input type="password" id="admin-u-senha" class="field-input" placeholder="Deixe vazio para enviar link de acesso ao usuário">
+        <span style="font-size:10px;color:var(--teal-dark);margin-top:3px;display:block">✉ Se vazio, um e-mail de boas-vindas com link para definir senha será enviado automaticamente.</span>
       </div>
       <div class="login-field" style="margin:0">
         <label style="font-size:12px;font-weight:600;color:var(--text-mid)">Perfil *</label>
@@ -2016,7 +2020,13 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
         </select>
       </div>
       <div class="login-field" style="margin:0" id="admin-u-reset-wrap" style="display:none">
-        <button class="btn btn-clear" style="width:100%" onclick="resetarSenhaUsuario()">📧 Enviar e-mail de redefinição de senha</button>
+        <div style="background:#f0fafb;border:1px solid #b2dfdb;border-radius:6px;padding:10px 12px;display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:11px;color:var(--text-mid);font-weight:600">Acesso do usuário</span>
+          <button class="btn btn-clear" style="width:100%;font-size:12px" onclick="resetarSenhaUsuario()">
+            <svg viewBox="0 0 13 13" fill="none" style="width:13px;height:13px"><path d="M11 6.5A4.5 4.5 0 1 1 6.5 2M11 2v4H7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Reenviar e-mail de acesso / redefinição de senha
+          </button>
+        </div>
       </div>
       <div id="admin-u-erro" style="font-size:12px;color:var(--red);display:none"></div>
     </div>
@@ -2096,6 +2106,39 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
     <div class="modal-btns">
       <button class="btn btn-secondary" onclick="closeMod('modal-admin-modelo')">Cancelar</button>
       <button class="btn btn-send" onclick="salvarModeloAdmin()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL ALTERAR MINHA SENHA ══ -->
+<div id="modal-alterar-senha" class="modal-overlay">
+  <div class="modal" style="width:400px;max-width:95vw">
+    <h3 style="display:flex;align-items:center;gap:8px">
+      <svg viewBox="0 0 16 16" fill="none" style="width:18px;height:18px;color:var(--teal)"><rect x="3" y="7" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 7V5a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>
+      Alterar Minha Senha
+    </h3>
+    <p style="font-size:12px;color:var(--text-muted);margin:0 0 14px">Informe sua senha atual e defina uma nova senha para acessar o sistema.</p>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
+      <div class="login-field" style="margin:0">
+        <label style="font-size:12px;font-weight:600;color:var(--text-mid)">Senha atual *</label>
+        <input type="password" id="altSenhaAtual" class="field-input" placeholder="Digite sua senha atual" autocomplete="current-password">
+      </div>
+      <div class="login-field" style="margin:0">
+        <label style="font-size:12px;font-weight:600;color:var(--text-mid)">Nova senha *</label>
+        <input type="password" id="altSenhaNova" class="field-input" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+      </div>
+      <div class="login-field" style="margin:0">
+        <label style="font-size:12px;font-weight:600;color:var(--text-mid)">Confirmar nova senha *</label>
+        <input type="password" id="altSenhaConf" class="field-input" placeholder="Repita a nova senha" autocomplete="new-password">
+      </div>
+      <div id="altSenhaErro" style="font-size:12px;color:var(--red);display:none;padding:8px 10px;background:#fff5f5;border-radius:5px;border:1px solid #ffccbc"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeMod('modal-alterar-senha')">Cancelar</button>
+      <button class="btn btn-send" id="altSenhaSalvarBtn" onclick="alterarMinhaSenha()">
+        <svg viewBox="0 0 13 13" fill="none" style="width:13px;height:13px"><path d="M2 6.5l3 3 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Alterar Senha
+      </button>
     </div>
   </div>
 </div>
@@ -2830,6 +2873,82 @@ async function fazerLogin() {
   }
 }
 
+// ─── ENVIAR RESET PARA A PRÓPRIA CONTA ───────────────────────
+async function enviarResetPropriaConta() {
+  const user = firebase.auth().currentUser;
+  const email = user?.email || currentUser?.email;
+  if (!email) { showToast('E-mail não encontrado. Contate o administrador.', 'error'); return; }
+  try {
+    await firebase.auth().sendPasswordResetEmail(email);
+    showToast('✉ Link de redefinição enviado para ' + email, 'success');
+  } catch(e) {
+    showToast('Erro ao enviar link: ' + (e.message || e), 'error');
+  }
+}
+
+// ─── ALTERAR MINHA SENHA ─────────────────────────────────────
+async function alterarMinhaSenha() {
+  const senhaAtual = document.getElementById('altSenhaAtual')?.value || '';
+  const senhaNova  = document.getElementById('altSenhaNova')?.value  || '';
+  const senhaConf  = document.getElementById('altSenhaConf')?.value  || '';
+  const erroEl     = document.getElementById('altSenhaErro');
+  const btn        = document.getElementById('altSenhaSalvarBtn');
+
+  erroEl.style.display = 'none';
+
+  if (!senhaAtual || !senhaNova || !senhaConf) {
+    erroEl.textContent = 'Preencha todos os campos obrigatórios.';
+    erroEl.style.display = ''; return;
+  }
+  if (senhaNova.length < 6) {
+    erroEl.textContent = 'A nova senha deve ter pelo menos 6 caracteres.';
+    erroEl.style.display = ''; return;
+  }
+  if (senhaNova !== senhaConf) {
+    erroEl.textContent = 'A confirmação não coincide com a nova senha.';
+    erroEl.style.display = ''; return;
+  }
+  if (senhaAtual === senhaNova) {
+    erroEl.textContent = 'A nova senha deve ser diferente da senha atual.';
+    erroEl.style.display = ''; return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Alterando...';
+
+  try {
+    const user = firebase.auth().currentUser;
+    if (!user) throw { code: 'auth/no-user', message: 'Sessão expirada. Faça login novamente.' };
+
+    // Re-autenticar antes de alterar a senha
+    const credential = firebase.auth.EmailAuthProvider.credential(user.email, senhaAtual);
+    await user.reauthenticateWithCredential(credential);
+
+    // Alterar a senha
+    await user.updatePassword(senhaNova);
+
+    // Limpar campos e fechar modal
+    document.getElementById('altSenhaAtual').value = '';
+    document.getElementById('altSenhaNova').value  = '';
+    document.getElementById('altSenhaConf').value  = '';
+    closeMod('modal-alterar-senha');
+    showToast('✓ Senha alterada com sucesso!', 'success');
+  } catch(e) {
+    const msgs = {
+      'auth/wrong-password':       'Senha atual incorreta.',
+      'auth/invalid-credential':   'Senha atual incorreta.',
+      'auth/weak-password':        'A nova senha é muito fraca.',
+      'auth/requires-recent-login':'Sessão expirada. Saia e faça login novamente.',
+      'auth/no-user':              'Sessão expirada. Saia e faça login novamente.'
+    };
+    erroEl.textContent = msgs[e.code] || ('Erro: ' + (e.message || 'Tente novamente.'));
+    erroEl.style.display = '';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Alterar Senha';
+  }
+}
+
 async function fazerLogout() {
   if (!confirm('Deseja sair do sistema?')) return;
   try {
@@ -2950,6 +3069,8 @@ function aplicarPerfilNaInterface() {
   if (chip) chip.textContent = perfilInfo.label;
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) logoutBtn.style.display = 'flex';
+  const alterarSenhaBtn = document.getElementById('alterarSenhaBtn');
+  if (alterarSenhaBtn) alterarSenhaBtn.style.display = 'flex';
 
   // Sidebar — nome
   const sbName = document.getElementById('sb-user-name');
@@ -5386,6 +5507,35 @@ function buildConfig(){
       </div>
     </div>
     <div class="config-section">
+      <div class="cs-head"><svg viewBox="0 0 14 14" fill="none"><rect x="2" y="6" width="10" height="7" rx="1.2" stroke="currentColor" stroke-width="1.2"/><path d="M4 6V4.5a3 3 0 0 1 6 0V6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="7" cy="9.5" r=".9" fill="currentColor"/></svg><span class="cs-title">Segurança</span><span class="cs-toggle-arrow">▾</span></div>
+      <div class="cs-body">
+        <div class="cf-row">
+          <div>
+            <div class="cf-label">Alterar senha de acesso</div>
+            <div class="cf-sub">Redefina sua senha atual para uma nova senha segura</div>
+          </div>
+          <div class="cf-right">
+            <button class="btn" style="background:var(--teal);color:#fff;font-size:12px;padding:6px 14px;border-radius:6px;height:32px" onclick="showMod('modal-alterar-senha')">
+              <svg viewBox="0 0 13 13" fill="none" style="width:12px;height:12px"><rect x="2" y="5.5" width="9" height="6.5" rx="1" stroke="currentColor" stroke-width="1.1"/><path d="M4 5.5V4a2.5 2.5 0 0 1 5 0v1.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+              Alterar Senha
+            </button>
+          </div>
+        </div>
+        <div class="cf-row">
+          <div>
+            <div class="cf-label">Enviar link de redefinição por e-mail</div>
+            <div class="cf-sub">Receba um link no seu e-mail cadastrado para redefinir a senha</div>
+          </div>
+          <div class="cf-right">
+            <button class="btn btn-clear" style="font-size:12px;padding:6px 14px;border-radius:6px;height:32px" onclick="enviarResetPropriaConta()">
+              <svg viewBox="0 0 13 13" fill="none" style="width:12px;height:12px"><path d="M11 6.5A4.5 4.5 0 1 1 6.5 2M11 2v4H7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Enviar link
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="config-section">
       <div class="cs-head"><svg viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M4 7h6M4 5h6M4 9h3.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg><span class="cs-title">Fornecedores Cadastrados</span><span class="cs-toggle-arrow">▾</span></div>
       <div class="cs-body">
         <div class="user-row"><div class="u-avatar" style="background:#ede7f6;color:#4527a0">HB</div><div class="u-info"><div class="u-name">Hobart Brasil</div><div class="u-role">Ecomax · CCR</div></div><span class="u-chip chip c-done">Ativo</span></div>
@@ -6334,8 +6484,9 @@ async function salvarUsuarioAdmin() {
 
     if (!uid) {
       // ──── CRIAR NOVO USUÁRIO ──────────────────────────────────────
-      if (!senha || senha.length < 6) {
-        erroEl.textContent = 'Senha deve ter no mínimo 6 caracteres.';
+      // Senha é opcional: se informada deve ter ≥6 chars; se não, será gerada automaticamente
+      if (senha && senha.length < 6) {
+        erroEl.textContent = 'Se informar senha, ela deve ter no mínimo 6 caracteres.';
         erroEl.style.display = '';
         btn.disabled = false;
         btn.textContent = 'Criar Usuário';
@@ -6352,25 +6503,28 @@ async function salvarUsuarioAdmin() {
         return;
       }
 
+      // ── Senha: usa a informada ou gera senha temporária aleatória ──
+      const senhaFinal = (senha && senha.length >= 6)
+        ? senha
+        : Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8).toUpperCase() + '!1';
+
       // ── Criar conta no Firebase Auth usando app secundário ────────
       // Usa app secundário para não deslogar o admin atual
       let secondaryApp;
       try {
         secondaryApp = firebase.initializeApp(FIREBASE_CONFIG, 'UserCreation');
       } catch(appErr) {
-        // Se o app secundário já existe (ex: erro anterior), reutiliza
         secondaryApp = firebase.app('UserCreation');
       }
 
       let newUid;
       try {
         const secondaryAuth = secondaryApp.auth();
-        const userCredential = await secondaryAuth.createUserWithEmailAndPassword(email, senha);
+        const userCredential = await secondaryAuth.createUserWithEmailAndPassword(email, senhaFinal);
         newUid = userCredential.user.uid;
         await secondaryAuth.signOut();
       } catch(authErr) {
-        // Limpar app secundário antes de propagar o erro
-        try { await secondaryApp.delete(); } catch(cleanupErr) { console.warn('[ADMIN] Erro ao limpar app secundário:', cleanupErr); }
+        try { await secondaryApp.delete(); } catch(cleanupErr) {}
         if (authErr.code === 'auth/email-already-in-use') {
           erroEl.textContent = 'Este e-mail já está cadastrado no sistema de autenticação.';
         } else if (authErr.code === 'auth/invalid-email') {
@@ -6385,7 +6539,7 @@ async function salvarUsuarioAdmin() {
         btn.textContent = 'Criar Usuário';
         return;
       } finally {
-        try { await secondaryApp.delete(); } catch(cleanupErr) { console.warn('[ADMIN] Erro ao limpar app secundário:', cleanupErr); }
+        try { await secondaryApp.delete(); } catch(cleanupErr) {}
       }
 
       // Criar documento do usuário no Firestore usando o UID do Firebase Auth
@@ -6400,7 +6554,6 @@ async function salvarUsuarioAdmin() {
         criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
         criadoPor: currentUser?.uid || 'admin'
       });
-      // Criar lookup público username → email
       batch.set(db.collection('username_lookup').doc(username.toLowerCase()), {
         email,
         uid: newUid,
@@ -6409,7 +6562,28 @@ async function salvarUsuarioAdmin() {
       });
       await batch.commit();
 
-      showToast('✓ Usuário criado com sucesso!', 'success');
+      // ── Enviar e-mail de boas-vindas + link de redefinição de senha ──
+      try {
+        await firebase.auth().sendPasswordResetEmail(email);
+      } catch(resetErr) {
+        console.warn('[ADMIN] Falha ao enviar reset email:', resetErr);
+      }
+      try {
+        await enviarNotificacao(email,
+          'Bem-vindo ao WORKRAIL — Solenis Brasil',
+          `Olá ${nome}, sua conta foi criada no sistema WORKRAIL. Acesse com seu usuário e defina sua senha pelo link enviado em outro e-mail.`,
+          null, {
+            'Seu usuário (login)': username,
+            'Perfil de acesso': perfil,
+            'URL do sistema': window.location.origin + window.location.pathname,
+            'Próximo passo': 'Verifique seu e-mail para o link de definição de senha e acesse o sistema.'
+          }
+        );
+      } catch(emailErr) {
+        console.warn('[ADMIN] Falha ao enviar e-mail de boas-vindas:', emailErr);
+      }
+
+      showToast('✓ Usuário criado! E-mail de acesso enviado para ' + email, 'success');
     } else {
       // ──── EDITAR USUÁRIO EXISTENTE ────────────────────────────────
       const updateData = { nome, perfil, email };
