@@ -99,7 +99,8 @@ service cloud.firestore {
 
     match /contadores/{docId} {
       allow read: if request.auth.uid != null;
-      allow write: if isSuperAdmin();
+      // Qualquer usuário autenticado pode incrementar contadores (geração de número WR)
+      allow write: if request.auth.uid != null;
     }
 
     // ── Base de máquinas importadas via Excel ──────────────

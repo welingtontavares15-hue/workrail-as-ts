@@ -3423,6 +3423,60 @@ async function notificarTransicaoEtapa(etapaAnterior, etapaAtual, dados) {
   });
 }
 
+// ─── NOTIFICAÇÃO DINÂMICA POR PERFIL (usa e-mails reais do Firestore) ──────────
+/**
+ * Busca todos os e-mails de usuários ativos com determinado perfil no Firestore.
+ * Suporta aliases legados (gestor = supervisor_asts, adm = adm_vendas).
+ */
+async function buscarEmailsPorPerfil(perfil) {
+  if (!db) return [];
+  try {
+    const aliasMap = {
+      gestor:  ['supervisor_asts', 'gestor'],
+      adm:     ['adm_vendas', 'adm'],
+      vendas:  ['vendas'],
+      super_admin: ['super_admin']
+    };
+    const perfis = aliasMap[perfil] || [perfil];
+    const emails = [];
+    for (const p of perfis) {
+      const snap = await db.collection('usuarios')
+        .where('perfil', '==', p)
+        .where('ativo', '!=', false)
+        .get();
+      snap.docs.forEach(d => { if (d.data().email) emails.push(d.data().email); });
+    }
+    return [...new Set(emails)]; // sem duplicatas
+  } catch(e) {
+    console.warn('[WORKRAIL] buscarEmailsPorPerfil falhou:', e);
+    return [];
+  }
+}
+
+/**
+ * Busca o e-mail de um usuário específico pelo UID.
+ */
+async function buscarEmailPorUid(uid) {
+  if (!db || !uid) return null;
+  try {
+    const snap = await db.collection('usuarios').doc(uid).get();
+    return snap.exists ? (snap.data().email || null) : null;
+  } catch(e) { return null; }
+}
+
+/**
+ * Envia notificação para TODOS os usuários de um perfil.
+ * Fallback para EMAIL_RECIPIENTS se nenhum e-mail for encontrado no Firestore.
+ */
+async function notificarPorPerfil(perfil, assunto, mensagem, protocolo, detalhes) {
+  const emails = await buscarEmailsPorPerfil(perfil);
+  const fallback = EMAIL_RECIPIENTS[perfil];
+  const destinos = emails.length > 0 ? emails : (fallback ? [fallback] : []);
+  for (const email of destinos) {
+    try { await enviarNotificacao(email, assunto, mensagem, protocolo, detalhes); } catch(e) {}
+  }
+}
+
 // ════════════════════════════════════════════════════════════
 // VALIDAÇÕES OBRIGATÓRIAS POR ETAPA
 // ════════════════════════════════════════════════════════════
@@ -4184,12 +4238,14 @@ async function confirmEnviarGestor() {
     // Notificações
     const prot = currentSolicitacao?.protocolo;
     try {
-      await enviarNotificacao(EMAIL_RECIPIENTS.gestor,
+      // Notifica TODOS os supervisores AS&TS cadastrados no sistema
+      await notificarPorPerfil('gestor',
         'Nova Solicitação Aguardando Aprovação',
         `Solicitação criada por ${currentUser?.nome || 'Vendas'} aguarda seu parecer.`,
         prot,
         { Cliente: dados.dadosCliente.nomeCliente, Modelo: dados.dadosSolicitacao.modeloMaquina,
-          Representante: dados.dadosSolicitacao.representante }
+          Representante: dados.dadosSolicitacao.representante,
+          'Acesso ao sistema': window.location.href }
       );
       await enviarNotificacao(FORMSUBMIT_EMAIL,
         'Nova Solicitação Criada',
@@ -4265,14 +4321,16 @@ async function confirmAprovar() {
         uploads.map(u => ({ ...u, etapa:'gestor', responsavel:'Supervisor AS&TS' })));
     }
     const prot = currentSolicitacao?.protocolo;
-    await enviarNotificacao(EMAIL_RECIPIENTS.adm,
-      'Solicitação Aprovada — Aprovação ADM',
+    // Notifica TODOS os ADM de Vendas cadastrados no sistema
+    await notificarPorPerfil('adm',
+      'Solicitação Aprovada — Aprovação ADM Necessária',
       `A solicitação foi aprovada pelo Supervisor AS&TS e aguarda aprovação administrativa.`,
       prot, {
-        Observacoes: obs,
+        Observações: obs,
         Cliente: currentSolicitacao?.dadosCliente?.nomeCliente,
         Fornecedor: dadosSupervisor.fornecedorSugerido,
-        Modelo: dadosSupervisor.modeloValidado
+        Modelo: dadosSupervisor.modeloValidado,
+        'Acesso ao sistema': window.location.href
       }
     );
     await enviarNotificacao(FORMSUBMIT_EMAIL,
@@ -4307,10 +4365,13 @@ async function confirmRejeitar() {
     );
 
     const prot = currentSolicitacao?.protocolo;
-    await enviarNotificacao(EMAIL_RECIPIENTS.vendas,
+    // Notifica o criador específico da solicitação
+    const emailCriador = await buscarEmailPorUid(currentSolicitacao?.criadoPorUid);
+    await enviarNotificacao(emailCriador || EMAIL_RECIPIENTS.vendas,
       'Solicitação Reprovada — Revisão Necessária',
-      `A solicitação foi reprovada pelo Supervisor AS&TS.`,
-      prot, { Motivo: obs, Cliente: currentSolicitacao?.dadosCliente?.nomeCliente }
+      `A solicitação foi reprovada pelo Supervisor AS&TS. Verifique o motivo e abra uma nova se necessário.`,
+      prot, { Motivo: obs, Cliente: currentSolicitacao?.dadosCliente?.nomeCliente,
+               'Acesso ao sistema': window.location.href }
     );
     await enviarNotificacao(FORMSUBMIT_EMAIL,
       'Solicitação Reprovada', `Motivo: ${obs}`, prot);
@@ -4343,10 +4404,13 @@ async function confirmSolicitarAjuste() {
     );
 
     const prot = currentSolicitacao?.protocolo;
-    await enviarNotificacao(EMAIL_RECIPIENTS.vendas,
+    // Notifica o criador específico da solicitação
+    const emailCriadorAjuste = await buscarEmailPorUid(currentSolicitacao?.criadoPorUid);
+    await enviarNotificacao(emailCriadorAjuste || EMAIL_RECIPIENTS.vendas,
       'Ajuste Solicitado pelo Supervisor AS&TS',
-      `O Supervisor AS&TS solicitou ajustes na solicitação.`,
-      prot, { Orientacoes: obs, Cliente: currentSolicitacao?.dadosCliente?.nomeCliente }
+      `O Supervisor AS&TS solicitou ajustes na sua solicitação. Por favor, revise e reenvie.`,
+      prot, { Orientações: obs, Cliente: currentSolicitacao?.dadosCliente?.nomeCliente,
+               'Acesso ao sistema': window.location.href }
     );
     await enviarNotificacao(FORMSUBMIT_EMAIL,
       'Solicitação de Ajuste', `Orientações: ${obs}`, prot);
@@ -4378,6 +4442,7 @@ async function confirmFornecedor() {
     );
 
     const prot = currentSolicitacao?.protocolo;
+    // Notifica o fornecedor pelo e-mail cadastrado no Firestore
     const emailFornecedor = await obterEmailFornecedor(dadosAdm.fornecedor);
     await enviarNotificacao(emailFornecedor,
       'Pedido Recebido — Preparar Equipamento',
@@ -4386,10 +4451,16 @@ async function confirmFornecedor() {
         Pedido: dadosAdm.numeroPedido,
         Fornecedor: dadosAdm.fornecedor,
         Modelo: currentSolicitacao?.dadosSolicitacao?.modeloMaquina,
-        EntregaPrevista: dadosAdm.entregaPrevista,
-        Cliente: currentSolicitacao?.dadosCliente?.nomeCliente
+        'Entrega Prevista': dadosAdm.entregaPrevista,
+        Cliente: currentSolicitacao?.dadosCliente?.nomeCliente,
+        'Acesso ao sistema': window.location.href
       }
     );
+    // Também notifica o fornecedor cadastrado nos usuários do sistema (se houver)
+    await notificarPorPerfil('fornecedor_' + (dadosAdm.fornecedor || '').toLowerCase().replace(/\s/g,'_'),
+      'Novo Pedido Aguardando Preparação', `Pedido ${dadosAdm.numeroPedido} aprovado.`, prot,
+      { Pedido: dadosAdm.numeroPedido, Cliente: currentSolicitacao?.dadosCliente?.nomeCliente }
+    ).catch(() => {}); // silencia se perfil não encontrado
     await enviarNotificacao(FORMSUBMIT_EMAIL,
       'Pedido Enviado ao Fornecedor', `Pedido: ${dadosAdm.numeroPedido}`, prot);
 
@@ -4437,17 +4508,21 @@ async function confirmExpedicao() {
     }
 
     const prot = currentSolicitacao?.protocolo;
-    await enviarNotificacao(EMAIL_RECIPIENTS.adm,
+    // Notifica todos os ADM de Vendas cadastrados
+    await notificarPorPerfil('adm',
       'Máquina Expedida — NF Disponível',
       `NF anexada e máquina liberada pelo fornecedor. A ADM deve acionar a logística para coleta e entrega.`,
-      prot, { NF: dados.numeroNF, DataColeta: dados.dataColeta,
+      prot, { NF: dados.numeroNF, 'Data Liberação': dados.dataColeta,
               'Serial Máquina': dados.maquinaConfirmada?.serialMaquina || '—',
-              Cliente: currentSolicitacao?.dadosCliente?.nomeCliente }
+              Cliente: currentSolicitacao?.dadosCliente?.nomeCliente,
+              'Acesso ao sistema': window.location.href }
     );
-    await enviarNotificacao(EMAIL_RECIPIENTS.gestor,
+    // Notifica também o supervisor
+    await notificarPorPerfil('gestor',
       'Máquina Liberada pelo Fornecedor',
       `Equipamento liberado pelo fornecedor e aguardando logística.`,
-      prot, { NF: dados.numeroNF, DataColeta: dados.dataColeta }
+      prot, { NF: dados.numeroNF, 'Data Liberação': dados.dataColeta,
+              Cliente: currentSolicitacao?.dadosCliente?.nomeCliente }
     );
     await enviarNotificacao(FORMSUBMIT_EMAIL,
       'NF Anexada — Expedição Confirmada', `NF: ${dados.numeroNF}`, prot);
@@ -4486,14 +4561,16 @@ async function confirmAgendarInstalacao() {
     }
 
     const prot = currentSolicitacao?.protocolo;
-    await enviarNotificacao(EMAIL_RECIPIENTS.gestor,
-      'Registrar Data de Instalação',
-      `A coleta foi confirmada e a instalação foi agendada.`,
-      prot, { DataColeta: dados.dataColetaConfirmada, Responsavel: dados.responsavelColeta,
-              Cliente: currentSolicitacao?.dadosCliente?.nomeCliente }
+    // Notifica todos os supervisores AS&TS para registrar a data de instalação
+    await notificarPorPerfil('gestor',
+      'Registrar Data de Instalação — Ação Necessária',
+      `A coleta foi confirmada. Por favor, registre a data de instalação no sistema.`,
+      prot, { 'Data Coleta': dados.dataColetaConfirmada, Responsável: dados.responsavelColeta,
+              Cliente: currentSolicitacao?.dadosCliente?.nomeCliente,
+              'Acesso ao sistema': window.location.href }
     );
     await enviarNotificacao(FORMSUBMIT_EMAIL,
-      'Registrar Data de Instalação', `Coleta em ${dados.dataColetaConfirmada}`, prot);
+      'Logística Acionada', `Coleta em ${dados.dataColetaConfirmada}`, prot);
 
     pendingFiles = {};
     showToast('Logística notificada. O Supervisor AS&TS deve informar a data de instalação.', 'success');
@@ -4528,6 +4605,21 @@ async function confirmIniciarRelatorio() {
     }
 
     pendingFiles = {};
+
+    // Notifica ADM e supervisor que a instalação foi agendada e o relatório deve ser gerado
+    const protInst = currentSolicitacao?.protocolo;
+    try {
+      await notificarPorPerfil('adm',
+        'Instalação Agendada — Aguardando Relatório',
+        `A data de instalação foi registrada. Aguardando o relatório final para encerramento.`,
+        protInst, { 'Data Instalação': dados.dataInstalacao, Horário: dados.horario,
+                    Técnico: dados.tecnico, Cliente: currentSolicitacao?.dadosCliente?.nomeCliente,
+                    'Acesso ao sistema': window.location.href }
+      );
+      await enviarNotificacao(FORMSUBMIT_EMAIL,
+        'Instalação Agendada', `Data: ${dados.dataInstalacao} às ${dados.horario}. Técnico: ${dados.tecnico}`, protInst);
+    } catch(notifErr) { console.warn('[WORKRAIL] Notificação instalação:', notifErr); }
+
     showToast('Data de instalação registrada. Próxima etapa: anexar relatório e finalizar.', 'success');
     go('relatorio');
   } catch(e) {
@@ -4561,16 +4653,28 @@ async function confirmConcluir() {
     }
 
     const prot = currentSolicitacao?.protocolo;
-    await enviarNotificacao(EMAIL_RECIPIENTS.adm,
-      'Processo Encerrado com Sucesso',
-      `Relatório de instalação anexado e solicitação finalizada.`,
+    // Notifica ADM, supervisores e o criador original da solicitação
+    await notificarPorPerfil('adm',
+      'Processo Encerrado com Sucesso ✓',
+      `Relatório de instalação anexado e solicitação finalizada com sucesso.`,
+      prot, { Cliente: currentSolicitacao?.dadosCliente?.nomeCliente, Protocolo: prot,
+              'Acesso ao sistema': window.location.href }
+    );
+    await notificarPorPerfil('gestor',
+      'Processo Encerrado com Sucesso ✓',
+      `A solicitação foi concluída com sucesso.`,
       prot, { Cliente: currentSolicitacao?.dadosCliente?.nomeCliente, Protocolo: prot }
     );
-    await enviarNotificacao(EMAIL_RECIPIENTS.gestor,
-      'Processo Encerrado',
-      `A solicitação foi concluída com sucesso.`,
-      prot, { Cliente: currentSolicitacao?.dadosCliente?.nomeCliente }
-    );
+    // Notifica o representante de vendas que criou a solicitação
+    const emailCriadorFinal = await buscarEmailPorUid(currentSolicitacao?.criadoPorUid);
+    if (emailCriadorFinal) {
+      await enviarNotificacao(emailCriadorFinal,
+        'Sua Solicitação Foi Concluída ✓',
+        `Boa notícia! A solicitação que você abriu foi concluída com sucesso. A máquina foi instalada.`,
+        prot, { Cliente: currentSolicitacao?.dadosCliente?.nomeCliente, Protocolo: prot,
+                'Acesso ao sistema': window.location.href }
+      );
+    }
     await enviarNotificacao(FORMSUBMIT_EMAIL,
       'Fluxo Finalizado', `Processo encerrado. Relatório anexado.`, prot);
 
