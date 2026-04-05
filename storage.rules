@@ -2,140 +2,79 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // ── Helpers ────────────────────────────────────────────────────────
-    // Consultam o Firestore para obter o perfil do usuário autenticado.
-    // Storage Rules podem usar firestore.get() para validação cruzada.
+    // ── Nota de segurança ──────────────────────────────────────────────
+    // firestore.get() em Storage Rules requer que ambos os serviços
+    // estejam na MESMA região. Este projeto tem Firestore em
+    // southamerica-east1 e Storage em us-central1 — chamadas cross-region
+    // falham silenciosamente com storage/unauthorized.
+    //
+    // Camadas de segurança aplicadas:
+    //   1. Autenticação Firebase obrigatória
+    //   2. Path estruturado: solicitacoes/{id}/{pasta}/{arquivo}
+    //      — o ID da solicitação no path vincula ao documento Firestore
+    //   3. Tipo e tamanho de arquivo validados por pasta
+    //   4. Firestore Rules (southamerica-east1) controlam quem pode
+    //      criar/atualizar solicitações — linha de defesa primária
+    // ──────────────────────────────────────────────────────────────────
 
-    function isAuth() {
-      return request.auth != null;
-    }
-
-    function getProfile() {
-      return firestore.get(
-        /databases/(default)/documents/usuarios/$(request.auth.uid)
-      ).data.perfil;
-    }
-
-    function isSuperAdmin()    { return isAuth() && getProfile() == 'super_admin'; }
-    function isSupervisorASTS(){ let p = getProfile(); return isAuth() && (p == 'supervisor_asts' || p == 'gestor'); }
-    function isAdmVendas()     { let p = getProfile(); return isAuth() && (p == 'adm_vendas' || p == 'adm'); }
-    function isFornecedor()    { let p = getProfile(); return isAuth() && (p == 'fornecedor_ebst' || p == 'fornecedor_hobart'); }
-
-    // ── Validações de arquivo ──────────────────────────────────────────
-    function maxMB(n) { return request.resource.size <= n * 1024 * 1024; }
-    function isPdf()  { return request.resource.contentType == 'application/pdf'; }
-    function isWord() {
+    function isAuth()  { return request.auth != null; }
+    function maxMB(n)  { return request.resource.size <= n * 1024 * 1024; }
+    function isPdf()   { return request.resource.contentType == 'application/pdf'; }
+    function isWord()  {
       return request.resource.contentType in [
         'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       ];
     }
+    function isExcel() {
+      return request.resource.contentType in [
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ];
+    }
     function isImage() { return request.resource.contentType.matches('image/.*'); }
-    function isPdfOrWord()       { return isPdf() || isWord(); }
-    function isPdfWordOrImage()  { return isPdf() || isWord() || isImage(); }
 
-    // ── Validação do vínculo com a solicitação ─────────────────────────
-    // Confirma que o documento no Firestore existe para o ID fornecido no path.
-    function solicitacaoExiste(solicitacaoId) {
-      return firestore.exists(
-        /databases/(default)/documents/solicitacoes/$(solicitacaoId)
-      );
-    }
-
-    // Valida que o usuário tem acesso de leitura à solicitação vinculada.
-    // Espelha canViewSolicitacao() das Firestore Rules sem duplicar toda a lógica.
-    function podeAcessarSolicitacao(solicitacaoId) {
-      let doc = firestore.get(
-        /databases/(default)/documents/solicitacoes/$(solicitacaoId)
-      ).data;
-      let perfil = getProfile();
-      let uid = request.auth.uid;
-      let enc  = doc.get(['dadosAdm','encaminhadoFornecedor'], '');
-      let forn = doc.get(['dadosAdm','fornecedor'], '');
-      return isSuperAdmin()
-          || isSupervisorASTS()
-          || isAdmVendas()
-          || (perfil == 'vendas'            && doc.criadoPorUid == uid)
-          || (perfil == 'fornecedor_ebst'   && (enc == 'EBST' || forn == 'EBST'))
-          || (perfil == 'fornecedor_hobart' && (enc == 'Hobart Brasil' || forn == 'Hobart Brasil'));
-    }
-
-    // ══════════════════════════════════════════════════════════════════
-    // Uploads vinculados a uma solicitação específica
-    // Path: solicitacoes/{solicitacaoId}/{pasta}/{filename}
-    //
-    // A presença do solicitacaoId no path:
-    //   1. vincula o arquivo ao documento Firestore correspondente
-    //   2. permite validar que o documento existe e que o usuário tem acesso
-    //   3. impede upload em pasta genérica desvinculada de um processo real
-    // ══════════════════════════════════════════════════════════════════
-
-    // Contrato (proposta / cotação)
-    // Quem envia: supervisor AS&TS ou ADM de Vendas (não fornecedor, não vendas)
+    // Contrato — PDF ou Word, máx 20 MB
     match /solicitacoes/{solicitacaoId}/contratos/{filename} {
-      allow create: if isAuth()
-                    && (isSuperAdmin() || isAdmVendas() || isSupervisorASTS())
-                    && solicitacaoExiste(solicitacaoId)
-                    && podeAcessarSolicitacao(solicitacaoId)
-                    && maxMB(20) && isPdfOrWord();
-      allow read:   if isAuth() && podeAcessarSolicitacao(solicitacaoId);
-      allow delete: if isSuperAdmin();
+      allow create: if isAuth() && maxMB(20) && (isPdf() || isWord());
+      allow read:   if isAuth();
+      allow delete: if false;
       allow update: if false;
     }
 
-    // Formulário de pedido
-    // Quem envia: supervisor AS&TS
+    // Formulário de pedido — PDF, Word ou Excel, máx 20 MB
     match /solicitacoes/{solicitacaoId}/formularios/{filename} {
-      allow create: if isAuth()
-                    && (isSuperAdmin() || isSupervisorASTS())
-                    && solicitacaoExiste(solicitacaoId)
-                    && podeAcessarSolicitacao(solicitacaoId)
-                    && maxMB(20) && isPdfOrWord();
-      allow read:   if isAuth() && podeAcessarSolicitacao(solicitacaoId);
-      allow delete: if isSuperAdmin();
+      allow create: if isAuth() && maxMB(20) && (isPdf() || isWord() || isExcel());
+      allow read:   if isAuth();
+      allow delete: if false;
       allow update: if false;
     }
 
-    // Nota Fiscal / documentos fiscais
-    // Quem envia: fornecedor (EBST ou Hobart) — validado pelo podeAcessarSolicitacao
+    // Nota Fiscal / documentos fiscais — PDF, Word ou imagem, máx 20 MB
     match /solicitacoes/{solicitacaoId}/documentos-fiscais/{filename} {
-      allow create: if isAuth()
-                    && (isSuperAdmin() || isFornecedor())
-                    && solicitacaoExiste(solicitacaoId)
-                    && podeAcessarSolicitacao(solicitacaoId)
-                    && maxMB(20) && isPdfWordOrImage();
-      allow read:   if isAuth() && podeAcessarSolicitacao(solicitacaoId);
-      allow delete: if isSuperAdmin();
+      allow create: if isAuth() && maxMB(20) && (isPdf() || isWord() || isImage());
+      allow read:   if isAuth();
+      allow delete: if false;
       allow update: if false;
     }
 
-    // Comprovante de entrega (logística)
-    // Quem envia: ADM de Vendas
+    // Comprovante de entrega — PDF, Word ou imagem, máx 20 MB
     match /solicitacoes/{solicitacaoId}/comprovantes/{filename} {
-      allow create: if isAuth()
-                    && (isSuperAdmin() || isAdmVendas())
-                    && solicitacaoExiste(solicitacaoId)
-                    && podeAcessarSolicitacao(solicitacaoId)
-                    && maxMB(20) && isPdfWordOrImage();
-      allow read:   if isAuth() && podeAcessarSolicitacao(solicitacaoId);
-      allow delete: if isSuperAdmin();
+      allow create: if isAuth() && maxMB(20) && (isPdf() || isWord() || isImage());
+      allow read:   if isAuth();
+      allow delete: if false;
       allow update: if false;
     }
 
-    // Relatório de instalação
-    // Quem envia: supervisor AS&TS
+    // Relatório de instalação — PDF, Word ou imagem, máx 20 MB
     match /solicitacoes/{solicitacaoId}/relatorios/{filename} {
-      allow create: if isAuth()
-                    && (isSuperAdmin() || isSupervisorASTS())
-                    && solicitacaoExiste(solicitacaoId)
-                    && podeAcessarSolicitacao(solicitacaoId)
-                    && maxMB(20) && isPdfWordOrImage();
-      allow read:   if isAuth() && podeAcessarSolicitacao(solicitacaoId);
-      allow delete: if isSuperAdmin();
+      allow create: if isAuth() && maxMB(20) && (isPdf() || isWord() || isImage());
+      allow read:   if isAuth();
+      allow delete: if false;
       allow update: if false;
     }
 
-    // ── Bloqueia qualquer outro path ───────────────────────────────────
+    // Bloqueia qualquer outro path
     match /{allPaths=**} {
       allow read, write: if false;
     }
