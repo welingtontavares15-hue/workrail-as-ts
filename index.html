@@ -412,6 +412,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
   background:#fff;
 }
 .hist-table{width:100%;border-collapse:collapse;background:#fff}
+/* Reduz padding horizontal do Histórico para aproveitar melhor a largura */
+#screen-historico .panel-body{padding-left:8px;padding-right:8px}
 .hist-table th{
   padding:10px 14px;text-align:left;
   font-size:10.5px;font-weight:700;color:var(--text-muted);
@@ -1214,7 +1216,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
                   </tr>
                 </thead>
                 <tbody id="ctdBody">
-                  <tr><td colspan="9"><div class="dash-loading"><div class="dash-spinner"></div>Carregando contratos…</div></td></tr>
+                  <tr><td colspan="20"><div class="dash-loading"><div class="dash-spinner"></div>Carregando contratos…</div></td></tr>
                 </tbody>
               </table>
             </div>
@@ -4703,9 +4705,10 @@ async function carregarSolicitacoesPendentes() {
       const data  = d.data();
       const st    = STATUS[data.status] || STATUS.RASCUNHO;
       const prot  = data.protocolo || d.id.slice(0,8);
-      const client= data.dadosSolicitacao?.nomeCliente || data.dadosSolicitacao?.cliente || '—';
-      const model = data.dadosSolicitacao?.modeloMaquina || data.dadosSolicitacao?.modelo || '—';
-      const resp  = data.criadoPorNome || data.dadosSolicitacao?.responsavelVendas || '—';
+      // dadosCliente.nomeCliente é o campo correto da estrutura de dados
+      const client= data.dadosCliente?.nomeCliente || data.dadosSolicitacao?.nomeCliente || '—';
+      const model = data.dadosSolicitacao?.modeloMaquina || '—';
+      const resp  = data.dadosSolicitacao?.representante || data.dadosSolicitacao?.responsavelVendas || '—';
       const dt    = data.criadoEm?.toDate ? data.criadoEm.toDate().toLocaleDateString('pt-BR') : '—';
       return `<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer" onclick="abrirSolicitacao('${d.id}')">
         <div style="flex:1;min-width:0">
@@ -4716,7 +4719,9 @@ async function carregarSolicitacoesPendentes() {
           <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${client}</div>
           <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">${model} · ${resp} · ${dt}</div>
         </div>
-        <svg viewBox="0 0 13 13" fill="none" style="flex-shrink:0;opacity:.35"><path d="M4.5 2.5l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <!-- width e height OBRIGATÓRIOS: sem eles o SVG renderiza a ~300×150px
+             escalando o stroke 23× e criando a grande forma diagonal que quebra o layout -->
+        <svg viewBox="0 0 13 13" width="13" height="13" fill="none" style="flex-shrink:0;opacity:.35"><path d="M4.5 2.5l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>`;
     }).join('');
 
@@ -4775,8 +4780,8 @@ async function carregarPendentesEquipe() {
       const data  = d.data();
       const st    = STATUS[data.status] || STATUS.RASCUNHO;
       const prot  = data.protocolo || d.id.slice(0,8);
-      const client= data.dadosSolicitacao?.nomeCliente || data.dadosSolicitacao?.cliente || '—';
-      const model = data.dadosSolicitacao?.modeloMaquina || data.dadosSolicitacao?.modelo || '—';
+      const client= data.dadosCliente?.nomeCliente || data.dadosSolicitacao?.nomeCliente || '—';
+      const model = data.dadosSolicitacao?.modeloMaquina || '—';
       const dt    = data.criadoEm?.toDate ? data.criadoEm.toDate().toLocaleDateString('pt-BR') : '—';
       return `<div style="background:#fff;border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:8px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer" onclick="abrirSolicitacao('${d.id}')">
         <div style="flex:1;min-width:0">
@@ -5424,10 +5429,25 @@ function desenharBarMeses(elId, dadosMeses) {
 function renderizarTabelaContratos(contratos) {
   const tbody = document.getElementById('ctdBody');
   if (!tbody) return;
+
+  // Gerenciar coluna Ações dinamicamente — apenas para Administrador
+  const isAdmin = ['super_admin','adm_vendas','adm'].includes(currentUser?.perfil);
+  const theadRow = document.querySelector('#ctdTable thead tr');
+  const existingAcoesHeader = document.getElementById('ctd-th-acoes');
+  if (isAdmin && !existingAcoesHeader && theadRow) {
+    const th = document.createElement('th');
+    th.id = 'ctd-th-acoes';
+    th.style.width = '72px';
+    th.textContent = 'Ações';
+    theadRow.appendChild(th);
+  } else if (!isAdmin && existingAcoesHeader) {
+    existingAcoesHeader.remove();
+  }
+
   if (!contratos.length) {
-    tbody.innerHTML = `<tr><td colspan="9">
+    tbody.innerHTML = `<tr><td colspan="20">
       <div class="dash-empty">
-        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         Nenhum contrato com vigência cadastrada
       </div></td></tr>`;
     return;
@@ -5438,13 +5458,14 @@ function renderizarTabelaContratos(contratos) {
     const lbl    = ctdLabel(c.dias);
     const pct    = c.pctDecorrido !== null ? Math.min(Math.max(c.pctDecorrido,0),100) : null;
     const barCor = {'verde':'#2e7d32','amarelo':'#f57f17','laranja':'#e65100','vermelho':'#c62828','vencido':'#880e4f','cinza':'#90a4ae'}[cat];
+    const nomeEscapado = (c.nomeCliente||'').replace(/'/g, '');
 
     return `<tr>
       <td><span class="ctd-proto">${c.numeroPedido||'—'}</span></td>
-      <td><span class="ctd-cliente">${c.nomeCliente}</span></td>
+      <td><span class="ctd-cliente">${c.nomeCliente||'—'}</span></td>
       <td style="font-size:11.5px;font-family:'DM Mono',monospace;color:var(--teal-dark)">${c.serial||'—'}</td>
       <td><span class="ctd-modelo">${c.modelo||'—'}</span></td>
-      <td style="font-size:11px;color:var(--text-mid);white-space:nowrap">${fmtDate(c.dataInst)}</td>
+      <td style="font-size:11px;color:var(--text-mid);white-space:nowrap">${fmtDate(c.dataInst)||'—'}</td>
       <td style="font-size:11px;color:var(--text-mid);text-align:center">${c.meses ? c.meses+'m' : '—'}</td>
       <td style="font-size:11px;color:var(--text-mid);white-space:nowrap">${c.dataVenc ? fmtDate(c.dataVenc) : '—'}</td>
       <td>
@@ -5457,6 +5478,10 @@ function renderizarTabelaContratos(contratos) {
         </div>` : '<span style="font-size:11px;color:var(--text-muted)">—</span>'}
       </td>
       <td><span class="ctd-badge ctd-${cat}">${lbl}</span></td>
+      ${isAdmin ? `<td><button class="btn-mini btn-mini-red" style="background:var(--red-l);font-size:10.5px"
+          onclick="excluirContratoDashboard('${c.id}','${c.tipo||'solicitacao'}','${nomeEscapado}')">
+          Excluir
+        </button></td>` : ''}
     </tr>`;
   }).join('');
 }
@@ -5472,6 +5497,49 @@ function filtrarContratos(termo) {
     (c.modelo||'').toLowerCase().includes(t)
   );
   renderizarTabelaContratos(filtrados);
+}
+
+// ─── EXCLUIR REGISTRO DO DASHBOARD ───────────────────────────
+// Exclusão restrita ao Administrador (super_admin, adm_vendas, adm)
+async function excluirContratoDashboard(id, tipo, nomeCliente) {
+  // Verificação de segurança: apenas admin pode excluir
+  if (!['super_admin','adm_vendas','adm'].includes(currentUser?.perfil)) {
+    showToast('Sem permissão para excluir registros.', 'error');
+    return;
+  }
+  if (!confirm(`⚠️ Excluir o registro de "${nomeCliente}" permanentemente?\n\nEsta ação não pode ser desfeita.\nTodos os contadores e indicadores serão atualizados.\n\nClique OK para confirmar.`)) return;
+
+  try {
+    showLoading(true);
+    if (tipo === 'maquina') {
+      // Máquina importada — exclusão direta da coleção maquinas
+      await db.collection('maquinas').doc(id).delete();
+      showToast(`✓ Máquina de "${nomeCliente}" excluída com sucesso.`, 'success');
+    } else {
+      // Solicitação — verificar status antes de excluir
+      const docSnap = await db.collection('solicitacoes').doc(id).get();
+      if (!docSnap.exists) { showToast('Registro não encontrado.', 'error'); return; }
+      const data = docSnap.data();
+      const statusAtual = data.status || '';
+      // Bloquear exclusão de solicitações em andamento (exceto Rascunho e Reprovado)
+      const podeExcluir = ['RASCUNHO','REPROVADO','INSTALACAO_CONCLUIDA','ENCERRADO'].includes(statusAtual)
+                       || currentUser?.perfil === 'super_admin';
+      if (!podeExcluir) {
+        showToast(`⚠️ Não é possível excluir: solicitação em andamento (status: ${statusAtual}). Aguarde a conclusão ou reprove antes de excluir.`, 'error');
+        return;
+      }
+      await db.collection('solicitacoes').doc(id).delete();
+      showToast(`✓ Solicitação de "${nomeCliente}" excluída com sucesso.`, 'success');
+    }
+    // Atualizar dashboard completo: contadores, KPIs, gráficos e tabela
+    await carregarDashboard();
+  } catch(e) {
+    console.error('[DASHBOARD] Erro ao excluir:', e);
+    const msgs = { 'permission-denied': 'Sem permissão para excluir registros.' };
+    showToast(msgs[e.code] || ('Erro ao excluir: ' + (e.message || e)), 'error');
+  } finally {
+    showLoading(false);
+  }
 }
 
 // ─── FUNÇÃO PRINCIPAL DO DASHBOARD ───────────────────────────
@@ -5505,8 +5573,8 @@ async function carregarDashboard() {
     document.getElementById('dash-kpi-venc90').textContent   = '—';
     document.getElementById('dash-kpi-vencidos').textContent = '—';
     const tbody = document.getElementById('ctdBody');
-    if (tbody) tbody.innerHTML = `<tr><td colspan="9"><div class="dash-empty">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    if (tbody) tbody.innerHTML = `<tr><td colspan="20"><div class="dash-empty">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       Firebase não configurado — conecte ao Firebase para ver os contratos
     </div></td></tr>`;
     return;
@@ -5514,7 +5582,7 @@ async function carregarDashboard() {
 
   // Mostra loading na tabela
   const tbody = document.getElementById('ctdBody');
-  if (tbody) tbody.innerHTML = `<tr><td colspan="9"><div class="dash-loading"><div class="dash-spinner"></div>Carregando contratos…</div></td></tr>`;
+  if (tbody) tbody.innerHTML = `<tr><td colspan="20"><div class="dash-loading"><div class="dash-spinner"></div>Carregando contratos…</div></td></tr>`;
 
   try {
     // Busca solicitações e máquinas importadas em paralelo.
@@ -5548,7 +5616,7 @@ async function carregarDashboard() {
       const serial      = d.dadosFornecedor?.maquinaConfirmada?.serialMaquina || d.dadosAdm?.maquina?.serialMaquina || '';
       const numeroPedido = d.dadosSolicitacao?.numeroPedido || d.protocolo || doc.id.substring(0,8).toUpperCase();
       const { dataVenc, dias, pctDecorrido } = _calcVig(dataInst, meses);
-      return { id: doc.id, protocolo: numeroPedido, numeroPedido, serial, nomeCliente, modelo, dataInst, meses, dataVenc, dias, pctDecorrido, status };
+      return { id: doc.id, tipo: 'solicitacao', protocolo: numeroPedido, numeroPedido, serial, nomeCliente, modelo, dataInst, meses, dataVenc, dias, pctDecorrido, status };
     });
 
     // ── Processa máquinas importadas (evita duplicar seriais já em solicitações) ──
@@ -5562,6 +5630,7 @@ async function carregarDashboard() {
         const { dataVenc, dias, pctDecorrido } = _calcVig(dataInst, meses);
         return {
           id:           doc.id,
+          tipo:         'maquina',
           protocolo:    m.numeroPedido  || m.serialMaquina,
           numeroPedido: m.numeroPedido  || m.serialMaquina,
           serial:       m.serialMaquina,
@@ -5597,6 +5666,7 @@ async function carregarDashboard() {
           const { dataVenc, dias, pctDecorrido } = _calcVig(dataInst, meses);
           return {
             id: doc.id,
+            tipo: 'maquina',
             protocolo:    m.numeroPedido  || m.serialMaquina,
             numeroPedido: m.numeroPedido  || m.serialMaquina,
             serial:       m.serialMaquina,
@@ -5713,8 +5783,8 @@ async function carregarDashboard() {
   } catch(e) {
     console.error('Erro ao carregar dashboard:', e);
     const tbody2 = document.getElementById('ctdBody');
-    if (tbody2) tbody2.innerHTML = `<tr><td colspan="9"><div class="dash-empty">
-      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    if (tbody2) tbody2.innerHTML = `<tr><td colspan="20"><div class="dash-empty">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       Erro ao carregar: ${e.message}
     </div></td></tr>`;
   }
