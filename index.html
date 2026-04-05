@@ -1674,24 +1674,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
                 <div class="field">
                   <label>Modelo da Máquina <span class="req">*</span></label>
                   <select id="modeloMaquinaSelect">
-                    <option value="">Selecionar modelo...</option>
-                    <optgroup label="Hobart">
-                      <option>Ecomax 403</option>
-                      <option>Ecomax 503</option>
-                      <option>Ecomax 603</option>
-                      <option>CCR 200 C NR-12</option>
-                      <option>CCR 200 S NR-12</option>
-                      <option>CCR 260 C NR-12</option>
-                      <option>CCR 260 S NR-12</option>
-                    </optgroup>
-                    <optgroup label="EBST">
-                      <option>HD-50 Remanufaturada</option>
-                      <option>HD-80 Remanufaturada</option>
-                      <option>HD-50 Nova</option>
-                      <option>HD-80 Nova</option>
-                      <option>HD-200</option>
-                      <option>HD-200 MOB</option>
-                    </optgroup>
+                    <option value="">Carregando modelos...</option>
                   </select>
                 </div>
                 <div class="field">
@@ -1717,19 +1700,13 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
                 <div class="field">
                   <label>Detergente</label>
                   <select id="selectDetergente">
-                    <option value="">Selecionar...</option>
-                    <option>Suma Break Up D3.12</option>
-                    <option>Suma Brite D1.5</option>
-                    <option>Suma Nova L6</option>
+                    <option value="">Carregando...</option>
                   </select>
                 </div>
                 <div class="field">
                   <label>Secante</label>
                   <select id="selectSecante">
-                    <option value="">Selecionar...</option>
-                    <option>Suma Rinse A7</option>
-                    <option>Suma Rinse A8</option>
-                    <option>Suma Rinse Plus</option>
+                    <option value="">Carregando...</option>
                   </select>
                 </div>
 
@@ -1767,20 +1744,25 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
               <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="4" r="2.5" stroke="currentColor" stroke-width="1.1"/><path d="M1 12c0-3.04 2.46-5.5 5.5-5.5S12 8.96 12 12" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg><span class="fc-title">Dados Recebidos</span></div>
               <div class="fc-body">
                 <div class="info-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
-                  <div class="ir-item"><div class="il">Ship To</div><div class="iv">BZ-001482</div></div>
-                  <div class="ir-item"><div class="il">Cliente</div><div class="iv">Rest. Sabor Mineiro</div></div>
-                  <div class="ir-item"><div class="il">Contrato</div><div class="iv">Anexado por Vendas</div></div>
-                  <div class="ir-item"><div class="il">Solicitado em</div><div class="iv">12/06/2025</div></div>
+                  <div class="ir-item"><div class="il">Ship To</div><div class="iv" id="info-shipto-02">—</div></div>
+                  <div class="ir-item"><div class="il">Cliente</div><div class="iv" id="info-cliente-02">—</div></div>
+                  <div class="ir-item"><div class="il">Modelo Solicitado</div><div class="iv" id="info-modelo-02">—</div></div>
+                  <div class="ir-item"><div class="il">Solicitado em</div><div class="iv" id="info-data-02">—</div></div>
+                </div>
+                <div class="info-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px">
+                  <div class="ir-item"><div class="il">CNPJ</div><div class="iv" id="info-cnpj-02">—</div></div>
+                  <div class="ir-item"><div class="il">Tipo Solicitação</div><div class="iv" id="info-tipo-02">—</div></div>
+                  <div class="ir-item"><div class="il">Refeições/Dia</div><div class="iv" id="info-ref-dia-02">—</div></div>
+                  <div class="ir-item"><div class="il">Contrato</div><div class="iv" id="info-contrato-02">—</div></div>
                 </div>
               </div>
             </div>
             <div class="fcard">
               <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="11" height="11" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M3.5 5h6M3.5 7h6M3.5 9h4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg><span class="fc-title">Especificação Técnica da Máquina</span></div>
-              <div class="fc-body c2">
+              <div class="fc-body c3">
                 <div class="field"><label>Fornecedor Recomendado <span class="req">*</span></label><select id="supervisorFornecedor"><option value="">Selecionar...</option><option>Hobart Brasil</option><option>EBST</option></select></div>
                 <div class="field"><label>Modelo Validado <span class="req">*</span></label><input type="text" id="supervisorModeloValidado" placeholder="Ex: Ecomax 503"></div>
-                <div class="field"><label>Voltagem / Configuração</label><input type="text" id="supervisorVoltagem" placeholder="Ex: 220V / 380V / trifásico"></div>
-                <div class="field"><label>Capacidade / Observação Técnica</label><input type="text" id="supervisorCapacidade" placeholder="Ex: 60 racks/h · bancada lado direito"></div>
+                <div class="field"><label>Formulário de Pedido ao Fornecedor</label><label class="file-drop" id="fFormularioGestor"><input type="file" onchange="setFile(this,'fFormularioGestor','fFormularioGestorA')"><svg viewBox="0 0 18 18" fill="none"><path d="M9 4v8M5 8l4-4 4 4M3 14h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Anexar formulário (Excel/PDF)</span></label><div class="file-attached" id="fFormularioGestorA"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1"/><path d="M8 1v3h3" stroke="currentColor" stroke-width="1"/></svg><span></span></div></div>
               </div>
             </div>
             <div class="fcard">
@@ -1824,7 +1806,14 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
               <div class="fc-body c2">
                 <div class="field"><label>Tipo de Contrato <span class="req">*</span></label><select id="selectTipoContrato"><option value="">Selecionar...</option><option>Comodato</option><option>Locação</option><option>Venda</option></select></div>
                 <div class="field"><label>Vigência <span class="req">*</span></label><input type="text" id="inputVigenciaAdm" placeholder="Ex: 24 meses"></div>
-                <div class="field"><label>Contrato Assinado <span class="req">*</span></label><label class="file-drop" id="fContrato"><input type="file" onchange="setFile(this,'fContrato','fContratoA')"><svg viewBox="0 0 18 18" fill="none"><path d="M9 4v8M5 8l4-4 4 4M3 14h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Anexar contrato</span></label><div class="file-attached" id="fContratoA"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1"/><path d="M8 1v3h3" stroke="currentColor" stroke-width="1"/></svg><span></span></div></div>
+                <div class="field s2">
+                  <label>Contrato Anexado por Vendas</label>
+                  <div id="admContratoCard" style="background:#f0fafb;border:1px solid #b2dfdb;border-radius:6px;padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:10px;min-height:38px">
+                    <svg viewBox="0 0 13 13" fill="none" style="width:14px;height:14px;color:#0e7b82;flex-shrink:0"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M8 1v3h3M4.5 7h4M4.5 9h2.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+                    <span id="admContratoNome" style="color:#075a60;font-weight:500;flex:1">Nenhum contrato vinculado</span>
+                    <a id="admContratoLink" href="#" target="_blank" rel="noopener" style="display:none;font-size:11px;color:#0e7b82;text-decoration:underline;white-space:nowrap">Visualizar ↗</a>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="fcard">
@@ -1833,23 +1822,6 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
                 <div class="field"><label>Fornecedor <span class="req">*</span></label><select id="selectFornecedorAdm"><option value="">Selecionar...</option><option>Hobart Brasil</option><option>EBST</option></select></div>
                 <div class="field"><label>Nº do Pedido</label><input type="text" id="campoPedidoNum" readonly placeholder="WR-2026-XXXX" style="background:#f4f6f8;color:var(--text-mid);cursor:default"></div>
                 <div class="field"><label>Entrega Prevista</label><input type="date" id="inputEntregaPrevista"></div>
-              </div>
-            </div>
-            <div class="fcard">
-              <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><rect x="1" y="2" width="11" height="9" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M4 6h5M4 8h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><circle cx="10" cy="2.5" r="2" fill="#0e7b82"/><path d="M9.3 2.5l.5.5.9-.9" stroke="#fff" stroke-width=".8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="fc-title">Serial da Máquina</span><span style="font-size:10px;color:var(--text-muted);margin-left:auto">Informe o Serial da máquina a ser entregue</span></div>
-              <div class="fc-body c2">
-                <div class="field"><label>Serial da Máquina</label><input type="text" id="inputSerialMaquina" placeholder="Ex: HB-2024-XXXXX"></div>
-                <div class="field" style="display:flex;align-items:flex-end;gap:10px">
-                  <button type="button" class="btn" style="background:var(--teal);color:#fff;padding:7px 14px;font-size:12px;gap:6px;border-radius:6px;white-space:nowrap" onclick="abrirModalSelecionarMaquina()"><svg viewBox="0 0 13 13" fill="none" style="width:13px;height:13px"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.2"/><path d="M9 9l2.5 2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Selecionar da Base</button>
-                  <span style="font-size:11px;color:var(--text-muted)">ou preencha o Serial manualmente</span>
-                </div>
-                <div id="admMaquinaSelecionada" style="display:none" class="field s2">
-                  <div style="background:#e0f4f5;border:1px solid #0e7b82;border-radius:6px;padding:8px 12px;font-size:12px;display:flex;align-items:center;gap:10px">
-                    <svg viewBox="0 0 13 13" fill="none" style="width:13px;height:13px;color:#0e7b82"><path d="M2.5 6.5l3 3L10.5 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    <span id="admMaquinaLabel" style="color:#075a60;font-weight:500"></span>
-                    <button type="button" onclick="limparMaquinaAdm()" style="margin-left:auto;background:none;border:none;color:#075a60;cursor:pointer;font-size:11px">✕ Limpar</button>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -1927,7 +1899,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
             <div class="fcard">
               <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 5.5-5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="fc-title">Acionamento da Logística</span></div>
               <div class="fc-body c2">
-                <div class="field"><label>Data de Liberação Confirmada <span class="req">*</span></label><input type="date" id="dataColetaConfirmada"></div>
+                <div class="field"><label>Data de Coleta Confirmada <span class="req">*</span></label><input type="date" id="dataColetaConfirmada"></div>
+                <div class="field"><label>Data de Entrega ao Cliente</label><input type="date" id="inputDataEntrega"></div>
                 <div class="field"><label>Responsável / Transportadora</label><input type="text" id="inputResponsavelColeta" placeholder="Nome do responsável ou transportadora"></div>
                 <div class="field"><label>Supervisor AS&TS notificado?</label><div class="toggle-field"><label class="toggle"><input type="checkbox" id="tSupv" onchange="updateTL('tSupv','lSupv')"><span class="toggle-slider"></span></label><span class="toggle-lbl" id="lSupv">Não</span></div></div>
                 <div class="field"><label>Observações</label><input type="text" id="inputObsLogistica" placeholder="Informações sobre coleta e entrega"></div>
@@ -1955,12 +1928,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
               <div class="fc-body c3">
                 <div class="field"><label>Data <span class="req">*</span></label><input type="date" id="inputDataInstalacao"></div>
                 <div class="field"><label>Horário <span class="req">*</span></label><input type="time" id="inputHorarioInstalacao"></div>
-                <div class="field"><label>Responsável da Instalação <span class="req">*</span></label><select id="selectResponsavelInstalacao"><option value="">Selecionar...</option><option>João P. Ferreira</option><option>Carlos A. Lima</option><option>Marcos R. Santos</option></select></div>
+                <div class="field"><label>Responsável da Instalação <span class="req">*</span></label><select id="selectResponsavelInstalacao"><option value="">Carregando...</option></select></div>
               </div>
-            </div>
-            <div class="fcard">
-              <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3 6-6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="fc-title">Checklist da Instalação (opcional)</span></div>
-              <div class="fc-body c1" style="gap:6px" id="clWrap"></div>
             </div>
           </div>
           <div class="action-bar">
@@ -1979,9 +1948,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
             <div class="fh-status"><div class="chip c-done"><div class="chip-dot"></div>Concluído</div></div>
           </div>
           <div class="form-body">
-            <div class="alert a-ok"><svg viewBox="0 0 15 15" fill="none"><path d="M2.5 7.5l3.5 3.5L12.5 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Instalação agendada. Anexe o relatório gerado no sistema externo para encerrar o processo.</span></div>
-            <div class="fcard">
-              <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M8 1v3h3M4.5 7h4M4.5 9h4M4.5 11h2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg><span class="fc-title">Relatório de Instalação</span></div>
+            <div class="alert a-info" style="background:#fff8e1;border-color:#f9a825;color:#5d4037"><svg viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 7v3.5M7.5 5.5v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span><strong>Ação obrigatória:</strong> Anexe o relatório de instalação gerado no sistema externo. O processo só pode ser encerrado após o upload do relatório.</span></div>
+            <div class="fcard" style="border:2px solid #0e7b82">
+              <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M8 1v3h3M4.5 7h4M4.5 9h4M4.5 11h2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg><span class="fc-title">Relatório de Instalação</span><span style="font-size:10px;color:var(--red);margin-left:auto;font-weight:600">Upload obrigatório para encerrar</span></div>
               <div class="fc-body c2">
                 <div class="field s2"><label>Relatório de Instalação <span class="req">*</span></label><label class="file-drop" id="fRel"><input type="file" onchange="setFile(this,'fRel','fRelA')"><svg viewBox="0 0 18 18" fill="none"><path d="M9 4v8M5 8l4-4 4 4M3 14h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Anexar relatório (PDF ou imagem)</span></label><div class="file-attached" id="fRelA"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1"/><path d="M8 1v3h3" stroke="currentColor" stroke-width="1"/></svg><span></span></div></div>
                 <div class="field s2"><label>Observações de Encerramento</label><textarea id="textareaObsRelatorio" placeholder="Observações adicionais sobre a instalação (opcional)..."></textarea></div>
@@ -2394,12 +2363,78 @@ async function carregarModelosSolicitacao() {
   }
 }
 
+// ─── CARREGAR PRODUTOS (DETERGENTE / SECANTE) DO FIRESTORE ──
+async function carregarProdutosFormulario() {
+  const selDet = document.getElementById('selectDetergente');
+  const selSec = document.getElementById('selectSecante');
+  if (!selDet || !selSec) return;
+  if (!db) {
+    selDet.innerHTML = '<option value="">Selecionar...</option>';
+    selSec.innerHTML = '<option value="">Selecionar...</option>';
+    return;
+  }
+  try {
+    const snap = await db.collection('produtos').where('ativo', '!=', false).get();
+    const produtos = snap.docs.map(d => d.data()).filter(d => d.nome);
+    const dets = produtos.filter(p => (p.tipo || '').toUpperCase() === 'DET' || (p.tipo || '').toLowerCase() === 'detergente');
+    const secs = produtos.filter(p => (p.tipo || '').toUpperCase() === 'SEC' || (p.tipo || '').toLowerCase() === 'secante');
+    const buildOpts = (arr) => '<option value="">Selecionar...</option>' + arr.map(p => `<option value="${p.nome}">${p.nome}</option>`).join('');
+    selDet.innerHTML = dets.length ? buildOpts(dets) : '<option value="">Selecionar...</option>';
+    selSec.innerHTML = secs.length ? buildOpts(secs) : '<option value="">Selecionar...</option>';
+  } catch(e) {
+    selDet.innerHTML = '<option value="">Selecionar...</option>';
+    selSec.innerHTML = '<option value="">Selecionar...</option>';
+  }
+  // Restaurar valores salvos se reabrindo solicitação
+  const savedDet = currentSolicitacao?.dadosSolicitacao?.detergente;
+  const savedSec = currentSolicitacao?.dadosSolicitacao?.secante;
+  if (savedDet) selDet.value = savedDet;
+  if (savedSec) selSec.value = savedSec;
+}
+
+// ─── CARREGAR RESPONSÁVEIS DE INSTALAÇÃO DO FIRESTORE ────────
+async function carregarResponsaveisInstalacao() {
+  const sel = document.getElementById('selectResponsavelInstalacao');
+  if (!sel) return;
+  const saved = currentSolicitacao?.dadosInstalacao?.tecnico || sel.value;
+  sel.innerHTML = '<option value="">Selecionar...</option>';
+  if (!db) return;
+  try {
+    const snap = await db.collection('usuarios')
+      .where('perfil', 'in', ['supervisor_asts', 'gestor'])
+      .where('ativo', '!=', false)
+      .get();
+    snap.docs.forEach(d => {
+      const u = d.data();
+      if (u.nome) {
+        const opt = document.createElement('option');
+        opt.value = u.nome;
+        opt.textContent = u.nome;
+        sel.appendChild(opt);
+      }
+    });
+  } catch(e) {
+    // Se query composta falhar, tenta sem filtro ativo
+    try {
+      const snap2 = await db.collection('usuarios').where('perfil', 'in', ['supervisor_asts', 'gestor']).get();
+      snap2.docs.forEach(d => {
+        const u = d.data();
+        if (u.nome && u.ativo !== false) {
+          const opt = document.createElement('option');
+          opt.value = u.nome;
+          opt.textContent = u.nome;
+          sel.appendChild(opt);
+        }
+      });
+    } catch(e2) {}
+  }
+  if (saved) sel.value = saved;
+}
+
 function coletarDadosSupervisor() {
   return {
     fornecedorSugerido: document.getElementById('supervisorFornecedor')?.value || '',
-    modeloValidado: document.getElementById('supervisorModeloValidado')?.value?.trim() || '',
-    voltagem: document.getElementById('supervisorVoltagem')?.value?.trim() || '',
-    capacidadeObservacao: document.getElementById('supervisorCapacidade')?.value?.trim() || ''
+    modeloValidado: document.getElementById('supervisorModeloValidado')?.value?.trim() || ''
   };
 }
 
@@ -3508,10 +3543,6 @@ function validateStep_Adm() {
     _erroField('inputVigenciaAdm', 'Informe a Vigência do contrato.');
     erros.push('Vigência');
   }
-  if (!arquivoAnexado('fContrato')) {
-    _erroField('fContrato', 'Anexe o Contrato Assinado.');
-    erros.push('Contrato Assinado (arquivo)');
-  }
   if (erros.length > 0) {
     showToast('Preencha os campos obrigatórios: ' + erros.join(' · '), 'error');
     const primeiro = document.querySelector('#screen-adm .field-error input, #screen-adm .field-error select');
@@ -3571,12 +3602,6 @@ function validateStep_Instalacao() {
   if (!document.getElementById('selectResponsavelInstalacao')?.value) {
     _erroField('selectResponsavelInstalacao', 'Selecione o Técnico Responsável.');
     erros.push('Técnico Responsável');
-  }
-  const checkboxes = document.querySelectorAll('#clWrap input[type="checkbox"]');
-  const marcados   = document.querySelectorAll('#clWrap input[type="checkbox"]:checked').length;
-  if (checkboxes.length > 0 && marcados < checkboxes.length) {
-    erros.push(`Checklist incompleto (${marcados}/${checkboxes.length} itens marcados)`);
-    showToast(`Checklist incompleto: ${marcados} de ${checkboxes.length} itens marcados.`, 'warn');
   }
   if (erros.length > 0) {
     showToast('Preencha todos os requisitos: ' + erros.join(' · '), 'error');
@@ -3883,30 +3908,27 @@ function filtrarResultadosMaquinas() {
 }
 
 function selecionarMaquinaImportada(maquina) {
-  // Preenche campo Serial na etapa ADM
-  const serEl = document.getElementById('inputSerialMaquina');
-  if (serEl) serEl.value = maquina.serialMaquina || '';
-
-  // Pré-carrega Serial na etapa Fornecedor
+  // Preenche Serial na etapa Fornecedor (serial agora é informado pelo fornecedor)
   const serFEl = document.getElementById('inputSerialMaquinaForn');
   if (serFEl) serFEl.value = maquina.serialMaquina || '';
 
-  // Exibe confirmação no ADM
-  const label    = [maquina.serialMaquina, maquina.modelo, maquina.fornecedor].filter(Boolean).join(' · ');
-  const admLabel = document.getElementById('admMaquinaLabel');
-  const admBox   = document.getElementById('admMaquinaSelecionada');
-  if (admLabel) admLabel.textContent = label;
-  if (admBox)   admBox.style.display = '';
+  // Exibe confirmação na tela ativa
+  const label = [maquina.serialMaquina, maquina.modelo, maquina.fornecedor].filter(Boolean).join(' · ');
+  const fornBox = document.getElementById('fornMaquinaPreenchida');
+  const fornLabel = document.getElementById('fornMaquinaLabel');
+  if (fornLabel) fornLabel.textContent = label;
+  if (fornBox) fornBox.style.display = '';
 
   closeMod('mImportarMaquinas');
   showToast('Máquina selecionada: Serial ' + (maquina.serialMaquina || '—'), 'success');
 }
 
 function limparMaquinaAdm() {
-  const serEl = document.getElementById('inputSerialMaquina');
-  if (serEl) serEl.value = '';
-  const admBox = document.getElementById('admMaquinaSelecionada');
-  if (admBox) admBox.style.display = 'none';
+  // Mantido para compatibilidade — limpa serial no fornecedor
+  const serFEl = document.getElementById('inputSerialMaquinaForn');
+  if (serFEl) serFEl.value = '';
+  const fornBox = document.getElementById('fornMaquinaPreenchida');
+  if (fornBox) fornBox.style.display = 'none';
 }
 
 // ════════════════════════════════════════════════════════════
@@ -3963,17 +3985,14 @@ function coletarDadosSolicitacao() {
 }
 
 function coletarDadosAdm() {
-  const serial     = document.getElementById('inputSerialMaquina')?.value?.trim() || '';
   const fornecedor = document.getElementById('selectFornecedorAdm')?.value || '';
-  const modelo     = currentSolicitacao?.dadosSolicitacao?.modeloMaquina || '';
-  const maquina    = normalizarRegistroMaquina({ serialMaquina: serial, modelo, fornecedor });
   return {
-    tipoContrato:    document.getElementById('selectTipoContrato')?.value || '',
-    vigencia:        document.getElementById('inputVigenciaAdm')?.value?.trim() || '',
+    tipoContrato:         document.getElementById('selectTipoContrato')?.value || '',
+    vigencia:             document.getElementById('inputVigenciaAdm')?.value?.trim() || '',
     fornecedor,
-    numeroPedido:    document.getElementById('campoPedidoNum')?.value || '',
-    entregaPrevista: document.getElementById('inputEntregaPrevista')?.value || '',
-    maquina
+    encaminhadoFornecedor: fornecedor, // alias usado nas Firestore queries e security rules
+    numeroPedido:         document.getElementById('campoPedidoNum')?.value || '',
+    entregaPrevista:      document.getElementById('inputEntregaPrevista')?.value || ''
   };
 }
 
@@ -3993,6 +4012,7 @@ function coletarDadosFornecedor() {
 function coletarDadosLogistica() {
   return {
     dataColetaConfirmada: document.getElementById('dataColetaConfirmada')?.value || '',
+    dataEntrega:          document.getElementById('inputDataEntrega')?.value || '',
     responsavelColeta:    document.getElementById('inputResponsavelColeta')?.value?.trim() || '',
     supervisorNotificado: document.getElementById('tSupv')?.checked ? 'Sim' : 'Não',
     observacoes:          document.getElementById('inputObsLogistica')?.value?.trim() || ''
@@ -4000,13 +4020,10 @@ function coletarDadosLogistica() {
 }
 
 function coletarDadosInstalacao() {
-  const marcados = [...document.querySelectorAll('#clWrap input[type="checkbox"]:checked')]
-    .map(cb => cb.closest('.cl-item')?.querySelector('label')?.textContent || '');
   return {
     dataInstalacao: document.getElementById('inputDataInstalacao')?.value || '',
     horario:        document.getElementById('inputHorarioInstalacao')?.value || '',
-    tecnico:        document.getElementById('selectResponsavelInstalacao')?.value || '',
-    checklistMarcados: marcados
+    tecnico:        document.getElementById('selectResponsavelInstalacao')?.value || ''
   };
 }
 
@@ -4118,6 +4135,10 @@ async function confirmAprovar() {
                    || '';
 
     const dadosSupervisor = coletarDadosSupervisor();
+
+    // Upload do formulário de pedido ao fornecedor (se anexado)
+    const uploads = await uploadMultiplos([['fFormularioGestor','FORMULARIO_PEDIDO']], 'formularios');
+
     const hist = entradaHistorico('APROVADO_GESTOR','Supervisor AS&TS','gestor',obs);
     await atualizarSolicitacao(currentSolicitacaoId,
       {
@@ -4129,6 +4150,10 @@ async function confirmAprovar() {
       },
       STATUS.APROVADO_GESTOR.key, 'adm', hist
     );
+    if (uploads.length > 0) {
+      await adicionarDocumentos(currentSolicitacaoId,
+        uploads.map(u => ({ ...u, etapa:'gestor', responsavel:'Supervisor AS&TS' })));
+    }
     const prot = currentSolicitacao?.protocolo;
     await enviarNotificacao(EMAIL_RECIPIENTS.adm,
       'Solicitação Aprovada — Aprovação ADM',
@@ -4137,8 +4162,7 @@ async function confirmAprovar() {
         Observacoes: obs,
         Cliente: currentSolicitacao?.dadosCliente?.nomeCliente,
         Fornecedor: dadosSupervisor.fornecedorSugerido,
-        Modelo: dadosSupervisor.modeloValidado,
-        Voltagem: dadosSupervisor.voltagem
+        Modelo: dadosSupervisor.modeloValidado
       }
     );
     await enviarNotificacao(FORMSUBMIT_EMAIL,
@@ -4235,10 +4259,6 @@ async function confirmFornecedor() {
   try {
     const dadosAdm = coletarDadosAdm();
 
-    const uploads = await uploadMultiplos(
-      [['fContrato','CONTRATO_ASSINADO']], 'contratos'
-    );
-
     const fornecedorFinal = dadosAdm.fornecedor || currentSolicitacao?.parecerGestor?.especificacao?.fornecedorSugerido || '';
     dadosAdm.fornecedor = fornecedorFinal;
     const hist = entradaHistorico('ENVIADO_FORNECEDOR','ADM de Vendas','adm',
@@ -4246,10 +4266,6 @@ async function confirmFornecedor() {
     await atualizarSolicitacao(currentSolicitacaoId,
       { dadosAdm }, STATUS.COM_FORNECEDOR.key, 'fornecedor', hist
     );
-    if (uploads.length > 0) {
-      await adicionarDocumentos(currentSolicitacaoId,
-        uploads.map(u => ({ ...u, etapa:'adm', responsavel:'ADM de Vendas' })));
-    }
 
     const prot = currentSolicitacao?.protocolo;
     const emailFornecedor = await obterEmailFornecedor(dadosAdm.fornecedor);
@@ -4260,7 +4276,6 @@ async function confirmFornecedor() {
         Pedido: dadosAdm.numeroPedido,
         Fornecedor: dadosAdm.fornecedor,
         Modelo: currentSolicitacao?.dadosSolicitacao?.modeloMaquina,
-        'Serial Máquina': dadosAdm.maquina?.serialMaquina || '—',
         EntregaPrevista: dadosAdm.entregaPrevista,
         Cliente: currentSolicitacao?.dadosCliente?.nomeCliente
       }
@@ -4588,7 +4603,55 @@ function go(id){
   document.getElementById('progressNav').style.display='flex';
   setBreadcrumb('Solicitação · Etapa '+(FLOW.indexOf(id)+1));
 
-  // Ao entrar no step ADM, exibe o Nº do Pedido gerado no step 01
+  // Ao entrar na tela de Solicitação, carrega modelos e produtos do Firestore
+  if (id === 'solicitacao') {
+    carregarModelosSolicitacao();
+    carregarProdutosFormulario();
+    // Restaurar campos se reabrindo
+    if (currentSolicitacao) {
+      const dc = currentSolicitacao.dadosCliente || {};
+      const ds = currentSolicitacao.dadosSolicitacao || {};
+      const _setVal = (elId, val) => { const el = document.getElementById(elId); if (el && val) el.value = val; };
+      _setVal('inputShipTo', dc.shipTo);
+      _setVal('inputNomeCliente', dc.nomeCliente);
+      _setVal('inputCnpj', dc.cnpj);
+      _setVal('inputEmailCliente', dc.emailCliente);
+      _setVal('inputEnderecoInstalacao', dc.enderecoInstalacao);
+      _setVal('tipoSolicitacao', ds.tipoSolicitacao);
+      _setVal('modeloMaquinaSelect', ds.modeloMaquina);
+      _setVal('inputRefeicoesDia', ds.refeicoesDia);
+      _setVal('inputRefeicoesHora', ds.refeicoesHora);
+      _setVal('textareaComentariosSolic', ds.comentarios);
+    }
+  }
+
+  // Ao entrar na tela do Supervisor, popula os cards de dados herdados
+  if (id === 'gestor') {
+    const dc = currentSolicitacao?.dadosCliente || {};
+    const ds = currentSolicitacao?.dadosSolicitacao || {};
+    const docs = currentSolicitacao?.documentos || [];
+    const _fmtTs = s => { try { return s ? new Date(s).toLocaleDateString('pt-BR') : '—'; } catch(e){ return '—'; } };
+    const criadoEm = currentSolicitacao?.criadoEm;
+    const dataStr  = criadoEm?.toDate ? _fmtTs(criadoEm.toDate()) : _fmtTs(criadoEm);
+    const setTxt = (elId, val) => { const el = document.getElementById(elId); if (el) el.textContent = val || '—'; };
+    setTxt('info-shipto-02',   dc.shipTo);
+    setTxt('info-cliente-02',  dc.nomeCliente);
+    setTxt('info-modelo-02',   ds.modeloMaquina);
+    setTxt('info-data-02',     dataStr);
+    setTxt('info-cnpj-02',     dc.cnpj);
+    setTxt('info-tipo-02',     ds.tipoSolicitacao);
+    setTxt('info-ref-dia-02',  ds.refeicoesDia ? ds.refeicoesDia + ' ref./dia' : '—');
+    const contratoDoc = docs.find(d => d.tipo === 'CONTRATO');
+    setTxt('info-contrato-02', contratoDoc ? '✓ Anexado por Vendas' : 'Não anexado');
+    // Restaurar campos do supervisor se já preenchidos
+    const esp = currentSolicitacao?.parecerGestor?.especificacao || {};
+    const _setVal = (elId, val) => { const el = document.getElementById(elId); if (el && val) el.value = val; };
+    _setVal('supervisorFornecedor',    esp.fornecedorSugerido || currentSolicitacao?.dadosAdm?.fornecedor);
+    _setVal('supervisorModeloValidado', esp.modeloValidado || ds.modeloMaquina);
+    _setVal('textareaParecerGestor',   currentSolicitacao?.parecerGestor?.observacoes);
+  }
+
+  // Ao entrar no step ADM, exibe o Nº do Pedido e popula contrato read-only
   if (id === 'adm') {
     const num = currentSolicitacao?.dadosSolicitacao?.numeroPedido
              || currentSolicitacao?.dadosAdm?.numeroPedido
@@ -4601,21 +4664,46 @@ function go(id){
     const fornecedorAdm = document.getElementById('selectFornecedorAdm');
     if (fornecedorAdm && fornecedorRecomendado) fornecedorAdm.value = fornecedorRecomendado;
 
-    // Pré-preencher Serial se já salvo (retorno à tela ADM)
-    const maqAdm = currentSolicitacao?.dadosAdm?.maquina;
-    if (maqAdm?.serialMaquina) {
-      const elSer = document.getElementById('inputSerialMaquina');
-      if (elSer && !elSer.value) elSer.value = maqAdm.serialMaquina;
+    // Pré-preencher campos ADM se já salvos
+    const dadosAdm = currentSolicitacao?.dadosAdm || {};
+    const _setVal = (elId, val) => { const el = document.getElementById(elId); if (el && val) el.value = val; };
+    _setVal('selectTipoContrato', dadosAdm.tipoContrato);
+    _setVal('inputVigenciaAdm',   dadosAdm.vigencia);
+    _setVal('inputEntregaPrevista', dadosAdm.entregaPrevista);
+
+    // Mostrar contrato anexado por Vendas (somente leitura)
+    const docs = currentSolicitacao?.documentos || [];
+    const contratoDoc = docs.find(d => d.tipo === 'CONTRATO');
+    const nomeEl = document.getElementById('admContratoNome');
+    const linkEl = document.getElementById('admContratoLink');
+    if (nomeEl && contratoDoc) {
+      nomeEl.textContent = contratoDoc.nomeArquivo || 'Contrato anexado por Vendas';
+      if (linkEl && contratoDoc.url) {
+        linkEl.href = contratoDoc.url;
+        linkEl.style.display = '';
+      }
+    } else if (nomeEl) {
+      nomeEl.textContent = 'Nenhum contrato vinculado';
     }
   }
 
-  // Ao entrar na tela Fornecedor, pré-preenche Serial da máquina registrada pelo ADM
+  // Ao entrar na tela Fornecedor, pré-preenche Serial da máquina registrada pelo Fornecedor (se retorno)
   if (id === 'fornecedor') {
-    const maqAdm = currentSolicitacao?.dadosAdm?.maquina;
-    if (maqAdm?.serialMaquina) {
-      const elSer = document.getElementById('inputSerialMaquinaForn');
-      if (elSer && !elSer.value) elSer.value = maqAdm.serialMaquina;
-    }
+    const dadosForn = currentSolicitacao?.dadosFornecedor || {};
+    const _setVal = (elId, val) => { const el = document.getElementById(elId); if (el && val) el.value = val; };
+    _setVal('inputSerialMaquinaForn', dadosForn.maquinaConfirmada?.serialMaquina);
+    _setVal('inputNumeroNF',          dadosForn.numeroNF);
+    _setVal('dataColeta',             dadosForn.dataColeta);
+    _setVal('inputObsFornecedor',     dadosForn.observacoes);
+  }
+
+  // Ao entrar na tela Instalação, carrega responsáveis do Firestore
+  if (id === 'instalacao') {
+    carregarResponsaveisInstalacao();
+    const di = currentSolicitacao?.dadosInstalacao || {};
+    const _setVal = (elId, val) => { const el = document.getElementById(elId); if (el && val) el.value = val; };
+    _setVal('inputDataInstalacao',   di.dataInstalacao);
+    _setVal('inputHorarioInstalacao', di.horario);
   }
 
   // Ao entrar na tela Logística, popula painéis e timeline com dados reais
@@ -4637,6 +4725,18 @@ function go(id){
     const tsForn = currentSolicitacao?.historico?.find(h => h.acao === 'NF_ANEXADA_EXPEDIDO');
     setEl('tl-data-pedido',    tsAdm  ? _fmtTs(tsAdm.data)  : _fmtData(currentSolicitacao?.dadosAdm?.entregaPrevista));
     setEl('tl-data-expedicao', tsForn ? _fmtTs(tsForn.data) : _fmtData(currentSolicitacao?.dadosFornecedor?.dataColeta));
+
+    // Restaurar campos já salvos
+    const dl = currentSolicitacao?.dadosLogistica || {};
+    const _setVal = (elId, val) => { const el = document.getElementById(elId); if (el && val) el.value = val; };
+    _setVal('dataColetaConfirmada',   dl.dataColetaConfirmada);
+    _setVal('inputDataEntrega',       dl.dataEntrega);
+    _setVal('inputResponsavelColeta', dl.responsavelColeta);
+    _setVal('inputObsLogistica',      dl.observacoes);
+    if (dl.supervisorNotificado === 'Sim') {
+      const tSupv = document.getElementById('tSupv');
+      if (tSupv) { tSupv.checked = true; updateTL('tSupv','lSupv'); }
+    }
   }
 }
 
@@ -5795,13 +5895,8 @@ function buildDashboard() {
   carregarDashboard();
 }
 
-// ─── BUILD CHECKLIST ─────────────────────────────────────────
-function buildChecklist(){
-  const el=document.getElementById('clWrap');
-  if(!el)return;
-  el.innerHTML=CHECKLIST_ITEMS.map((item,i)=>`
-    <div class="cl-item"><input type="checkbox" id="cl${i}" onchange="this.closest('.cl-item').style.background=this.checked?'var(--teal-xlight)':'#fff';this.closest('.cl-item').style.borderColor=this.checked?'rgba(14,123,130,.3)':'var(--border)'"><label for="cl${i}">${item}</label></div>`).join('');
-}
+// ─── BUILD CHECKLIST (deprecated — checklist removido do fluxo) ──
+function buildChecklist(){ /* checklist removido — clWrap não existe mais */ }
 
 // ════════════════════════════════════════════════════════════
 // ADMIN SISTEMA — Gestão de Usuários, Fornecedores e Modelos
@@ -6762,7 +6857,7 @@ function init(){
   buildConfig();
   buildDashboard();
   buildChecklist();
-  popularModelosSolicitacao(DEFAULT_MACHINE_MODELS);
+  popularModelosSolicitacao(DEFAULT_MACHINE_MODELS); // fallback estático; será substituído por carregarModelosSolicitacao() ao entrar no formulário
   setBreadcrumb('Início');
 
   // Inicializa Firebase + autenticação
