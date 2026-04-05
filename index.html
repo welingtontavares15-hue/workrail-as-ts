@@ -838,6 +838,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
   font-size:11.5px;color:#fff;flex-shrink:0;
 }
 .supplier-banner svg{width:14px;height:14px;flex-shrink:0}
+/* ── Filtros de solicitações ── */
+.sol-filter-btn{transition:background .15s,color .15s,border-color .15s}
+.sol-filter-btn.active{background:var(--teal)!important;color:#fff!important;border-color:var(--teal)!important;font-weight:500}
 
 /* ══ PAINEL ADMIN ══ */
 .admin-tab{
@@ -1618,7 +1621,14 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
           <div><div class="ph-title">Solicitações</div><div class="ph-sub" id="solicitacoesSub">Minhas solicitações</div></div>
           <div class="ph-right" id="btnNovaSolicitacao"><button class="btn btn-primary" style="height:32px;font-size:12px;padding:0 14px" onclick="go('solicitacao')">+ Nova</button></div>
         </div>
-        <div class="panel-body">
+        <!-- Filtros por status -->
+        <div id="solicitacoesFilters" style="display:flex;gap:6px;padding:0 20px 12px;flex-wrap:wrap">
+          <button class="sol-filter-btn active" data-filter="todas" onclick="filtrarSolicitacoes('todas',this)" style="font-size:11.5px;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:#fff;cursor:pointer;color:var(--text-mid);transition:.15s">Todas</button>
+          <button class="sol-filter-btn" data-filter="andamento" onclick="filtrarSolicitacoes('andamento',this)" style="font-size:11.5px;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:#fff;cursor:pointer;color:var(--text-mid);transition:.15s">Em andamento</button>
+          <button class="sol-filter-btn" data-filter="concluidas" onclick="filtrarSolicitacoes('concluidas',this)" style="font-size:11.5px;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:#fff;cursor:pointer;color:var(--text-mid);transition:.15s">Concluídas</button>
+          <button class="sol-filter-btn" data-filter="ajuste" onclick="filtrarSolicitacoes('ajuste',this)" style="font-size:11.5px;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:#fff;cursor:pointer;color:var(--text-mid);transition:.15s">Ajuste / Reprovadas</button>
+        </div>
+        <div class="panel-body" style="padding-top:0">
           <div id="solicitacoesList" style="display:flex;flex-direction:column;gap:8px"></div>
         </div>
       </div>
@@ -3123,7 +3133,7 @@ function aplicarControleMenu(perfil) {
   // Esconde itens de menu não permitidos por perfil
   const regras = {
     // item_id: ['perfis que PODEM ver']
-    'sb-solicitacao':  ['vendas','adm','adm_vendas','super_admin'],
+    'sb-solicitacao':  ['vendas','gestor','supervisor_asts','adm','adm_vendas','super_admin'],
     'sb-pendentes':    ['gestor','supervisor_asts','adm','adm_vendas','super_admin','fornecedor_ebst','fornecedor_hobart'],
     'sb-relatorios':   ['gestor','supervisor_asts','adm','adm_vendas','super_admin'],
     'sb-configuracoes':['adm','adm_vendas','super_admin'],
@@ -5100,6 +5110,9 @@ function buildProgressNav(){
 function openPendentes(){ goPage('pendentes'); }
 
 // ─── SOLICITAÇÕES DO USUÁRIO LOGADO ────────────────────────
+// Cache dos docs para filtragem client-side
+let _solicitacoesCache = [];
+
 async function carregarSolicitacoesPendentes() {
   if (!firebaseOk || !currentUser) return;
   const listEl = document.getElementById('solicitacoesList');
@@ -5110,68 +5123,130 @@ async function carregarSolicitacoesPendentes() {
   // Botão "Nova" só aparece para vendas e super_admin
   const btnEl = document.getElementById('btnNovaSolicitacao');
   if (btnEl) btnEl.style.display = (perfil === 'vendas' || perfil === 'super_admin') ? '' : 'none';
+
+  // Filtros: vendas e super_admin veem os filtros; outros não têm sentido pois query é escopo operacional
+  const filtersEl = document.getElementById('solicitacoesFilters');
+  if (filtersEl) filtersEl.style.display = (perfil === 'vendas' || perfil === 'super_admin') ? 'flex' : 'none';
+
   if (listEl) listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Carregando...</div>';
 
   try {
     let query;
+    // Sem orderBy no Firestore para evitar exigência de índice composto.
+    // Ordenação feita client-side após o fetch.
     if (perfil === 'vendas') {
-      query = db.collection('solicitacoes').where('criadoPorUid','==',uid).orderBy('criadoEm','desc').limit(50);
+      // Vendas vê TODAS as próprias solicitações, independente de etapa
+      query = db.collection('solicitacoes').where('criadoPorUid','==',uid).limit(100);
     } else if (perfil === 'supervisor_asts' || perfil === 'gestor') {
-      query = db.collection('solicitacoes').where('etapaAtual','in',['gestor','solicitacao']).orderBy('criadoEm','desc').limit(50);
+      // Supervisor vê todas as solicitações que já passaram ou estão na sua etapa
+      query = db.collection('solicitacoes').limit(200);
     } else if (perfil === 'adm_vendas' || perfil === 'adm') {
-      query = db.collection('solicitacoes').where('etapaAtual','in',['adm','gestor']).orderBy('criadoEm','desc').limit(50);
-    } else if (perfil === 'fornecedor_ebst') {
-      query = db.collection('solicitacoes').where('etapaAtual','==','fornecedor').where('dadosAdm.encaminhadoFornecedor','==','EBST').orderBy('criadoEm','desc').limit(50);
-    } else if (perfil === 'fornecedor_hobart') {
-      query = db.collection('solicitacoes').where('etapaAtual','==','fornecedor').where('dadosAdm.encaminhadoFornecedor','==','Hobart Brasil').orderBy('criadoEm','desc').limit(50);
+      // ADM vê tudo a partir da etapa adm em diante
+      query = db.collection('solicitacoes').limit(200);
     } else {
-      query = db.collection('solicitacoes').orderBy('criadoEm','desc').limit(100);
+      // super_admin e demais: tudo
+      query = db.collection('solicitacoes').limit(200);
     }
 
     const snap = await query.get();
-    const docs = snap.docs;
-    if (subEl) subEl.textContent = `${docs.length} solicitaç${docs.length===1?'ão':'ões'} encontrada${docs.length===1?'':'s'}`;
 
-    if (!listEl) return;
-    if (!docs.length) {
-      listEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:13px">Nenhuma solicitação encontrada.</div>';
-      return;
-    }
+    // Ordena por data decrescente client-side (mais recente primeiro)
+    _solicitacoesCache = snap.docs.sort((a, b) => {
+      const ta = a.data().criadoEm?.toMillis ? a.data().criadoEm.toMillis() : 0;
+      const tb = b.data().criadoEm?.toMillis ? b.data().criadoEm.toMillis() : 0;
+      return tb - ta;
+    });
 
-    listEl.innerHTML = docs.map(d => {
-      const data  = d.data();
-      const st    = STATUS[data.status] || STATUS.RASCUNHO;
-      const prot  = data.protocolo || d.id.slice(0,8);
-      // dadosCliente.nomeCliente é o campo correto da estrutura de dados
-      const client= data.dadosCliente?.nomeCliente || data.dadosSolicitacao?.nomeCliente || '—';
-      const model = data.dadosSolicitacao?.modeloMaquina || '—';
-      const resp  = data.dadosSolicitacao?.representante || data.dadosSolicitacao?.responsavelVendas || '—';
-      const dt    = data.criadoEm?.toDate ? data.criadoEm.toDate().toLocaleDateString('pt-BR') : '—';
-      return `<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer" onclick="abrirSolicitacao('${d.id}')">
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-            <span style="font-size:11.5px;font-weight:700;color:var(--teal-dark);font-family:'DM Mono',monospace">${prot}</span>
-            <div class="chip ${st.chip}" style="height:20px;font-size:10px;padding:0 7px"><div class="chip-dot"></div>${st.label}</div>
-          </div>
-          <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${client}</div>
-          <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">${model} · ${resp} · ${dt}</div>
-        </div>
-        <!-- width e height OBRIGATÓRIOS: sem eles o SVG renderiza a ~300×150px
-             escalando o stroke 23× e criando a grande forma diagonal que quebra o layout -->
-        <svg viewBox="0 0 13 13" width="13" height="13" fill="none" style="flex-shrink:0;opacity:.35"><path d="M4.5 2.5l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>`;
-    }).join('');
+    _renderizarSolicitacoes('todas');
 
-    // Badge no sidebar
+    // Resetar filtro visual para "Todas"
+    document.querySelectorAll('.sol-filter-btn').forEach(b => b.classList.remove('active'));
+    const btnTodas = document.querySelector('.sol-filter-btn[data-filter="todas"]');
+    if (btnTodas) btnTodas.classList.add('active');
+
+    // Badge no sidebar: contagem de solicitações em aberto (não concluídas)
     const badgeEl = document.getElementById('badgeSolicitacoes');
     if (badgeEl) {
-      const n = docs.filter(d => !['ENCERRADO','INSTALACAO_CONCLUIDA'].includes(d.data().status)).length;
+      const n = _solicitacoesCache.filter(d => !['ENCERRADO','INSTALACAO_CONCLUIDA'].includes(d.data().status)).length;
       badgeEl.textContent = n; badgeEl.style.display = n > 0 ? '' : 'none';
     }
   } catch(e) {
     console.error('[WORKRAIL] Erro ao carregar solicitações:', e);
-    if (listEl) listEl.innerHTML = '<div style="padding:24px;text-align:center;color:#c62828;font-size:13px">Erro ao carregar. Verifique sua conexão.</div>';
+    if (listEl) listEl.innerHTML = '<div style="padding:24px;text-align:center;color:#c62828;font-size:13px">Erro ao carregar. Verifique sua conexão e tente novamente.</div>';
   }
+}
+
+// Aplica filtro client-side sobre o cache de solicitações
+function filtrarSolicitacoes(filtro, btnEl) {
+  // Atualizar visual dos botões de filtro
+  document.querySelectorAll('.sol-filter-btn').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = '#fff';
+    b.style.color = 'var(--text-mid)';
+    b.style.borderColor = 'var(--border)';
+  });
+  if (btnEl) {
+    btnEl.classList.add('active');
+    btnEl.style.background = 'var(--teal)';
+    btnEl.style.color = '#fff';
+    btnEl.style.borderColor = 'var(--teal)';
+  }
+  _renderizarSolicitacoes(filtro);
+}
+
+const STATUS_ANDAMENTO    = ['AGUARDANDO_GESTOR','EM_ANALISE_GESTOR','APROVADO_GESTOR','EM_REVISAO_ADM','COM_FORNECEDOR','NF_ANEXADA','EM_LOGISTICA','AGUARDANDO_INSTALACAO','INSTALACAO_AGENDADA'];
+const STATUS_CONCLUIDAS   = ['ENCERRADO','INSTALACAO_CONCLUIDA'];
+const STATUS_AJUSTE       = ['AGUARDA_AJUSTE','REPROVADO'];
+
+function _renderizarSolicitacoes(filtro) {
+  const listEl = document.getElementById('solicitacoesList');
+  const subEl  = document.getElementById('solicitacoesSub');
+  if (!listEl) return;
+
+  let docs = _solicitacoesCache;
+
+  if (filtro === 'andamento') {
+    docs = docs.filter(d => STATUS_ANDAMENTO.includes(d.data().status));
+  } else if (filtro === 'concluidas') {
+    docs = docs.filter(d => STATUS_CONCLUIDAS.includes(d.data().status));
+  } else if (filtro === 'ajuste') {
+    docs = docs.filter(d => STATUS_AJUSTE.includes(d.data().status));
+  }
+
+  if (subEl) subEl.textContent = `${docs.length} solicitaç${docs.length===1?'ão':'ões'} encontrada${docs.length===1?'':'s'}`;
+
+  if (!docs.length) {
+    listEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:13px">Nenhuma solicitação encontrada para este filtro. ✓</div>';
+    return;
+  }
+
+  const etapaLabel = { solicitacao:'Solicitação', gestor:'Supervisor AS&TS', adm:'ADM Vendas',
+    fornecedor:'Fornecedor', logistica:'Logística', instalacao:'Instalação',
+    relatorio:'Relatório', concluido:'Concluído' };
+
+  listEl.innerHTML = docs.map(d => {
+    const data     = d.data();
+    const st       = STATUS[data.status] || STATUS.RASCUNHO;
+    const prot     = data.protocolo || d.id.slice(0,8);
+    const client   = data.dadosCliente?.nomeCliente || data.dadosSolicitacao?.nomeCliente || '—';
+    const model    = data.dadosSolicitacao?.modeloMaquina || '—';
+    const forn     = data.dadosAdm?.encaminhadoFornecedor || data.dadosAdm?.fornecedor || '';
+    const etapa    = etapaLabel[data.etapaAtual] || data.etapaAtual || '—';
+    const dt       = data.criadoEm?.toDate ? data.criadoEm.toDate().toLocaleDateString('pt-BR') : '—';
+    const fornBadge = forn ? `<span style="font-size:10px;background:var(--purple-l);color:var(--purple);padding:1px 6px;border-radius:10px;font-weight:500">${forn}</span>` : '';
+    return `<div style="background:#fff;border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:8px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer" onclick="abrirSolicitacao('${d.id}')">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
+          <span style="font-size:11.5px;font-weight:700;color:var(--teal-dark);font-family:'DM Mono',monospace">${prot}</span>
+          <div class="chip ${st.chip}" style="height:20px;font-size:10px;padding:0 7px"><div class="chip-dot"></div>${st.label}</div>
+          ${fornBadge}
+        </div>
+        <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${client}</div>
+        <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">${model} · Etapa: ${etapa} · ${dt}</div>
+      </div>
+      <svg viewBox="0 0 13 13" width="13" height="13" fill="none" style="flex-shrink:0;opacity:.35"><path d="M4.5 2.5l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>`;
+  }).join('');
 }
 
 // ─── PENDENTES DA EQUIPE ────────────────────────────────────
