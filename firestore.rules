@@ -2,11 +2,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ═══════════════════════════════════════════════
+    // HELPERS — perfil e papel do usuário autenticado
+    // ═══════════════════════════════════════════════
+
     function getUserProfile() {
       return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.perfil;
     }
 
-    // Aceita tanto o nome canônico quanto aliases legados
     function isSuperAdmin() {
       return getUserProfile() == 'super_admin';
     }
@@ -21,74 +24,185 @@ service cloud.firestore {
       return p == 'adm_vendas' || p == 'adm';
     }
 
-    // Perfis que NÃO podem ser atribuídos pelo próprio usuário na criação
-    // Impede escalada de privilégio: cliente envia perfil=super_admin no primeiro write
-    function isPerfilPrivilegiado(perfil) {
-      return perfil in ['super_admin', 'adm_vendas', 'adm', 'supervisor_asts', 'gestor'];
+    // ═══════════════════════════════════════════════
+    // /usuarios/{userId}
+    // ═══════════════════════════════════════════════
+
+    // Campos que um usuário pode definir no próprio documento (whitelist).
+    // Limitar ao mínimo necessário para o login funcionar.
+    function camposUsuarioPermitidos() {
+      return request.resource.data.keys().hasOnly(
+        ['nome', 'email', 'perfil', 'fornecedor', 'ativo', 'criadoEm']
+      );
     }
+
+    // Perfis que podem ser auto-atribuídos.
+    // NUNCA incluir super_admin, adm_vendas/adm, supervisor_asts/gestor.
+    // Criação de papéis operacionais exige ação do super_admin.
+    function perfilAutoPermitido() {
+      return request.resource.data.perfil in ['vendas', 'fornecedor_ebst', 'fornecedor_hobart'];
+    }
+
+    match /usuarios/{userId} {
+      allow read: if request.auth.uid == userId || isSuperAdmin();
+
+      // Criação pelo próprio usuário:
+      //   1. documento ainda não existe
+      //   2. somente campos da whitelist
+      //   3. perfil restrito a papéis não privilegiados
+      // Criação por super_admin: sem restrições de campo (necessário para onboarding).
+      // NOTA: bootstrap do primeiro super_admin deve ser feito via Firebase Console
+      //       ou Admin SDK — nunca via bootstrap-admin.html em produção.
+      allow create: if isSuperAdmin()
+                    || (request.auth.uid == userId
+                        && !exists(/databases/$(database)/documents/usuarios/$(userId))
+                        && camposUsuarioPermitidos()
+                        && perfilAutoPermitido());
+
+      // Apenas super_admin pode alterar perfil, ativo, fornecedor ou excluir.
+      allow update, delete: if isSuperAdmin();
+    }
+
+    // ═══════════════════════════════════════════════
+    // /solicitacoes/{solicitacaoId}
+    // ═══════════════════════════════════════════════
 
     function canViewSolicitacao() {
       let doc = resource.data;
       let perfil = getUserProfile();
       let uid = request.auth.uid;
-      // Acesso seguro via get() — dadosAdm pode não existir em etapas iniciais (solicitacao/gestor).
-      // Sem esse cuidado, o null dereference derruba a avaliação e nega acesso a todos os perfis.
+      // Acesso seguro — dadosAdm não existe em etapas iniciais.
       let enc  = doc.get(['dadosAdm', 'encaminhadoFornecedor'], '');
       let forn = doc.get(['dadosAdm', 'fornecedor'], '');
-      let fornecedorEBST   = enc == 'EBST'          || forn == 'EBST';
-      let fornecedorHobart = enc == 'Hobart Brasil'  || forn == 'Hobart Brasil';
+      let fornecedorEBST   = enc == 'EBST'         || forn == 'EBST';
+      let fornecedorHobart = enc == 'Hobart Brasil' || forn == 'Hobart Brasil';
       return isSuperAdmin()
           || isSupervisorASTS()
           || isAdmVendas()
-          || (perfil == 'vendas' && doc.criadoPorUid == uid)
-          || (perfil == 'fornecedor_ebst' && fornecedorEBST)
+          || (perfil == 'vendas'            && doc.criadoPorUid == uid)
+          || (perfil == 'fornecedor_ebst'   && fornecedorEBST)
           || (perfil == 'fornecedor_hobart' && fornecedorHobart);
     }
 
     function canEditEtapa(etapa) {
-      // etapa vem do campo etapaAtual nos documentos Firestore
-      // FLOW = ['solicitacao','gestor','adm','fornecedor','logistica','instalacao','relatorio','concluido']
+      // FLOW: solicitacao → gestor → adm → fornecedor → logistica → instalacao → relatorio → concluido
       return isSuperAdmin()
           || (etapa == 'solicitacao' && getUserProfile() == 'vendas')
           || ((etapa == 'gestor' || etapa == 'supervisor') && isSupervisorASTS())
           || ((etapa == 'adm' || etapa == 'adm_vendas') && isAdmVendas())
-          // Fornecedor edita sua etapa com base no perfil — acesso seguro via get()
           || (etapa == 'fornecedor' && getUserProfile() == 'fornecedor_ebst'
               && (resource.data.get(['dadosAdm','encaminhadoFornecedor'],'') == 'EBST'
                   || resource.data.get(['dadosAdm','fornecedor'],'') == 'EBST'))
           || (etapa == 'fornecedor' && getUserProfile() == 'fornecedor_hobart'
               && (resource.data.get(['dadosAdm','encaminhadoFornecedor'],'') == 'Hobart Brasil'
                   || resource.data.get(['dadosAdm','fornecedor'],'') == 'Hobart Brasil'))
-          || ((etapa == 'logistica') && isAdmVendas())
+          || (etapa == 'logistica'   && isAdmVendas())
           || ((etapa == 'instalacao' || etapa == 'data_instalacao') && isSupervisorASTS())
-          || ((etapa == 'relatorio' || etapa == 'relatorio_final') && isSupervisorASTS());
+          || ((etapa == 'relatorio'  || etapa == 'relatorio_final') && isSupervisorASTS());
     }
 
-    // Valida que a transição de etapa é uma progressão legítima no fluxo.
-    // Evita que um cliente mal-intencionado pule etapas ou retroceda arbitrariamente.
+    // Valida progressão legítima no fluxo — impede saltos de etapa.
     function isValidTransition(from, to) {
-      return from == to  // atualização sem mudança de etapa (sempre válida)
-          || (from == 'solicitacao' && to in ['gestor'])
+      return from == to  // atualização sem mudança de etapa (campos da etapa atual)
+          || (from == 'solicitacao' && to == 'gestor')
           || (from == 'gestor'      && to in ['adm', 'solicitacao'])
           || (from == 'adm'         && to in ['fornecedor', 'gestor'])
-          || (from == 'fornecedor'  && to in ['logistica'])
-          || (from == 'logistica'   && to in ['instalacao'])
-          || (from == 'instalacao'  && to in ['relatorio'])
-          || (from == 'relatorio'   && to in ['concluido'])
+          || (from == 'fornecedor'  && to == 'logistica')
+          || (from == 'logistica'   && to == 'instalacao')
+          || (from == 'instalacao'  && to == 'relatorio')
+          || (from == 'relatorio'   && to == 'concluido')
           || (from == 'concluido'   && to == 'concluido');
     }
 
-    match /usuarios/{userId} {
-      allow read: if request.auth.uid == userId || isSuperAdmin();
-      // Bootstrap: usuário autenticado pode criar o próprio documento se ainda não existir.
-      // SEGURANÇA: não é permitido atribuir perfis privilegiados (adm, supervisor, super_admin).
-      // Isso impede escalada de privilégio via primeiro write do cliente.
-      allow create: if isSuperAdmin()
-                    || (request.auth.uid == userId
-                        && !exists(/databases/$(database)/documents/usuarios/$(userId))
-                        && !isPerfilPrivilegiado(request.resource.data.perfil));
-      allow update, delete: if isSuperAdmin();
+    // Whitelist de campos editáveis por etapa.
+    // Impede que um cliente altere dados de etapas passadas ou campos internos
+    // enquanto faz uma transição aparentemente válida de from→to.
+    //
+    // Campos sempre imutáveis (verificados separadamente na regra update):
+    //   protocolo, criadoPorUid
+    //
+    // Campos sempre mutáveis (controle do fluxo):
+    //   status, etapaAtual, atualizadoEm, historico, documentos
+    //
+    // Campos específicos de cada etapa — somente o dado daquela etapa pode mudar:
+    //   solicitacao → (apenas avanço de etapa, sem dados extras)
+    //   gestor      → parecerGestor, dadosAdm (supervisor preenche parecer + define fornecedor)
+    //   adm         → dadosAdm (adm confirma dados administrativos e encaminha)
+    //   fornecedor  → dadosFornecedor
+    //   logistica   → dadosLogistica
+    //   instalacao  → dadosInstalacao
+    //   relatorio   → dadosRelatorio
+    function onlyAllowedFieldsChanged(etapa) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      let base = ['status', 'etapaAtual', 'atualizadoEm', 'historico', 'documentos'];
+      return (etapa == 'solicitacao' && changed.hasOnly(base))
+          || (etapa == 'gestor'      && changed.hasOnly(['status','etapaAtual','atualizadoEm','historico','documentos','parecerGestor','dadosAdm']))
+          || (etapa == 'adm'         && changed.hasOnly(['status','etapaAtual','atualizadoEm','historico','documentos','dadosAdm']))
+          || (etapa == 'fornecedor'  && changed.hasOnly(['status','etapaAtual','atualizadoEm','historico','documentos','dadosFornecedor']))
+          || (etapa == 'logistica'   && changed.hasOnly(['status','etapaAtual','atualizadoEm','historico','documentos','dadosLogistica']))
+          || (etapa == 'instalacao'  && changed.hasOnly(['status','etapaAtual','atualizadoEm','historico','documentos','dadosInstalacao']))
+          || (etapa == 'relatorio'   && changed.hasOnly(['status','etapaAtual','atualizadoEm','historico','documentos','dadosRelatorio']))
+          || (etapa == 'concluido'   && changed.hasOnly(['atualizadoEm']));
     }
+
+    match /solicitacoes/{solicitacaoId} {
+      allow read: if canViewSolicitacao();
+
+      // Criar: somente vendas ou super_admin.
+      // criadoPorUid deve ser o UID do usuário logado.
+      // etapaAtual deve iniciar em 'solicitacao'.
+      allow create: if request.auth.uid != null
+                    && request.resource.data.criadoPorUid == request.auth.uid
+                    && request.resource.data.etapaAtual == 'solicitacao'
+                    && (isSuperAdmin() || getUserProfile() == 'vendas');
+
+      // Atualizar: quatro validações independentes devem passar:
+      //   1. usuário pode ver a solicitação (canViewSolicitacao)
+      //   2. usuário tem permissão para editar a etapa atual (canEditEtapa)
+      //   3. campos imutáveis não foram alterados (protocolo, criadoPorUid)
+      //   4. transição de etapa é legítima (isValidTransition)
+      //   5. somente campos permitidos para a etapa foram alterados (onlyAllowedFieldsChanged)
+      allow update: if canViewSolicitacao()
+                    && canEditEtapa(resource.data.etapaAtual)
+                    && request.resource.data.protocolo == resource.data.protocolo
+                    && request.resource.data.criadoPorUid == resource.data.criadoPorUid
+                    && isValidTransition(resource.data.etapaAtual, request.resource.data.etapaAtual)
+                    && onlyAllowedFieldsChanged(resource.data.etapaAtual);
+
+      allow delete: if isSuperAdmin();
+
+      match /historico/{eventoId} {
+        allow read:   if canViewSolicitacao();
+        allow create: if canViewSolicitacao()
+                      && request.resource.data.executadoPorUid == request.auth.uid;
+        // Histórico é append-only — update e delete bloqueados
+        allow update, delete: if false;
+      }
+    }
+
+    // ═══════════════════════════════════════════════
+    // /username_lookup/{username}
+    // ═══════════════════════════════════════════════
+
+    match /username_lookup/{username} {
+      // Leitura pública mantida: necessária para login por username antes da autenticação.
+      // O documento contém apenas {email, uid, ativo, criadoEm} — sem dados sensíveis além do email.
+      // Limitação aceita: enumeração de usernames é possível. Mitigação: não exibir usernames
+      // existentes na UI; login via username não confirma existência antes do auth.
+      allow read: if true;
+
+      // Escrita restrita a super_admin apenas.
+      // Razão: usuários são criados pelo admin (salvarUsuarioAdmin), não por auto-registro.
+      //        Qualquer escrita de cliente autenticado poderia contaminar ou sequestrar
+      //        o mapeamento username → uid/email de outro usuário.
+      // NOTA: o bootstrap do primeiro super_admin deve criar este mapeamento
+      //       via Firebase Console ou Admin SDK — não via cliente autenticado.
+      allow write: if isSuperAdmin();
+    }
+
+    // ═══════════════════════════════════════════════
+    // Outras coleções
+    // ═══════════════════════════════════════════════
 
     match /fornecedores/{docId} {
       allow read: if request.auth.uid != null;
@@ -100,44 +214,15 @@ service cloud.firestore {
       allow create, update, delete: if isSuperAdmin() || isAdmVendas();
     }
 
-    match /solicitacoes/{solicitacaoId} {
-      allow read: if canViewSolicitacao();
-      // Criar: qualquer usuário autenticado com perfil válido (vendas OU super_admin)
-      // criadoPorUid deve ser o próprio UID do usuário logado
-      // etapaAtual deve iniciar em 'solicitacao' (regra de integridade do fluxo)
-      allow create: if request.auth.uid != null
-                    && request.resource.data.criadoPorUid == request.auth.uid
-                    && request.resource.data.etapaAtual == 'solicitacao'
-                    && (isSuperAdmin() || getUserProfile() == 'vendas');
-      // Atualizar: deve poder ver, ter permissão de editar a etapa atual,
-      // não alterar protocolo nem criadoPorUid, e só avançar/manter a etapa
-      // em transições legítimas do fluxo.
-      allow update: if canViewSolicitacao()
-                    && canEditEtapa(resource.data.etapaAtual)
-                    && request.resource.data.protocolo == resource.data.protocolo
-                    && request.resource.data.criadoPorUid == resource.data.criadoPorUid
-                    && isValidTransition(resource.data.etapaAtual, request.resource.data.etapaAtual);
-      allow delete: if isSuperAdmin();
-
-      match /historico/{eventoId} {
-        allow read: if canViewSolicitacao();
-        allow create: if canViewSolicitacao()
-                      && request.resource.data.executadoPorUid == request.auth.uid;
-        allow update, delete: if false;
-      }
-    }
-
     match /contadores/{docId} {
       allow read: if request.auth.uid != null;
-      // Qualquer usuário autenticado pode incrementar contadores (geração de número WR)
+      // Qualquer usuário autenticado pode incrementar (geração de protocolo WR).
+      // Limitação aceita: usuário poderia incrementar o contador sem criar solicitação.
+      // Mitigação P1: mover geração de protocolo para Cloud Function.
       allow write: if request.auth.uid != null;
     }
 
-    // ── Base de máquinas importadas via Excel ──────────────
     match /maquinas/{serialId} {
-      // super_admin, adm_vendas, adm, supervisor_asts, gestor: leem tudo
-      // fornecedor_ebst: lê apenas máquinas onde fornecedor == 'EBST'
-      // fornecedor_hobart: lê apenas máquinas onde fornecedor == 'Hobart Brasil'
       allow read: if isSuperAdmin()
                   || isSupervisorASTS()
                   || isAdmVendas()
@@ -147,23 +232,12 @@ service cloud.firestore {
                            && (isSuperAdmin() || isAdmVendas());
     }
 
-    match /username_lookup/{username} {
-      // Leitura pública mantida para que o login por username funcione antes da autenticação.
-      allow read: if true;
-      // Criar: apenas o próprio usuário pode registrar seu username,
-      // e o UID registrado deve corresponder ao seu UID logado.
-      // Isso impede que um usuário crie ou sequestre o mapeamento de outro.
-      allow create: if request.auth.uid != null
-                    && request.resource.data.uid == request.auth.uid;
-      // Atualizar ou excluir: apenas super_admin
-      // (impede sabotagem de mapeamento username → email por usuário comum)
-      allow update, delete: if isSuperAdmin();
-    }
-
     match /produtos/{docId} {
       allow read: if request.auth.uid != null;
       allow create, update, delete: if isSuperAdmin() || isAdmVendas();
     }
+
+    // Bloqueia qualquer caminho não coberto pelas regras acima
     match /{document=**} {
       allow read, write: if false;
     }

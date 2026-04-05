@@ -3201,7 +3201,10 @@ async function uploadArquivo(file, pasta) {
   if (!firebaseOk || !file) return null;
   try {
     const ts   = Date.now();
-    const path = `solicitacoes/${pasta}/${ts}_${file.name}`;
+    // Inclui o ID da solicitação no path para vincular o arquivo ao documento correto.
+    // currentSolicitacaoId sempre existe no momento do upload (criação ocorre antes).
+    const solId = currentSolicitacaoId || 'sem-id';
+    const path = `solicitacoes/${solId}/${pasta}/${ts}_${file.name}`;
     const ref  = storage.ref(path);
     const snap = await ref.put(file);
     const url  = await snap.ref.getDownloadURL();
@@ -4310,16 +4313,18 @@ async function confirmEnviarGestor() {
   try {
     const dados = coletarDadosSolicitacao();
 
-    // Upload do contrato (antes de criar a solicitação)
-    const uploads = await uploadMultiplos([['fProp','CONTRATO']], 'contratos');
-
-    // Criar solicitação no Firestore
+    // Criar solicitação ANTES do upload para que currentSolicitacaoId exista.
+    // Isso vincula os arquivos ao documento correto no Storage e evita órfãos
+    // em caso de falha após upload mas antes da persistência do doc principal.
     await criarSolicitacao(dados);
 
-    // Anexar documentos se enviados
+    // Upload do contrato com path vinculado ao ID da solicitação
+    const uploads = await uploadMultiplos([['fProp','CONTRATO']], 'contratos');
+
+    // Anexar documentos à solicitação já criada
     if (uploads.length > 0) {
       await adicionarDocumentos(currentSolicitacaoId,
-        uploads.map(u => ({ ...u, etapa: 'solicitacao', responsavel: currentUser?.nome || 'Vendas' })));
+        uploads.map(u => ({ ...u, etapa: 'gestor', responsavel: currentUser?.nome || 'Vendas' })));
     }
 
     // Notificações
