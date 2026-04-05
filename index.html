@@ -1125,9 +1125,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
           <div class="home-sub">Plataforma de Controle de Máquinas de Lavar Louças · Solenis Brasil</div>
           <div class="home-divider"></div>
           <div class="home-stats">
-            <div class="home-stat"><div class="hs-num">18</div><div class="hs-lbl">Solicitações</div></div>
-            <div class="home-stat"><div class="hs-num">4</div><div class="hs-lbl">Em andamento</div></div>
-            <div class="home-stat"><div class="hs-num">12</div><div class="hs-lbl">Concluídas</div></div>
+            <div class="home-stat"><div class="hs-num" id="home-stat-total">—</div><div class="hs-lbl">Solicitações</div></div>
+            <div class="home-stat"><div class="hs-num" id="home-stat-open">—</div><div class="hs-lbl">Em andamento</div></div>
+            <div class="home-stat"><div class="hs-num" id="home-stat-done">—</div><div class="hs-lbl">Concluídas</div></div>
           </div>
           <div class="home-cta">
             <button class="home-cta-btn primary" onclick="go('solicitacao')">
@@ -5177,7 +5177,10 @@ function goPage(id){
     showToast('Acesso restrito. Redirecionando para Pendentes.', 'warn');
     id = 'pendentes';
   }
-  if(id===currentPage) return;
+  if(id===currentPage) {
+    onEnterPage(id);
+    return;
+  }
   document.getElementById('screen-'+currentPage)?.classList.remove('active');
   document.getElementById('screen-'+id)?.classList.add('active');
   currentPage = id;
@@ -5193,6 +5196,11 @@ function goPage(id){
   // breadcrumb
   const bcMap = {home:'Início',dashboard:'Dashboard',historico:'Histórico',notificacoes:'Notificações',relatorios:'Relatórios',configuracoes:'Configurações',admin:'Admin Sistema',solicitacoes:'Solicitações',pendentes:'Pendentes'};
   setBreadcrumb(bcMap[id]||id);
+  onEnterPage(id);
+}
+
+function onEnterPage(id) {
+  if (id === 'home')           atualizarHomeStats();
   if (id === 'admin')          onEnterAdmin();
   if (id === 'dashboard')      carregarDashboard();
   if (id === 'historico')      carregarHistoricoFirebase();
@@ -5518,6 +5526,71 @@ function filtrarSolicitacoes(filtro, btnEl) {
 const STATUS_ANDAMENTO    = ['AGUARDANDO_GESTOR','EM_ANALISE_GESTOR','APROVADO_GESTOR','EM_REVISAO_ADM','COM_FORNECEDOR','NF_ANEXADA','EM_LOGISTICA','AGUARDANDO_INSTALACAO','INSTALACAO_AGENDADA'];
 const STATUS_CONCLUIDAS   = ['ENCERRADO','INSTALACAO_CONCLUIDA'];
 const STATUS_AJUSTE       = ['AGUARDA_AJUSTE','REPROVADO'];
+
+function solicitacaoEstaConcluida(data) {
+  return STATUS_CONCLUIDAS.includes(data?.status) || data?.etapaAtual === 'concluido';
+}
+
+async function buscarSolicitacoesHomeStats() {
+  if (!firebaseOk || !currentUser || !db) return [];
+
+  const perfil = currentUser.perfil;
+  const uid = currentUser.uid;
+  let query;
+
+  if (perfil === 'vendas') {
+    query = db.collection('solicitacoes').where('criadoPorUid', '==', uid);
+  } else if (perfil === 'fornecedor_ebst') {
+    query = db.collection('solicitacoes').where('dadosAdm.encaminhadoFornecedor', '==', 'EBST');
+  } else if (perfil === 'fornecedor_hobart') {
+    query = db.collection('solicitacoes').where('dadosAdm.encaminhadoFornecedor', '==', 'Hobart Brasil');
+  } else {
+    query = db.collection('solicitacoes');
+  }
+
+  const snap = await query.get();
+  return snap.docs.filter(doc => {
+    if (!isFornecedor()) return true;
+    const data = doc.data();
+    const fornecedorDaSolicitacao = data.dadosAdm?.encaminhadoFornecedor || data.dadosAdm?.fornecedor;
+    const fornecedorUsuario = currentUser.fornecedor || fornecedorDoPerfil(perfil);
+    return !fornecedorUsuario || !fornecedorDaSolicitacao || fornecedorDaSolicitacao === fornecedorUsuario;
+  });
+}
+
+async function atualizarHomeStats() {
+  const totalEl = document.getElementById('home-stat-total');
+  const openEl = document.getElementById('home-stat-open');
+  const doneEl = document.getElementById('home-stat-done');
+  if (!totalEl || !openEl || !doneEl) return;
+
+  if (!firebaseOk || !currentUser || !db) {
+    totalEl.textContent = '—';
+    openEl.textContent = '—';
+    doneEl.textContent = '—';
+    return;
+  }
+
+  totalEl.textContent = '...';
+  openEl.textContent = '...';
+  doneEl.textContent = '...';
+
+  try {
+    const docs = await buscarSolicitacoesHomeStats();
+    const total = docs.length;
+    const concluidas = docs.filter(doc => solicitacaoEstaConcluida(doc.data())).length;
+    const emAndamento = Math.max(total - concluidas, 0);
+
+    totalEl.textContent = String(total);
+    openEl.textContent = String(emAndamento);
+    doneEl.textContent = String(concluidas);
+  } catch (e) {
+    console.error('[WORKRAIL] Erro ao atualizar indicadores da home:', e);
+    totalEl.textContent = '—';
+    openEl.textContent = '—';
+    doneEl.textContent = '—';
+  }
+}
 
 function _renderizarSolicitacoes(filtro) {
   const listEl = document.getElementById('solicitacoesList');
