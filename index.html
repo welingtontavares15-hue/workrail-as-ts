@@ -2726,6 +2726,32 @@ function sanitizeText(str) {
             .replace(/"/g,'&quot;').replace(/'/g,'&#39;').trim();
 }
 
+async function resolverEmailPorUsername(username) {
+  const usernameNormalizado = (username || '').trim().toLowerCase();
+  if (!usernameNormalizado) {
+    throw { code: 'user-not-found', message: 'Informe seu username.' };
+  }
+
+  try {
+    const resolveUsername = firebase.functions().httpsCallable('resolveUsername');
+    const result = await resolveUsername({ username: usernameNormalizado });
+    const email = result?.data?.email;
+    if (!email) {
+      throw { code: 'auth-error', message: 'Resposta inválida ao verificar usuário.' };
+    }
+    return email;
+  } catch (lookupErr) {
+    const code = lookupErr?.code || '';
+    if (code === 'functions/not-found') {
+      throw { code: 'user-not-found', message: 'Usuário não encontrado. Verifique o username.' };
+    }
+    if (code === 'functions/invalid-argument') {
+      throw { code: 'user-not-found', message: 'Username inválido.' };
+    }
+    throw { code: 'auth-error', message: 'Erro ao verificar usuário. Tente novamente.' };
+  }
+}
+
 // ════════════════════════════════════════════════════════════
 // RECUPERAR SENHA
 // ════════════════════════════════════════════════════════════
@@ -2761,24 +2787,17 @@ async function enviarRecuperacao() {
   btn.textContent = 'Verificando...';
 
   try {
-    // Verificar se o username existe no lookup
-    const lookupDoc = await db.collection('username_lookup').doc(username).get();
-    if (!lookupDoc.exists) {
-      msgEl.style.color = '#c62828';
-      msgEl.textContent = 'Usuário não encontrado. Verifique o username ou contate o administrador.';
-      return;
-    }
-    const email = lookupDoc.data().email;
+    const email = await resolverEmailPorUsername(username);
     await firebase.auth().sendPasswordResetEmail(email);
     msgEl.style.color = '#2e7d32';
     msgEl.textContent = 'E-mail de recuperação enviado! Verifique sua caixa de entrada.';
     usernameEl.value = '';
   } catch(e) {
     msgEl.style.color = '#c62828';
-    if (e.code === 'auth/user-not-found') {
+    if (e.code === 'user-not-found' || e.code === 'auth/user-not-found') {
       msgEl.textContent = 'Usuário não encontrado no sistema de autenticação.';
     } else {
-      msgEl.textContent = 'Erro ao enviar recuperação. Contate o administrador.';
+      msgEl.textContent = e.message || 'Erro ao enviar recuperação. Contate o administrador.';
     }
   } finally {
     btn.disabled = false;
@@ -2823,21 +2842,7 @@ async function fazerLogin() {
     // username_lookup é inacessível ao cliente (allow read: if false).
     // A Cloud Function resolveUsername() usa Admin SDK no servidor — sem token de cliente.
     // Isso elimina enumeração de usernames/emails pelo cliente ou por atacantes.
-    let emailParaAuth;
-    try {
-      const resolveUsername = firebase.functions().httpsCallable('resolveUsername');
-      const result = await resolveUsername({ username });
-      emailParaAuth = result.data.email;
-    } catch(lookupErr) {
-      const code = lookupErr?.code || '';
-      if (code === 'functions/not-found') {
-        throw { code: 'user-not-found', message: 'Usuário não encontrado. Verifique o username.' };
-      }
-      if (code === 'functions/invalid-argument') {
-        throw { code: 'user-not-found', message: 'Username inválido.' };
-      }
-      throw { code: 'auth-error', message: 'Erro ao verificar usuário. Tente novamente.' };
-    }
+    const emailParaAuth = await resolverEmailPorUsername(username);
 
     let authUser;
     try {
@@ -6758,27 +6763,36 @@ async function migrarUsernameLookup() {
       if (statusEl) statusEl.textContent = 'Nenhum usuário encontrado na coleção usuarios.';
       return;
     }
-    const batch = db.batch();
-    let count = 0, skip = 0;
+    const BATCH_LIMIT = 400;
+    let batch = db.batch();
+    let ops = 0;
+    let sincronizados = 0;
+    let ignorados = 0;
+
     for (const doc of snap.docs) {
       const u = doc.data();
-      if (!u.username || !u.email) { skip++; continue; }
+      if (!u.username || !u.email) { ignorados++; continue; }
       const key = u.username.toLowerCase();
-      // Verifica se já existe
-      const existing = await db.collection('username_lookup').doc(key).get();
-      if (existing.exists) { skip++; continue; }
       batch.set(db.collection('username_lookup').doc(key), {
         email:     u.email,
         uid:       doc.id,
         ativo:     u.ativo !== false,
-        migradoEm: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      count++;
+        sincronizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      sincronizados++;
+      ops++;
+
+      if (ops >= BATCH_LIMIT) {
+        await batch.commit();
+        batch = db.batch();
+        ops = 0;
+      }
     }
-    if (count > 0) await batch.commit();
+
+    if (ops > 0) await batch.commit();
     if (statusEl) statusEl.innerHTML =
-      `<span style="color:var(--green)">✓ Migração concluída: ${count} entrada(s) criada(s), ${skip} já existente(s) ou sem dados.</span>`;
-    showToast(`Migração concluída: ${count} usuário(s) migrado(s).`, 'success');
+      `<span style="color:var(--green)">✓ Migração concluída: ${sincronizados} entrada(s) sincronizada(s), ${ignorados} ignorada(s) por falta de dados.</span>`;
+    showToast(`Migração concluída: ${sincronizados} usuário(s) sincronizado(s).`, 'success');
   } catch(e) {
     if (statusEl) statusEl.innerHTML = `<span style="color:#c62828">✗ Erro: ${e.message}</span>`;
     showToast('Erro na migração: ' + e.message, 'error');
