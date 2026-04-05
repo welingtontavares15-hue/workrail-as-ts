@@ -3331,11 +3331,20 @@ async function adicionarDocumentos(id, docs) {
 async function carregarHistoricoFirebase() {
   if (!firebaseOk) return;
   try {
-    let querySol = db.collection('solicitacoes').orderBy('criadoEm','desc').limit(200);
+    const perfil = currentUser?.perfil;
+    const uid    = currentUser?.uid;
 
-    if (isFornecedor()) {
+    // Query base — sem orderBy para evitar índice composto; ordenação feita client-side
+    let querySol = db.collection('solicitacoes').limit(200);
+
+    if (perfil === 'vendas') {
+      // Vendas vê apenas suas próprias solicitações
+      querySol = db.collection('solicitacoes')
+        .where('criadoPorUid', '==', uid)
+        .limit(200);
+    } else if (isFornecedor()) {
       // Deriva fornecedor do campo explícito ou do perfil (fallback seguro)
-      const fornecedorFiltro = currentUser.fornecedor || fornecedorDoPerfil(currentUser.perfil);
+      const fornecedorFiltro = currentUser.fornecedor || fornecedorDoPerfil(perfil);
       if (fornecedorFiltro) {
         // Usa campo canônico encaminhadoFornecedor; client-side também filtra o alias legado
         querySol = db.collection('solicitacoes')
@@ -5328,12 +5337,40 @@ async function abrirSolicitacao(solicitacaoId) {
   try {
     const doc = await db.collection('solicitacoes').doc(solicitacaoId).get();
     if (!doc.exists) { showToast('Solicitação não encontrada.', 'error'); return; }
+
+    const data = doc.data();
+
+    // Verificação de propriedade para perfil vendas — impede abertura manual de IDs alheios
+    if (currentUser?.perfil === 'vendas' && data.criadoPorUid !== currentUser.uid) {
+      console.warn('[WORKRAIL] abrirSolicitacao bloqueado: solicitação de outro usuário', solicitacaoId);
+      showToast('Acesso negado — esta solicitação não pertence à sua conta.', 'error');
+      goPage('solicitacoes');
+      return;
+    }
+
+    // Verificação para fornecedor — não pode abrir solicitações de outro fornecedor
+    if (isFornecedor()) {
+      const fornecedorDaSOlic = data.dadosAdm?.encaminhadoFornecedor || data.dadosAdm?.fornecedor;
+      const fornecedorDoUsuario = currentUser.fornecedor || fornecedorDoPerfil(currentUser.perfil);
+      if (fornecedorDaSOlic && fornecedorDoUsuario && fornecedorDaSOlic !== fornecedorDoUsuario) {
+        console.warn('[WORKRAIL] abrirSolicitacao bloqueado: solicitação de outro fornecedor');
+        showToast('Acesso negado — esta solicitação não pertence ao seu fornecedor.', 'error');
+        goPage('pendentes');
+        return;
+      }
+    }
+
     currentSolicitacaoId = solicitacaoId;
-    currentSolicitacao   = doc.data();
+    currentSolicitacao   = data;
     go(currentSolicitacao.etapaAtual || 'solicitacao');
   } catch(e) {
     console.error('[WORKRAIL] Erro ao abrir solicitação:', e);
-    showToast('Erro ao abrir solicitação.', 'error');
+    if (e.code === 'permission-denied') {
+      showToast('Acesso negado — você não tem permissão para abrir esta solicitação.', 'error');
+      goPage('solicitacoes');
+    } else {
+      showToast('Erro ao abrir solicitação: ' + (e.message || 'tente novamente.'), 'error');
+    }
   }
 }
 
@@ -6135,10 +6172,18 @@ async function carregarDashboard() {
   if (tbody) tbody.innerHTML = `<tr><td colspan="20"><div class="dash-loading"><div class="dash-spinner"></div>Carregando contratos…</div></td></tr>`;
 
   try {
+    // Para vendas: busca somente as próprias solicitações via query restrita.
+    // Para os demais perfis operacionais: visão completa do parque.
+    const uid = currentUser?.uid;
+    const podeVerTudoQuery = ['gestor','supervisor_asts','adm','adm_vendas','super_admin'].includes(currentUser?.perfil);
+    const querySolicitacoes = podeVerTudoQuery
+      ? db.collection('solicitacoes').get()
+      : db.collection('solicitacoes').where('criadoPorUid','==',uid).get();
+
     // Busca solicitações e máquinas importadas em paralelo.
     // maquinas pode falhar por permissão — não deve derrubar o dashboard.
     const [snapSol, snapMaqResult] = await Promise.all([
-      db.collection('solicitacoes').get(),
+      querySolicitacoes,
       db.collection('maquinas').get().catch(() => null)
     ]);
     const snapMaq = snapMaqResult;
@@ -6166,7 +6211,8 @@ async function carregarDashboard() {
       const serial      = d.dadosFornecedor?.maquinaConfirmada?.serialMaquina || d.dadosAdm?.maquina?.serialMaquina || '';
       const numeroPedido = d.dadosSolicitacao?.numeroPedido || d.protocolo || doc.id.substring(0,8).toUpperCase();
       const { dataVenc, dias, pctDecorrido } = _calcVig(dataInst, meses);
-      return { id: doc.id, tipo: 'solicitacao', protocolo: numeroPedido, numeroPedido, serial, nomeCliente, modelo, dataInst, meses, dataVenc, dias, pctDecorrido, status };
+      const criadoPorUid = d.criadoPorUid || null;
+      return { id: doc.id, tipo: 'solicitacao', protocolo: numeroPedido, numeroPedido, serial, nomeCliente, modelo, dataInst, meses, dataVenc, dias, pctDecorrido, status, criadoPorUid };
     });
 
     // ── Processa máquinas importadas (evita duplicar seriais já em solicitações) ──
@@ -6195,13 +6241,14 @@ async function carregarDashboard() {
         };
       });
 
-    // ── Filtro por perfil: vendas vê apenas os próprios contratos ──
+    // ── Filtro por perfil: vendas já vem filtrado pela query; bloco abaixo é defesa extra ──
     const podeVerTudo = ['gestor','supervisor_asts','adm','adm_vendas','super_admin'].includes(currentUser?.perfil);
     let filtradosSol = contratosSol;
     let filtradosMaq = contratosMaq;
     if (!podeVerTudo && currentUser?.perfil === 'vendas') {
       const nomeUsuario = currentUser.nome || currentUser.username || '';
-      filtradosSol = contratosSol.filter(c => !c.nomeCliente || c.criadoPorUid === currentUser.uid);
+      // Dupla defesa: a query já veio filtrada por criadoPorUid; este filtro garante segurança mesmo com cache
+      filtradosSol = contratosSol.filter(c => c.criadoPorUid === currentUser.uid);
       // Para máquinas importadas, filtrar por responsavelVendas
       filtradosMaq = (snapMaq ? snapMaq.docs : [])
         .filter(doc => {
