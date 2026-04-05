@@ -25,9 +25,12 @@ service cloud.firestore {
       let doc = resource.data;
       let perfil = getUserProfile();
       let uid = request.auth.uid;
-      // Retrocompatibilidade: aceita encaminhadoFornecedor ou fornecedor como campo de segregação
-      let fornecedorEBST   = (doc.dadosAdm.encaminhadoFornecedor == 'EBST')   || (doc.dadosAdm.fornecedor == 'EBST');
-      let fornecedorHobart = (doc.dadosAdm.encaminhadoFornecedor == 'Hobart Brasil') || (doc.dadosAdm.fornecedor == 'Hobart Brasil');
+      // Acesso seguro via get() — dadosAdm pode não existir em etapas iniciais (solicitacao/gestor).
+      // Sem esse cuidado, o null dereference derruba a avaliação e nega acesso a todos os perfis.
+      let enc  = doc.get(['dadosAdm', 'encaminhadoFornecedor'], '');
+      let forn = doc.get(['dadosAdm', 'fornecedor'], '');
+      let fornecedorEBST   = enc == 'EBST'          || forn == 'EBST';
+      let fornecedorHobart = enc == 'Hobart Brasil'  || forn == 'Hobart Brasil';
       return isSuperAdmin()
           || isSupervisorASTS()
           || isAdmVendas()
@@ -43,13 +46,13 @@ service cloud.firestore {
           || (etapa == 'solicitacao' && getUserProfile() == 'vendas')
           || ((etapa == 'gestor' || etapa == 'supervisor') && isSupervisorASTS())
           || ((etapa == 'adm' || etapa == 'adm_vendas') && isAdmVendas())
-          // Fornecedor edita sua etapa com base no perfil (sem depender do campo fornecedor do usuário)
+          // Fornecedor edita sua etapa com base no perfil — acesso seguro via get()
           || (etapa == 'fornecedor' && getUserProfile() == 'fornecedor_ebst'
-              && (resource.data.dadosAdm.encaminhadoFornecedor == 'EBST'
-                  || resource.data.dadosAdm.fornecedor == 'EBST'))
+              && (resource.data.get(['dadosAdm','encaminhadoFornecedor'],'') == 'EBST'
+                  || resource.data.get(['dadosAdm','fornecedor'],'') == 'EBST'))
           || (etapa == 'fornecedor' && getUserProfile() == 'fornecedor_hobart'
-              && (resource.data.dadosAdm.encaminhadoFornecedor == 'Hobart Brasil'
-                  || resource.data.dadosAdm.fornecedor == 'Hobart Brasil'))
+              && (resource.data.get(['dadosAdm','encaminhadoFornecedor'],'') == 'Hobart Brasil'
+                  || resource.data.get(['dadosAdm','fornecedor'],'') == 'Hobart Brasil'))
           || ((etapa == 'logistica') && isAdmVendas())
           || ((etapa == 'instalacao' || etapa == 'data_instalacao') && isSupervisorASTS())
           || ((etapa == 'relatorio' || etapa == 'relatorio_final') && isSupervisorASTS());
