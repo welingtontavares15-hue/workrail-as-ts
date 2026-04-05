@@ -1928,7 +1928,11 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
               <div class="fc-body c3">
                 <div class="field"><label>Data <span class="req">*</span></label><input type="date" id="inputDataInstalacao"></div>
                 <div class="field"><label>Horário <span class="req">*</span></label><input type="time" id="inputHorarioInstalacao"></div>
-                <div class="field"><label>Responsável da Instalação <span class="req">*</span></label><select id="selectResponsavelInstalacao"><option value="">Carregando...</option></select></div>
+                <div class="field">
+                  <label>Responsável da Instalação <span class="req">*</span></label>
+                  <input type="text" id="selectResponsavelInstalacao" list="listResponsaveisInstalacao" placeholder="Digite ou selecione o responsável" autocomplete="off">
+                  <datalist id="listResponsaveisInstalacao"></datalist>
+                </div>
               </div>
             </div>
           </div>
@@ -2394,41 +2398,26 @@ async function carregarProdutosFormulario() {
 
 // ─── CARREGAR RESPONSÁVEIS DE INSTALAÇÃO DO FIRESTORE ────────
 async function carregarResponsaveisInstalacao() {
-  const sel = document.getElementById('selectResponsavelInstalacao');
-  if (!sel) return;
-  const saved = currentSolicitacao?.dadosInstalacao?.tecnico || sel.value;
-  sel.innerHTML = '<option value="">Selecionar...</option>';
-  if (!db) return;
+  const input = document.getElementById('selectResponsavelInstalacao');
+  const dl    = document.getElementById('listResponsaveisInstalacao');
+  if (!input || !dl) return;
+  const saved = currentSolicitacao?.dadosInstalacao?.tecnico || input.value;
+  dl.innerHTML = '';
+  if (!db) { if (saved) input.value = saved; return; }
   try {
     const snap = await db.collection('usuarios')
       .where('perfil', 'in', ['supervisor_asts', 'gestor'])
-      .where('ativo', '!=', false)
       .get();
     snap.docs.forEach(d => {
       const u = d.data();
-      if (u.nome) {
+      if (u.nome && u.ativo !== false) {
         const opt = document.createElement('option');
         opt.value = u.nome;
-        opt.textContent = u.nome;
-        sel.appendChild(opt);
+        dl.appendChild(opt);
       }
     });
-  } catch(e) {
-    // Se query composta falhar, tenta sem filtro ativo
-    try {
-      const snap2 = await db.collection('usuarios').where('perfil', 'in', ['supervisor_asts', 'gestor']).get();
-      snap2.docs.forEach(d => {
-        const u = d.data();
-        if (u.nome && u.ativo !== false) {
-          const opt = document.createElement('option');
-          opt.value = u.nome;
-          opt.textContent = u.nome;
-          sel.appendChild(opt);
-        }
-      });
-    } catch(e2) {}
-  }
-  if (saved) sel.value = saved;
+  } catch(e) {}
+  if (saved) input.value = saved;
 }
 
 function coletarDadosSupervisor() {
@@ -3599,9 +3588,9 @@ function validateStep_Instalacao() {
     _erroField('inputHorarioInstalacao', 'Informe o Horário da instalação.');
     erros.push('Horário');
   }
-  if (!document.getElementById('selectResponsavelInstalacao')?.value) {
-    _erroField('selectResponsavelInstalacao', 'Selecione o Técnico Responsável.');
-    erros.push('Técnico Responsável');
+  if (!document.getElementById('selectResponsavelInstalacao')?.value?.trim()) {
+    _erroField('selectResponsavelInstalacao', 'Informe o Responsável da Instalação.');
+    erros.push('Responsável da Instalação');
   }
   if (erros.length > 0) {
     showToast('Preencha todos os requisitos: ' + erros.join(' · '), 'error');
