@@ -1,0 +1,133 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Helpers ────────────────────────────────────────────
+    // Espelham as funções do Firestore Rules para consistência.
+    // Storage Rules podem consultar Firestore via firestore.get().
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function getProfile() {
+      return firestore.get(
+        /databases/(default)/documents/usuarios/$(request.auth.uid)
+      ).data.perfil;
+    }
+
+    function isSuperAdmin() {
+      return isAuth() && getProfile() == 'super_admin';
+    }
+
+    function isSupervisorASTS() {
+      let p = getProfile();
+      return isAuth() && (p == 'supervisor_asts' || p == 'gestor');
+    }
+
+    function isAdmVendas() {
+      let p = getProfile();
+      return isAuth() && (p == 'adm_vendas' || p == 'adm');
+    }
+
+    function isFornecedor() {
+      let p = getProfile();
+      return isAuth() && (p == 'fornecedor_ebst' || p == 'fornecedor_hobart');
+    }
+
+    // Limite de tamanho e validação de tipo
+    function maxMB(n) {
+      return request.resource.size <= n * 1024 * 1024;
+    }
+
+    function isPdf() {
+      return request.resource.contentType == 'application/pdf';
+    }
+
+    function isPdfOrWord() {
+      return request.resource.contentType in [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ];
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isDocOrImgOrPdf() {
+      return isPdfOrWord() || isImage();
+    }
+
+    // ── Contratos (proposta / cotação) ─────────────────────
+    // Caminho real: solicitacoes/contratos/{timestamp_filename}
+    // Quem envia: supervisor AS&TS ou ADM de Vendas
+    match /solicitacoes/contratos/{filename} {
+      allow create: if isAuth()
+                    && (isSuperAdmin() || isAdmVendas() || isSupervisorASTS())
+                    && maxMB(20)
+                    && isPdfOrWord();
+      allow read:   if isAuth();
+      allow delete: if isSuperAdmin();
+      allow update: if false;  // imutável — delete + recreate
+    }
+
+    // ── Formulários de pedido ──────────────────────────────
+    // Caminho real: solicitacoes/formularios/{timestamp_filename}
+    // Quem envia: supervisor AS&TS
+    match /solicitacoes/formularios/{filename} {
+      allow create: if isAuth()
+                    && (isSuperAdmin() || isSupervisorASTS())
+                    && maxMB(20)
+                    && isPdfOrWord();
+      allow read:   if isAuth();
+      allow delete: if isSuperAdmin();
+      allow update: if false;
+    }
+
+    // ── Documentos fiscais (Nota Fiscal) ───────────────────
+    // Caminho real: solicitacoes/documentos-fiscais/{timestamp_filename}
+    // Quem envia: fornecedor (EBST ou Hobart)
+    match /solicitacoes/documentos-fiscais/{filename} {
+      allow create: if isAuth()
+                    && (isSuperAdmin() || isFornecedor())
+                    && maxMB(20)
+                    && isDocOrImgOrPdf();
+      allow read:   if isAuth();
+      allow delete: if isSuperAdmin();
+      allow update: if false;
+    }
+
+    // ── Comprovantes de entrega (logística) ────────────────
+    // Caminho real: solicitacoes/comprovantes/{timestamp_filename}
+    // Quem envia: ADM de Vendas
+    match /solicitacoes/comprovantes/{filename} {
+      allow create: if isAuth()
+                    && (isSuperAdmin() || isAdmVendas())
+                    && maxMB(20)
+                    && isDocOrImgOrPdf();
+      allow read:   if isAuth();
+      allow delete: if isSuperAdmin();
+      allow update: if false;
+    }
+
+    // ── Relatórios de instalação ───────────────────────────
+    // Caminho real: solicitacoes/relatorios/{timestamp_filename}
+    // Quem envia: supervisor AS&TS
+    match /solicitacoes/relatorios/{filename} {
+      allow create: if isAuth()
+                    && (isSuperAdmin() || isSupervisorASTS())
+                    && maxMB(20)
+                    && isDocOrImgOrPdf();
+      allow read:   if isAuth();
+      allow delete: if isSuperAdmin();
+      allow update: if false;
+    }
+
+    // ── Bloquear qualquer outro caminho ───────────────────
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

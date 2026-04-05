@@ -21,6 +21,12 @@ service cloud.firestore {
       return p == 'adm_vendas' || p == 'adm';
     }
 
+    // Perfis que NÃO podem ser atribuídos pelo próprio usuário na criação
+    // Impede escalada de privilégio: cliente envia perfil=super_admin no primeiro write
+    function isPerfilPrivilegiado(perfil) {
+      return perfil in ['super_admin', 'adm_vendas', 'adm', 'supervisor_asts', 'gestor'];
+    }
+
     function canViewSolicitacao() {
       let doc = resource.data;
       let perfil = getUserProfile();
@@ -41,7 +47,7 @@ service cloud.firestore {
 
     function canEditEtapa(etapa) {
       // etapa vem do campo etapaAtual nos documentos Firestore
-      // FLOW = ['solicitacao','gestor','adm','fornecedor','logistica','instalacao','relatorio']
+      // FLOW = ['solicitacao','gestor','adm','fornecedor','logistica','instalacao','relatorio','concluido']
       return isSuperAdmin()
           || (etapa == 'solicitacao' && getUserProfile() == 'vendas')
           || ((etapa == 'gestor' || etapa == 'supervisor') && isSupervisorASTS())
@@ -58,12 +64,29 @@ service cloud.firestore {
           || ((etapa == 'relatorio' || etapa == 'relatorio_final') && isSupervisorASTS());
     }
 
+    // Valida que a transição de etapa é uma progressão legítima no fluxo.
+    // Evita que um cliente mal-intencionado pule etapas ou retroceda arbitrariamente.
+    function isValidTransition(from, to) {
+      return from == to  // atualização sem mudança de etapa (sempre válida)
+          || (from == 'solicitacao' && to in ['gestor'])
+          || (from == 'gestor'      && to in ['adm', 'solicitacao'])
+          || (from == 'adm'         && to in ['fornecedor', 'gestor'])
+          || (from == 'fornecedor'  && to in ['logistica'])
+          || (from == 'logistica'   && to in ['instalacao'])
+          || (from == 'instalacao'  && to in ['relatorio'])
+          || (from == 'relatorio'   && to in ['concluido'])
+          || (from == 'concluido'   && to == 'concluido');
+    }
+
     match /usuarios/{userId} {
       allow read: if request.auth.uid == userId || isSuperAdmin();
-      // Bootstrap: usuário autenticado pode criar o próprio documento se ainda não existir
+      // Bootstrap: usuário autenticado pode criar o próprio documento se ainda não existir.
+      // SEGURANÇA: não é permitido atribuir perfis privilegiados (adm, supervisor, super_admin).
+      // Isso impede escalada de privilégio via primeiro write do cliente.
       allow create: if isSuperAdmin()
                     || (request.auth.uid == userId
-                        && !exists(/databases/$(database)/documents/usuarios/$(userId)));
+                        && !exists(/databases/$(database)/documents/usuarios/$(userId))
+                        && !isPerfilPrivilegiado(request.resource.data.perfil));
       allow update, delete: if isSuperAdmin();
     }
 
@@ -86,10 +109,14 @@ service cloud.firestore {
                     && request.resource.data.criadoPorUid == request.auth.uid
                     && request.resource.data.etapaAtual == 'solicitacao'
                     && (isSuperAdmin() || getUserProfile() == 'vendas');
+      // Atualizar: deve poder ver, ter permissão de editar a etapa atual,
+      // não alterar protocolo nem criadoPorUid, e só avançar/manter a etapa
+      // em transições legítimas do fluxo.
       allow update: if canViewSolicitacao()
                     && canEditEtapa(resource.data.etapaAtual)
                     && request.resource.data.protocolo == resource.data.protocolo
-                    && request.resource.data.criadoPorUid == resource.data.criadoPorUid;
+                    && request.resource.data.criadoPorUid == resource.data.criadoPorUid
+                    && isValidTransition(resource.data.etapaAtual, request.resource.data.etapaAtual);
       allow delete: if isSuperAdmin();
 
       match /historico/{eventoId} {
@@ -121,10 +148,18 @@ service cloud.firestore {
     }
 
     match /username_lookup/{username} {
+      // Leitura pública mantida para que o login por username funcione antes da autenticação.
       allow read: if true;
-      // Bootstrap: qualquer usuário autenticado pode criar entrada para si mesmo
-      allow write: if isSuperAdmin() || request.auth.uid != null;
+      // Criar: apenas o próprio usuário pode registrar seu username,
+      // e o UID registrado deve corresponder ao seu UID logado.
+      // Isso impede que um usuário crie ou sequestre o mapeamento de outro.
+      allow create: if request.auth.uid != null
+                    && request.resource.data.uid == request.auth.uid;
+      // Atualizar ou excluir: apenas super_admin
+      // (impede sabotagem de mapeamento username → email por usuário comum)
+      allow update, delete: if isSuperAdmin();
     }
+
     match /produtos/{docId} {
       allow read: if request.auth.uid != null;
       allow create, update, delete: if isSuperAdmin() || isAdmVendas();
