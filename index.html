@@ -2389,6 +2389,20 @@ function isFornecedor() {
   return currentUser?.perfil?.startsWith('fornecedor_');
 }
 
+function isSupervisorASTS() {
+  const p = currentUser?.perfil;
+  return p === 'supervisor_asts' || p === 'gestor';
+}
+
+function isAdmVendas() {
+  const p = currentUser?.perfil;
+  return p === 'adm_vendas' || p === 'adm';
+}
+
+function isSuperAdmin() {
+  return currentUser?.perfil === 'super_admin';
+}
+
 
 const DEFAULT_MACHINE_MODELS = [
   { fabricante:'Hobart', modelo:'Ecomax 403' },
@@ -4388,6 +4402,10 @@ async function confirmEnviarGestor() {
 
 // 02 → GESTOR aprova
 async function confirmAprovar() {
+  if (!isSupervisorASTS() && !isSuperAdmin()) {
+    showToast('Acesso negado — somente o Supervisor AS&TS pode aprovar esta etapa.', 'error');
+    return;
+  }
   if (!validateStep_Gestor('aprovar')) return;
   const btnAprovar = document.getElementById('btnConfirmAprovar');
   if (btnAprovar) btnAprovar.disabled = true;
@@ -4452,6 +4470,10 @@ async function confirmAprovar() {
 
 // 02 → GESTOR rejeita
 async function confirmRejeitar() {
+  if (!isSupervisorASTS() && !isSuperAdmin()) {
+    showToast('Acesso negado — somente o Supervisor AS&TS pode rejeitar esta etapa.', 'error');
+    return;
+  }
   const obs = document.getElementById('textareaParecerGestor')?.value?.trim();
   if (!obs) {
     closeMod('mRejeitar');
@@ -4491,6 +4513,10 @@ async function confirmRejeitar() {
 
 // 02 → GESTOR solicita ajuste
 async function confirmSolicitarAjuste() {
+  if (!isSupervisorASTS() && !isSuperAdmin()) {
+    showToast('Acesso negado — somente o Supervisor AS&TS pode solicitar ajuste.', 'error');
+    return;
+  }
   const obs = document.getElementById('textareaParecerGestor')?.value?.trim();
   if (!obs) {
     closeMod('mAjuste');
@@ -4530,6 +4556,10 @@ async function confirmSolicitarAjuste() {
 
 // 03 → ADM aciona Fornecedor
 async function confirmFornecedor() {
+  if (!isAdmVendas() && !isSuperAdmin()) {
+    showToast('Acesso negado — somente o ADM de Vendas pode acionar o fornecedor.', 'error');
+    return;
+  }
   if (!validateStep_Adm()) return;
   const btnFornecedor = document.getElementById('btnConfirmFornecedor');
   if (btnFornecedor) btnFornecedor.disabled = true;
@@ -4666,6 +4696,10 @@ async function confirmExpedicao() {
 
 // 05 → ADM aciona logística e encaminha ao Supervisor AS&TS
 async function confirmAgendarInstalacao() {
+  if (!isAdmVendas() && !isSuperAdmin()) {
+    showToast('Acesso negado — somente o ADM de Vendas pode acionar a logística.', 'error');
+    return;
+  }
   if (!validateStep_Logistica()) return;
   const btnInstalacao = document.getElementById('btnConfirmInstalacao');
   if (btnInstalacao) btnInstalacao.disabled = true;
@@ -4714,6 +4748,10 @@ async function confirmAgendarInstalacao() {
 
 // 06 → Técnico avança para gerar relatório
 async function confirmIniciarRelatorio() {
+  if (!isSupervisorASTS() && !isSuperAdmin()) {
+    showToast('Acesso negado — somente o Supervisor AS&TS pode registrar a data de instalação.', 'error');
+    return;
+  }
   if (!validateStep_Instalacao()) return;
   const btnRelatorio = document.getElementById('btnConfirmRelatorio');
   if (btnRelatorio) btnRelatorio.disabled = true;
@@ -4764,6 +4802,10 @@ async function confirmIniciarRelatorio() {
 
 // 07 → Encerramento do processo
 async function confirmConcluir() {
+  if (!isSupervisorASTS() && !isSuperAdmin()) {
+    showToast('Acesso negado — somente o Supervisor AS&TS pode finalizar a solicitação.', 'error');
+    return;
+  }
   if (!validateStep_Relatorio()) return;
   const btnConcluir = document.getElementById('btnConfirmConcluir');
   if (btnConcluir) btnConcluir.disabled = true;
