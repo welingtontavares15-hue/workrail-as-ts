@@ -2627,10 +2627,6 @@ function _initializeFirebaseApp() {
 
     // ── Observa estado de autenticação ──────────────────────────
     auth.onAuthStateChanged(async (user) => {
-      // Sessão anônima é usada apenas como ponte para lookup de username durante login.
-      // Não deve disparar carregamento de perfil nem alterar estado da UI.
-      if (user && user.isAnonymous) return;
-
       if (!currentUser && user) {
         // Sessão Firebase ativa mas sem sessão local — carrega perfil
         await carregarPerfilUsuario(user);
@@ -2808,27 +2804,23 @@ async function fazerLogin() {
     // PASSO 1: Autenticar via Firebase Authentication (request.auth)
     // Este é o ÚNICO lugar onde fazemos requisição sem ter request.auth
     // ══════════════════════════════════════════════════════════════════
-    // PASSO 1a: Autenticar anonimamente para obter token válido antes do lookup.
-    // username_lookup não é mais público — exige request.auth.uid != null.
-    // A sessão anônima é substituída automaticamente pelo login real no passo 1b.
-    // onAuthStateChanged ignora sessões anônimas (user.isAnonymous == true).
-    try {
-      await firebase.auth().signInAnonymously();
-    } catch(anonErr) {
-      console.warn('[WORKRAIL] signInAnonymously falhou (Anonymous Auth habilitado no Console?):', anonErr);
-      throw { code: 'auth-error', message: 'Erro ao preparar autenticação. Verifique a configuração do Firebase.' };
-    }
-
-    // PASSO 1b: Buscar email pelo username (exige auth — não é mais leitura pública)
+    // PASSO 1a: Resolver username → email via Cloud Function (backend seguro).
+    // username_lookup é inacessível ao cliente (allow read: if false).
+    // A Cloud Function resolveUsername() usa Admin SDK no servidor — sem token de cliente.
+    // Isso elimina enumeração de usernames/emails pelo cliente ou por atacantes.
     let emailParaAuth;
     try {
-      const lookupDoc = await db.collection('username_lookup').doc(username).get();
-      if (!lookupDoc.exists || !lookupDoc.data().email) {
+      const resolveUsername = firebase.functions().httpsCallable('resolveUsername');
+      const result = await resolveUsername({ username });
+      emailParaAuth = result.data.email;
+    } catch(lookupErr) {
+      const code = lookupErr?.code || '';
+      if (code === 'functions/not-found') {
         throw { code: 'user-not-found', message: 'Usuário não encontrado. Verifique o username.' };
       }
-      emailParaAuth = lookupDoc.data().email;
-    } catch(lookupErr) {
-      if (lookupErr.code === 'user-not-found') throw lookupErr;
+      if (code === 'functions/invalid-argument') {
+        throw { code: 'user-not-found', message: 'Username inválido.' };
+      }
       throw { code: 'auth-error', message: 'Erro ao verificar usuário. Tente novamente.' };
     }
 

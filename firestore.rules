@@ -187,16 +187,13 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════
 
     match /username_lookup/{username} {
-      // Leitura restrita a usuários autenticados (incluindo sessão anônima transitória).
-      // O frontend usa signInAnonymously() como ponte antes de ler o lookup,
-      // garantindo que nunca há leitura sem token válido de curta duração.
-      // Isso elimina a enumeração pública de usernames/emails por não autenticados.
-      allow read: if request.auth.uid != null;
+      // LEITURA BLOQUEADA para qualquer cliente — anonymous, autenticado ou não.
+      // A resolução username → email acontece exclusivamente via Cloud Function
+      // resolveUsername() que usa o Admin SDK no servidor (sem token de cliente).
+      // Isso elimina completamente enumeração de usernames/emails pelo cliente.
+      allow read: if false;
 
-      // Escrita exclusiva do super_admin.
-      // Usuários são criados pelo admin (salvarUsuarioAdmin).
-      // O mapeamento username→email não pode ser alterado por nenhum cliente comum.
-      // NOTA: bootstrap do primeiro super_admin via Firebase Console ou Admin SDK.
+      // Escrita exclusiva do super_admin (Admin SDK via salvarUsuarioAdmin).
       allow write: if isSuperAdmin();
     }
 
