@@ -2202,11 +2202,11 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
 <div id="mAprovar" class="modal-overlay"><div class="modal m-approve"><h3>Aprovar Solicitação?</h3><p>Será encaminhada ao ADM de Vendas para revisão contratual. Aprovação registrada no histórico.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mAprovar')">Cancelar</button><button id="btnConfirmAprovar" class="btn btn-approve" onclick="confirmAprovar()"><svg viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 5.5-5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Aprovar</button></div></div></div>
 <div id="mRejeitar" class="modal-overlay"><div class="modal m-reject"><h3>Rejeitar Solicitação?</h3><p>Retorna ao Representante com a justificativa registrada. A justificativa é obrigatória.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mRejeitar')">Cancelar</button><button class="btn btn-reject" onclick="confirmRejeitar()"><svg viewBox="0 0 13 13" fill="none"><path d="M2 2l9 9M11 2L2 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Rejeitar</button></div></div></div>
 <div id="mAjuste" class="modal-overlay"><div class="modal m-reject"><h3>Solicitar Ajuste?</h3><p>A solicitação retornará a Vendas com as orientações do Supervisor AS&TS registradas.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mAjuste')">Cancelar</button><button class="btn btn-clear" onclick="confirmSolicitarAjuste()"><svg viewBox="0 0 13 13" fill="none"><path d="M2 6.5h9M9 4l2.5 2.5L9 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Solicitar Ajuste</button></div></div></div>
-<div id="mFornecedor" class="modal-overlay"><div class="modal m-advance"><h3>Aprovar e Encaminhar?</h3><p>O pedido será enviado formalmente via e-mail e registrado no Firebase. O Nº do Pedido será gerado automaticamente.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mFornecedor')">Cancelar</button><button class="btn btn-supplier" onclick="confirmFornecedor()">Acionar</button></div></div></div>
-<div id="mExpedir" class="modal-overlay"><div class="modal m-advance"><h3>Informar NF e Liberação?</h3><p>A máquina será marcada como expedida. NF e romaneio devem estar anexados e serão armazenados no Firebase.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mExpedir')">Cancelar</button><button class="btn btn-advance" onclick="confirmExpedicao()">Confirmar</button></div></div></div>
-<div id="mInstalacao" class="modal-overlay"><div class="modal m-advance"><h3>Notificar Logística?</h3><p>O Supervisor AS&TS será notificado para informar a data de instalação.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mInstalacao')">Cancelar</button><button class="btn btn-advance" onclick="confirmAgendarInstalacao()">Confirmar</button></div></div></div>
-<div id="mRelatorio" class="modal-overlay"><div class="modal m-advance"><h3>Confirmar Programação da Instalação?</h3><p>Confirme a data de instalação. Depois da execução, o relatório poderá ser anexado para encerramento.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mRelatorio')">Cancelar</button><button class="btn btn-advance" onclick="confirmIniciarRelatorio()">Avançar</button></div></div></div>
-<div id="mConcluir" class="modal-overlay"><div class="modal m-approve"><h3>Encerrar Processo?</h3><p>O processo será encerrado definitivamente. O relatório de instalação será anexado ao histórico e a solicitação será encerrada.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mConcluir')">Cancelar</button><button class="btn btn-conclude" onclick="confirmConcluir()"><svg viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Encerrar</button></div></div></div>
+<div id="mFornecedor" class="modal-overlay"><div class="modal m-advance"><h3>Aprovar e Encaminhar?</h3><p>O pedido será enviado formalmente via e-mail e registrado no Firebase. O Nº do Pedido será gerado automaticamente.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mFornecedor')">Cancelar</button><button id="btnConfirmFornecedor" class="btn btn-supplier" onclick="confirmFornecedor()">Acionar</button></div></div></div>
+<div id="mExpedir" class="modal-overlay"><div class="modal m-advance"><h3>Informar NF e Liberação?</h3><p>A máquina será marcada como expedida. NF e romaneio devem estar anexados e serão armazenados no Firebase.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mExpedir')">Cancelar</button><button id="btnConfirmExpedicao" class="btn btn-advance" onclick="confirmExpedicao()">Confirmar</button></div></div></div>
+<div id="mInstalacao" class="modal-overlay"><div class="modal m-advance"><h3>Notificar Logística?</h3><p>O Supervisor AS&TS será notificado para informar a data de instalação.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mInstalacao')">Cancelar</button><button id="btnConfirmInstalacao" class="btn btn-advance" onclick="confirmAgendarInstalacao()">Confirmar</button></div></div></div>
+<div id="mRelatorio" class="modal-overlay"><div class="modal m-advance"><h3>Confirmar Programação da Instalação?</h3><p>Confirme a data de instalação. Depois da execução, o relatório poderá ser anexado para encerramento.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mRelatorio')">Cancelar</button><button id="btnConfirmRelatorio" class="btn btn-advance" onclick="confirmIniciarRelatorio()">Avançar</button></div></div></div>
+<div id="mConcluir" class="modal-overlay"><div class="modal m-approve"><h3>Encerrar Processo?</h3><p>O processo será encerrado definitivamente. O relatório de instalação será anexado ao histórico e a solicitação será encerrada.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mConcluir')">Cancelar</button><button id="btnConfirmConcluir" class="btn btn-conclude" onclick="confirmConcluir()"><svg viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Encerrar</button></div></div></div>
 <div id="mSuccess" class="modal-overlay"><div class="modal m-approve" style="text-align:center;padding:32px 24px"><div style="width:58px;height:58px;border-radius:50%;background:#e8f5e9;border:2px solid #a5d6a7;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:26px">✓</div><h3 style="font-size:17px;margin-bottom:8px">Processo Concluído!</h3><p>Todos os documentos foram registrados e as partes notificadas.</p><div style="margin:14px 0 18px;padding:10px;background:#e8f5e9;border-radius:6px;font-size:11.5px;color:#2e7d32;font-family:'DM Mono',monospace">Protocolo: WR-2025-0847 · 20/06/2025</div><button class="btn btn-secondary" onclick="closeMod('mSuccess');goPage('home')">Voltar ao Início</button></div></div>
 <!-- ══ MODAL PRODUTO SEC/DET ══ -->
 <div id="modal-admin-produto" class="modal-overlay">
@@ -2472,7 +2472,9 @@ async function carregarResponsaveisInstalacao() {
         dl.appendChild(opt);
       }
     });
-  } catch(e) {}
+  } catch(e) {
+    console.warn('[WORKRAIL] carregarResponsaveisInstalacao: falha ao buscar responsáveis:', e.message || e);
+  }
   if (saved) input.value = saved;
 }
 
@@ -2491,7 +2493,9 @@ async function obterEmailFornecedor(nomeFornecedor) {
       const dados = snap.docs[0].data();
       if (dados?.email) return dados.email;
     }
-  } catch(e) {}
+  } catch(e) {
+    console.warn('[WORKRAIL] obterEmailFornecedor: falha ao buscar e-mail do fornecedor:', e.message || e);
+  }
   return EMAIL_RECIPIENTS.fornecedor;
 }
 
@@ -2965,9 +2969,28 @@ async function alterarMinhaSenha() {
 async function fazerLogout() {
   if (!confirm('Deseja sair do sistema?')) return;
   try {
-    // Limpar sessão
+    // Limpar sessão local
     localStorage.removeItem('WORKRAIL_SESSION');
-    currentUser = null;
+
+    // Limpar estado da aplicação para evitar vazamento entre sessões
+    currentUser          = null;
+    currentSolicitacaoId = null;
+    currentSolicitacao   = null;
+    visitedFlow          = new Set();
+    currentFlow          = null;
+    pendingFiles         = {};
+
+    // Remover banner de fornecedor (se presente de sessão anterior)
+    const banner = document.getElementById('supplier-banner');
+    if (banner) banner.remove();
+
+    // Desautenticar do Firebase Auth (evita que onAuthStateChanged recarregue o perfil antigo)
+    if (auth) {
+      try { await auth.signOut(); } catch(signOutErr) {
+        console.warn('[WORKRAIL] Erro ao deslogar do Firebase Auth:', signOutErr);
+      }
+    }
+
     document.getElementById('login-overlay').classList.remove('hidden');
     document.getElementById('loginUsername').value = '';
     document.getElementById('loginSenha').value = '';
@@ -3184,7 +3207,15 @@ async function uploadMultiplos(campos, pasta) {
     const file = pendingFiles[campo];
     if (file) {
       const up = await uploadArquivo(file, pasta);
-      if (up) docs.push({ tipo, ...up });
+      if (up) {
+        docs.push({ tipo, ...up });
+      } else {
+        // Upload retornou null — falha silenciosa do uploadArquivo; reporta ao usuário
+        const msg = `Falha ao fazer upload do arquivo "${file.name}" (${tipo}). Verifique sua conexão e tente novamente.`;
+        console.error('[WORKRAIL] uploadMultiplos: upload falhou para campo', campo, 'tipo', tipo, 'arquivo', file.name);
+        showToast(msg, 'error');
+        throw new Error(msg);
+      }
     }
   }
   return docs;
@@ -4461,13 +4492,17 @@ async function confirmSolicitarAjuste() {
 // 03 → ADM aciona Fornecedor
 async function confirmFornecedor() {
   if (!validateStep_Adm()) return;
+  const btnFornecedor = document.getElementById('btnConfirmFornecedor');
+  if (btnFornecedor) btnFornecedor.disabled = true;
   closeMod('mFornecedor');
   showLoading(true);
   try {
     const dadosAdm = coletarDadosAdm();
 
     const fornecedorFinal = dadosAdm.fornecedor || currentSolicitacao?.parecerGestor?.especificacao?.fornecedorSugerido || '';
-    dadosAdm.fornecedor = fornecedorFinal;
+    dadosAdm.fornecedor            = fornecedorFinal;
+    // Campo canônico — garante segregação entre EBST e Hobart nas Security Rules e queries
+    dadosAdm.encaminhadoFornecedor = fornecedorFinal;
     const hist = entradaHistorico('ENVIADO_FORNECEDOR','ADM de Vendas','adm',
       `Pedido ${dadosAdm.numeroPedido} aprovado e enviado ao fornecedor ${fornecedorFinal}`);
     await atualizarSolicitacao(currentSolicitacaoId,
@@ -4502,7 +4537,8 @@ async function confirmFornecedor() {
     go('fornecedor');
   } catch(e) {
     console.error(e);
-    showToast('Erro ao acionar fornecedor.', 'error');
+    showToast('Erro ao acionar fornecedor: ' + (e.message || 'tente novamente.'), 'error');
+    if (btnFornecedor) btnFornecedor.disabled = false;
   } finally {
     showLoading(false);
   }
@@ -4511,6 +4547,9 @@ async function confirmFornecedor() {
 // 04 → FORNECEDOR confirma expedição com NF
 async function confirmExpedicao() {
   if (!validateStep_Fornecedor()) return;
+
+  const btnExpedicao = document.getElementById('btnConfirmExpedicao');
+  if (btnExpedicao) btnExpedicao.disabled = true;
 
   // ── Segurança: garante que o fornecedor só age na solicitação que é dele
   if (isFornecedor() && currentSolicitacao) {
@@ -4523,6 +4562,7 @@ async function confirmExpedicao() {
       const msg = `Acesso negado — solicitação é do fornecedor "${fornecedorDaSOlic}", mas você é "${fornecedorDoUsuario}".`;
       console.error('[WORKRAIL] confirmExpedicao bloqueado:', { fornecedorDaSOlic, fornecedorDoUsuario, perfil: currentUser.perfil });
       showToast(msg, 'error');
+      if (btnExpedicao) btnExpedicao.disabled = false;
       return;
     }
   }
@@ -4579,6 +4619,7 @@ async function confirmExpedicao() {
     };
     const msg = msgs[e.code] || `Falha ao gravar expedição: ${e.message || 'erro desconhecido'}.`;
     showToast(msg, 'error');
+    if (btnExpedicao) btnExpedicao.disabled = false;
   } finally {
     showLoading(false);
   }
@@ -4587,6 +4628,8 @@ async function confirmExpedicao() {
 // 05 → ADM aciona logística e encaminha ao Supervisor AS&TS
 async function confirmAgendarInstalacao() {
   if (!validateStep_Logistica()) return;
+  const btnInstalacao = document.getElementById('btnConfirmInstalacao');
+  if (btnInstalacao) btnInstalacao.disabled = true;
   closeMod('mInstalacao');
   showLoading(true);
   try {
@@ -4623,7 +4666,8 @@ async function confirmAgendarInstalacao() {
     go('instalacao');
   } catch(e) {
     console.error(e);
-    showToast('Erro ao agendar instalação.', 'error');
+    showToast('Erro ao agendar instalação: ' + (e.message || 'tente novamente.'), 'error');
+    if (btnInstalacao) btnInstalacao.disabled = false;
   } finally {
     showLoading(false);
   }
@@ -4632,6 +4676,8 @@ async function confirmAgendarInstalacao() {
 // 06 → Técnico avança para gerar relatório
 async function confirmIniciarRelatorio() {
   if (!validateStep_Instalacao()) return;
+  const btnRelatorio = document.getElementById('btnConfirmRelatorio');
+  if (btnRelatorio) btnRelatorio.disabled = true;
   closeMod('mRelatorio');
   showLoading(true);
   try {
@@ -4670,7 +4716,8 @@ async function confirmIniciarRelatorio() {
     go('relatorio');
   } catch(e) {
     console.error(e);
-    showToast('Erro ao avançar para relatório.', 'error');
+    showToast('Erro ao avançar para relatório: ' + (e.message || 'tente novamente.'), 'error');
+    if (btnRelatorio) btnRelatorio.disabled = false;
   } finally {
     showLoading(false);
   }
@@ -4679,6 +4726,8 @@ async function confirmIniciarRelatorio() {
 // 07 → Encerramento do processo
 async function confirmConcluir() {
   if (!validateStep_Relatorio()) return;
+  const btnConcluir = document.getElementById('btnConfirmConcluir');
+  if (btnConcluir) btnConcluir.disabled = true;
   closeMod('mConcluir');
   showLoading(true);
   try {
@@ -4734,7 +4783,8 @@ async function confirmConcluir() {
     showSuccess();
   } catch(e) {
     console.error(e);
-    showToast('Erro ao encerrar processo.', 'error');
+    showToast('Erro ao encerrar processo: ' + (e.message || 'tente novamente.'), 'error');
+    if (btnConcluir) btnConcluir.disabled = false;
   } finally {
     showLoading(false);
   }
