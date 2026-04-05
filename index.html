@@ -3131,9 +3131,20 @@ function aplicarControleMenu(perfil) {
 }
 
 function adicionarBannerFornecedor(perfil) {
-  if (!isFornecedor()) return;
+  const existing = document.getElementById('supplier-banner');
+
+  // Se NÃO é fornecedor, garante que o banner (de sessão anterior) seja removido
+  if (!isFornecedor()) {
+    if (existing) existing.remove();
+    return;
+  }
+
+  // Já está visível com o fornecedor correto — nada a fazer
+  if (existing) return;
+
   const main = document.querySelector('.main');
-  if (!main || document.getElementById('supplier-banner')) return;
+  if (!main) return;
+
   const nomeFornecedor = currentUser.fornecedor || fornecedorDoPerfil(perfil);
   const banner = document.createElement('div');
   banner.id = 'supplier-banner';
