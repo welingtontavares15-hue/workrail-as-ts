@@ -34,12 +34,15 @@ service cloud.firestore {
       let doc = resource.data;
       let perfil = getUserProfile();
       let uid = request.auth.uid;
+      // Retrocompatibilidade: aceita encaminhadoFornecedor ou fornecedor como campo de segregação
+      let fornecedorEBST   = (doc.dadosAdm.encaminhadoFornecedor == 'EBST')   || (doc.dadosAdm.fornecedor == 'EBST');
+      let fornecedorHobart = (doc.dadosAdm.encaminhadoFornecedor == 'Hobart Brasil') || (doc.dadosAdm.fornecedor == 'Hobart Brasil');
       return isSuperAdmin()
           || isSupervisorASTS()
           || isAdmVendas()
           || (perfil == 'vendas' && doc.criadoPorUid == uid)
-          || (perfil == 'fornecedor_ebst' && doc.dadosAdm.encaminhadoFornecedor == 'EBST')
-          || (perfil == 'fornecedor_hobart' && doc.dadosAdm.encaminhadoFornecedor == 'Hobart Brasil');
+          || (perfil == 'fornecedor_ebst' && fornecedorEBST)
+          || (perfil == 'fornecedor_hobart' && fornecedorHobart);
     }
 
     function canEditEtapa(etapa) {
@@ -105,7 +108,14 @@ service cloud.firestore {
 
     // ── Base de máquinas importadas via Excel ──────────────
     match /maquinas/{serialId} {
-      allow read: if request.auth.uid != null;
+      // super_admin, adm_vendas, adm, supervisor_asts, gestor: leem tudo
+      // fornecedor_ebst: lê apenas máquinas onde fornecedor == 'EBST'
+      // fornecedor_hobart: lê apenas máquinas onde fornecedor == 'Hobart Brasil'
+      allow read: if isSuperAdmin()
+                  || isSupervisorASTS()
+                  || isAdmVendas()
+                  || (getUserProfile() == 'fornecedor_ebst'   && resource.data.fornecedor == 'EBST')
+                  || (getUserProfile() == 'fornecedor_hobart' && resource.data.fornecedor == 'Hobart Brasil');
       allow write, delete: if request.auth.uid != null
                            && (isSuperAdmin() || isAdmVendas());
     }

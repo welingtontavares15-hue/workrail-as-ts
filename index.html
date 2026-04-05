@@ -910,6 +910,17 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
 </head>
 <body>
 
+<!-- ══ TOAST CONTAINER ══ -->
+<div id="toastContainer" class="toast-container"></div>
+
+<!-- ══ LOADING OVERLAY ══ -->
+<div id="loadingOverlay">
+  <div class="loading-card">
+    <div class="loading-spinner"></div>
+    <div style="font-size:13px;color:var(--text-mid);font-weight:500">Processando...</div>
+  </div>
+</div>
+
 <!-- ══ LOGIN OVERLAY ══ -->
 <div id="login-overlay">
   <div class="login-card">
@@ -2188,7 +2199,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
 
 <!-- ══ MODALS ══ -->
 <div id="mEnviar" class="modal-overlay"><div class="modal m-advance"><h3>Enviar para o Supervisor AS&TS?</h3><p>A solicitação será encaminhada ao Supervisor AS&TS para análise e os documentos serão salvos no Firebase.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mEnviar')">Cancelar</button><button class="btn btn-send" onclick="confirmEnviarGestor()">Confirmar</button></div></div></div>
-<div id="mAprovar" class="modal-overlay"><div class="modal m-approve"><h3>Aprovar Solicitação?</h3><p>Será encaminhada ao ADM de Vendas para revisão contratual. Aprovação registrada no histórico.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mAprovar')">Cancelar</button><button class="btn btn-approve" onclick="confirmAprovar()"><svg viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 5.5-5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Aprovar</button></div></div></div>
+<div id="mAprovar" class="modal-overlay"><div class="modal m-approve"><h3>Aprovar Solicitação?</h3><p>Será encaminhada ao ADM de Vendas para revisão contratual. Aprovação registrada no histórico.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mAprovar')">Cancelar</button><button id="btnConfirmAprovar" class="btn btn-approve" onclick="confirmAprovar()"><svg viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 5.5-5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Aprovar</button></div></div></div>
 <div id="mRejeitar" class="modal-overlay"><div class="modal m-reject"><h3>Rejeitar Solicitação?</h3><p>Retorna ao Representante com a justificativa registrada. A justificativa é obrigatória.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mRejeitar')">Cancelar</button><button class="btn btn-reject" onclick="confirmRejeitar()"><svg viewBox="0 0 13 13" fill="none"><path d="M2 2l9 9M11 2L2 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Rejeitar</button></div></div></div>
 <div id="mAjuste" class="modal-overlay"><div class="modal m-reject"><h3>Solicitar Ajuste?</h3><p>A solicitação retornará a Vendas com as orientações do Supervisor AS&TS registradas.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mAjuste')">Cancelar</button><button class="btn btn-clear" onclick="confirmSolicitarAjuste()"><svg viewBox="0 0 13 13" fill="none"><path d="M2 6.5h9M9 4l2.5 2.5L9 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Solicitar Ajuste</button></div></div></div>
 <div id="mFornecedor" class="modal-overlay"><div class="modal m-advance"><h3>Aprovar e Encaminhar?</h3><p>O pedido será enviado formalmente via e-mail e registrado no Firebase. O Nº do Pedido será gerado automaticamente.</p><div class="modal-btns"><button class="btn btn-secondary" onclick="closeMod('mFornecedor')">Cancelar</button><button class="btn btn-supplier" onclick="confirmFornecedor()">Acionar</button></div></div></div>
@@ -3090,7 +3101,7 @@ function aplicarControleMenu(perfil) {
   const regras = {
     // item_id: ['perfis que PODEM ver']
     'sb-solicitacao':  ['vendas','adm','adm_vendas','super_admin'],
-    'sb-pendentes':    ['gestor','supervisor_asts','adm','adm_vendas','super_admin'],
+    'sb-pendentes':    ['gestor','supervisor_asts','adm','adm_vendas','super_admin','fornecedor_ebst','fornecedor_hobart'],
     'sb-relatorios':   ['gestor','supervisor_asts','adm','adm_vendas','super_admin'],
     'sb-configuracoes':['adm','adm_vendas','super_admin'],
     'sb-dashboard':    ['vendas','gestor','supervisor_asts','adm','adm_vendas','super_admin'],
@@ -3110,12 +3121,12 @@ function aplicarControleMenu(perfil) {
     }
   });
 
-  // Para fornecedores: redireciona home para histórico filtrado
+  // Para fornecedores: redireciona home para pendentes
   if (isFornecedor()) {
     const homeEl = document.getElementById('sb-home');
     if (homeEl) homeEl.style.display = 'none';
-    // Troca tela inicial direto para histórico filtrado
-    setTimeout(() => goPage('historico'), 50);
+    // Troca tela inicial direto para pendentes (filtrado por fornecedor via Firestore rules)
+    setTimeout(() => goPage('pendentes'), 50);
   }
 }
 
@@ -4291,6 +4302,8 @@ async function confirmEnviarGestor() {
 // 02 → GESTOR aprova
 async function confirmAprovar() {
   if (!validateStep_Gestor('aprovar')) return;
+  const btnAprovar = document.getElementById('btnConfirmAprovar');
+  if (btnAprovar) btnAprovar.disabled = true;
   closeMod('mAprovar');
   showLoading(true);
   try {
@@ -4340,10 +4353,11 @@ async function confirmAprovar() {
 
     pendingFiles = {};
     showToast('Solicitação aprovada tecnicamente e encaminhada ao ADM de Vendas!', 'success');
-    go('adm');
+    goPage('pendentes');
   } catch(e) {
     console.error(e);
     showToast('Erro ao aprovar solicitação.', 'error');
+    if (btnAprovar) btnAprovar.disabled = false;
   } finally {
     showLoading(false);
   }
@@ -4782,6 +4796,17 @@ let activeFilter = 'Todos';
 
 // ─── NAVIGATION ────────────────────────────────────────────
 function goPage(id){
+  // Guard: fornecedores não podem acessar páginas restritas
+  const PAGINAS_BLOQUEADAS_FORNECEDOR = ['dashboard','relatorios','admin','configuracoes'];
+  if (isFornecedor() && PAGINAS_BLOQUEADAS_FORNECEDOR.includes(id)) {
+    showToast('Acesso restrito. Redirecionando para Pendentes.', 'warn');
+    id = 'pendentes';
+  }
+  // Guard adicional: histórico sem filtro de fornecedor também é bloqueado
+  if (isFornecedor() && id === 'historico') {
+    showToast('Acesso restrito. Redirecionando para Pendentes.', 'warn');
+    id = 'pendentes';
+  }
   if(id===currentPage) return;
   document.getElementById('screen-'+currentPage)?.classList.remove('active');
   document.getElementById('screen-'+id)?.classList.add('active');
