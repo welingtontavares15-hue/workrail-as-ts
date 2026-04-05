@@ -1878,7 +1878,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
             </div>
           </div>
           <div class="action-bar">
-            <div class="ab-left"><button class="btn btn-back" onclick="go('adm')"><svg viewBox="0 0 13 13" fill="none"><path d="M8 2L4 6.5 8 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Voltar</button></div>
+            <div class="ab-left"><button class="btn btn-back" onclick="goPage('pendentes')"><svg viewBox="0 0 13 13" fill="none"><path d="M8 2L4 6.5 8 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Pendentes</button></div>
             <div class="ab-right"><button class="btn btn-advance" onclick="showMod('mExpedir')"><svg viewBox="0 0 13 13" fill="none"><path d="M11 6.5H2M7.5 3l3.5 3.5L7.5 10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Informar NF e Liberação</button></div>
           </div>
         </div>
@@ -3281,10 +3281,15 @@ async function carregarHistoricoFirebase() {
   try {
     let querySol = db.collection('solicitacoes').orderBy('criadoEm','desc').limit(200);
 
-    if (isFornecedor() && currentUser.fornecedor) {
-      querySol = db.collection('solicitacoes')
-        .where('dadosAdm.fornecedor', '==', currentUser.fornecedor)
-        .orderBy('criadoEm','desc').limit(200);
+    if (isFornecedor()) {
+      // Deriva fornecedor do campo explícito ou do perfil (fallback seguro)
+      const fornecedorFiltro = currentUser.fornecedor || fornecedorDoPerfil(currentUser.perfil);
+      if (fornecedorFiltro) {
+        // Usa campo canônico encaminhadoFornecedor; client-side também filtra o alias legado
+        querySol = db.collection('solicitacoes')
+          .where('dadosAdm.encaminhadoFornecedor', '==', fornecedorFiltro)
+          .limit(200);
+      }
     }
 
     // maquinas: busca simples. Falha graciosamente se permissão não configurada.
@@ -3322,8 +3327,9 @@ async function carregarHistoricoFirebase() {
     const rowsMaq = (snapMaq ? snapMaq.docs : [])
       .filter(d => {
         if (serialsEmSol.has(d.id)) return false;
-        if (isFornecedor() && currentUser.fornecedor) {
-          return d.data().fornecedor === currentUser.fornecedor;
+        if (isFornecedor()) {
+          const fornecedorFiltro = currentUser.fornecedor || fornecedorDoPerfil(currentUser.perfil);
+          return d.data().fornecedor === fornecedorFiltro;
         }
         return true;
       })
@@ -4496,10 +4502,16 @@ async function confirmExpedicao() {
   if (!validateStep_Fornecedor()) return;
 
   // ── Segurança: garante que o fornecedor só age na solicitação que é dele
-  if (isFornecedor() && currentUser.fornecedor && currentSolicitacao) {
-    const fornecedorDaSOlic = currentSolicitacao?.dadosAdm?.fornecedor;
-    if (fornecedorDaSOlic && fornecedorDaSOlic !== currentUser.fornecedor) {
-      showToast('Acesso negado. Esta solicitação pertence a outro fornecedor.', 'error');
+  if (isFornecedor() && currentSolicitacao) {
+    // Campo canônico: encaminhadoFornecedor; fallback legado: fornecedor
+    const fornecedorDaSOlic = currentSolicitacao?.dadosAdm?.encaminhadoFornecedor
+                           || currentSolicitacao?.dadosAdm?.fornecedor;
+    // Deriva fornecedor do usuário: campo explícito > derivado do perfil
+    const fornecedorDoUsuario = currentUser.fornecedor || fornecedorDoPerfil(currentUser.perfil);
+    if (fornecedorDaSOlic && fornecedorDoUsuario && fornecedorDaSOlic !== fornecedorDoUsuario) {
+      const msg = `Acesso negado — solicitação é do fornecedor "${fornecedorDaSOlic}", mas você é "${fornecedorDoUsuario}".`;
+      console.error('[WORKRAIL] confirmExpedicao bloqueado:', { fornecedorDaSOlic, fornecedorDoUsuario, perfil: currentUser.perfil });
+      showToast(msg, 'error');
       return;
     }
   }
@@ -4547,8 +4559,15 @@ async function confirmExpedicao() {
     showToast('Expedição confirmada! NF e romaneio registrados.', 'success');
     go('logistica');
   } catch(e) {
-    console.error(e);
-    showToast('Erro ao confirmar expedição.', 'error');
+    console.error('[WORKRAIL] confirmExpedicao erro:', e);
+    const msgs = {
+      'permission-denied':  'Acesso negado — verifique seu perfil ou o fornecedor da solicitação.',
+      'unavailable':        'Firebase temporariamente indisponível. Tente novamente em instantes.',
+      'not-found':          'Solicitação não encontrada. Recarregue a página.',
+      'unauthenticated':    'Sessão expirada. Faça login novamente.',
+    };
+    const msg = msgs[e.code] || `Falha ao gravar expedição: ${e.message || 'erro desconhecido'}.`;
+    showToast(msg, 'error');
   } finally {
     showLoading(false);
   }
@@ -4832,6 +4851,22 @@ function goPage(id){
 }
 
 function go(id){
+  // Guard: fornecedor só pode acessar a tela da própria etapa (fornecedor)
+  if (isFornecedor()) {
+    const ETAPAS_PERMITIDAS_FORNECEDOR = ['fornecedor'];
+    if (!ETAPAS_PERMITIDAS_FORNECEDOR.includes(id)) {
+      console.warn('[WORKRAIL] go() bloqueado para fornecedor tentando acessar etapa:', id);
+      if (id !== 'fornecedor') {
+        // Se houver solicitação aberta, mantém na tela do fornecedor; senão volta para pendentes
+        if (currentSolicitacaoId) {
+          id = 'fornecedor';
+        } else {
+          goPage('pendentes');
+          return;
+        }
+      }
+    }
+  }
   document.getElementById('screen-'+currentPage)?.classList.remove('active');
   document.getElementById('screen-'+id)?.classList.add('active');
   currentPage = id;

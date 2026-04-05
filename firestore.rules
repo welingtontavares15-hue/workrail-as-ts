@@ -52,7 +52,13 @@ service cloud.firestore {
           || (etapa == 'solicitacao' && getUserProfile() == 'vendas')
           || ((etapa == 'gestor' || etapa == 'supervisor') && isSupervisorASTS())
           || ((etapa == 'adm' || etapa == 'adm_vendas') && isAdmVendas())
-          || (etapa == 'fornecedor' && isFornecedor() && getUserFornecedor() == resource.data.dadosAdm.encaminhadoFornecedor)
+          // Fornecedor edita sua etapa com base no perfil (sem depender do campo fornecedor do usuário)
+          || (etapa == 'fornecedor' && getUserProfile() == 'fornecedor_ebst'
+              && (resource.data.dadosAdm.encaminhadoFornecedor == 'EBST'
+                  || resource.data.dadosAdm.fornecedor == 'EBST'))
+          || (etapa == 'fornecedor' && getUserProfile() == 'fornecedor_hobart'
+              && (resource.data.dadosAdm.encaminhadoFornecedor == 'Hobart Brasil'
+                  || resource.data.dadosAdm.fornecedor == 'Hobart Brasil'))
           || ((etapa == 'logistica') && isAdmVendas())
           || ((etapa == 'instalacao' || etapa == 'data_instalacao') && isSupervisorASTS())
           || ((etapa == 'relatorio' || etapa == 'relatorio_final') && isSupervisorASTS());
