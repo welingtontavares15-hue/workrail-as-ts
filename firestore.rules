@@ -76,10 +76,13 @@ service cloud.firestore {
 
     match /solicitacoes/{solicitacaoId} {
       allow read: if canViewSolicitacao();
+      // Criar: qualquer usuário autenticado com perfil válido (vendas OU super_admin)
+      // criadoPorUid deve ser o próprio UID do usuário logado
+      // etapaAtual deve iniciar em 'solicitacao' (regra de integridade do fluxo)
       allow create: if request.auth.uid != null
-                    && (isSuperAdmin() || (getUserProfile() == 'vendas' && request.resource.data.criadoPorPerfil == 'vendas'))
                     && request.resource.data.criadoPorUid == request.auth.uid
-                    && request.resource.data.etapaAtual == 'solicitacao';
+                    && request.resource.data.etapaAtual == 'solicitacao'
+                    && (isSuperAdmin() || getUserProfile() == 'vendas');
       allow update: if canViewSolicitacao()
                     && canEditEtapa(resource.data.etapaAtual)
                     && request.resource.data.protocolo == resource.data.protocolo
