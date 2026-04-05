@@ -2534,9 +2534,165 @@ async function obterEmailFornecedor(nomeFornecedor) {
 // ─── FLOW CONSTANTS ──────────────────────────────────────────
 const FLOW        = ['solicitacao','gestor','adm','fornecedor','logistica','instalacao','relatorio'];
 const FLOW_LABELS = ['01·Solicitação','02·Supervisor AS&TS','03·ADM Vendas','04·Fornecedor','05·Logística','06·Instalação','07·Encerramento'];
+const ETAPA_LABELS = {
+  solicitacao: 'Solicitação',
+  gestor: 'Supervisor AS&TS',
+  adm: 'ADM Vendas',
+  fornecedor: 'Fornecedor',
+  logistica: 'Logística',
+  instalacao: 'Instalação',
+  relatorio: 'Encerramento',
+  concluido: 'Concluído'
+};
+const RESPONSAVEL_ETAPA = {
+  solicitacao: 'Vendas',
+  gestor: 'Supervisor AS&TS',
+  adm: 'ADM de Vendas',
+  fornecedor: 'Fornecedor',
+  logistica: 'ADM de Vendas',
+  instalacao: 'Supervisor AS&TS',
+  relatorio: 'Supervisor AS&TS'
+};
+const MODAL_ETAPA = {
+  mEnviar: 'solicitacao',
+  mAprovar: 'gestor',
+  mRejeitar: 'gestor',
+  mAjuste: 'gestor',
+  mFornecedor: 'adm',
+  mExpedir: 'fornecedor',
+  mInstalacao: 'logistica',
+  mRelatorio: 'instalacao',
+  mConcluir: 'relatorio'
+};
 let currentPage = 'home';
 let currentFlow = null;
 let visitedFlow = new Set();
+
+function getEtapaLabel(etapa) {
+  return ETAPA_LABELS[etapa] || etapa || 'Etapa desconhecida';
+}
+
+function getResponsavelEtapa(etapa) {
+  return RESPONSAVEL_ETAPA[etapa] || getEtapaLabel(etapa);
+}
+
+function etapaPertenceAoPerfil(etapa) {
+  if (isSuperAdmin()) return true;
+
+  switch (etapa) {
+    case 'solicitacao':
+      return currentUser?.perfil === 'vendas';
+    case 'gestor':
+    case 'instalacao':
+    case 'relatorio':
+      return isSupervisorASTS();
+    case 'adm':
+    case 'logistica':
+      return isAdmVendas();
+    case 'fornecedor': {
+      if (!isFornecedor()) return false;
+      const fornecedorDaSolicitacao = currentSolicitacao?.dadosAdm?.encaminhadoFornecedor
+                                   || currentSolicitacao?.dadosAdm?.fornecedor;
+      const fornecedorDoUsuario = currentUser?.fornecedor || fornecedorDoPerfil(currentUser?.perfil);
+      return !fornecedorDaSolicitacao || !fornecedorDoUsuario || fornecedorDaSolicitacao === fornecedorDoUsuario;
+    }
+    default:
+      return false;
+  }
+}
+
+function usuarioPodeAtuarNaEtapa(etapa) {
+  if (etapa === 'solicitacao' && !currentSolicitacaoId) {
+    return etapaPertenceAoPerfil('solicitacao');
+  }
+  if (!currentSolicitacao) return false;
+  return currentSolicitacao.etapaAtual === etapa && etapaPertenceAoPerfil(etapa);
+}
+
+function mensagemBloqueioEtapa(etapa) {
+  const etapaAtual = currentSolicitacao?.etapaAtual;
+
+  if (!currentSolicitacao && etapa === 'solicitacao') return '';
+  if (!currentSolicitacao) {
+    return 'Solicitação não carregada. Reabra o item para continuar.';
+  }
+  if (etapaAtual !== etapa) {
+    return `Esta solicitação está aguardando ação da etapa "${getEtapaLabel(etapaAtual)}". A tela atual ficou disponível apenas para consulta.`;
+  }
+  return `Esta etapa é de responsabilidade de ${getResponsavelEtapa(etapa)}. Seu perfil pode consultar os dados, mas não pode editar nem aprovar nesta fase.`;
+}
+
+function validarAcaoEtapa(etapa, mensagemPerfil) {
+  if (etapa === 'solicitacao' && !currentSolicitacaoId) {
+    if (!etapaPertenceAoPerfil('solicitacao')) {
+      showToast(mensagemPerfil || 'Acesso negado — somente Vendas pode criar e enviar uma nova solicitação.', 'error');
+      return false;
+    }
+    return true;
+  }
+
+  if (!currentSolicitacao) {
+    showToast('Solicitação não carregada. Reabra o item e tente novamente.', 'error');
+    return false;
+  }
+
+  if (currentSolicitacao.etapaAtual !== etapa) {
+    showToast(`Ação indisponível — esta solicitação está na etapa "${getEtapaLabel(currentSolicitacao.etapaAtual)}".`, 'error');
+    return false;
+  }
+
+  if (!etapaPertenceAoPerfil(etapa)) {
+    showToast(mensagemPerfil || `Acesso negado — esta etapa é de responsabilidade de ${getResponsavelEtapa(etapa)}.`, 'error');
+    return false;
+  }
+
+  return true;
+}
+
+function restaurarBloqueioTelaFluxo(screen) {
+  if (!screen) return;
+
+  screen.querySelectorAll('[data-stage-lock-prev-disabled]').forEach(el => {
+    el.disabled = el.dataset.stageLockPrevDisabled === '1';
+    delete el.dataset.stageLockPrevDisabled;
+  });
+
+  screen.querySelectorAll('[data-stage-lock-prev-display]').forEach(el => {
+    el.style.display = el.dataset.stageLockPrevDisplay;
+    delete el.dataset.stageLockPrevDisplay;
+  });
+
+  screen.querySelectorAll('[data-stage-lock-banner]').forEach(el => el.remove());
+}
+
+function aplicarPermissoesTelaFluxo(etapa) {
+  if (!FLOW.includes(etapa)) return;
+
+  const screen = document.getElementById('screen-' + etapa);
+  if (!screen) return;
+
+  if (usuarioPodeAtuarNaEtapa(etapa)) return;
+
+  const banner = document.createElement('div');
+  banner.setAttribute('data-stage-lock-banner', '1');
+  banner.style.cssText = 'margin:0 32px 14px;padding:12px 14px;border:1px solid #90caf9;background:#e3f2fd;color:#1565c0;border-radius:8px;font-size:12.5px;line-height:1.45';
+  banner.textContent = mensagemBloqueioEtapa(etapa);
+  screen.insertBefore(banner, screen.firstChild);
+
+  screen.querySelectorAll('input, select, textarea, button').forEach(el => {
+    if (!('stageLockPrevDisabled' in el.dataset)) {
+      el.dataset.stageLockPrevDisabled = el.disabled ? '1' : '0';
+    }
+    el.disabled = true;
+  });
+
+  screen.querySelectorAll('button[onclick*="showMod("], button[onclick*="validarEAbrirModalEnvio"]').forEach(el => {
+    if (!('stageLockPrevDisplay' in el.dataset)) {
+      el.dataset.stageLockPrevDisplay = el.style.display || '';
+    }
+    el.style.display = 'none';
+  });
+}
 
 // ════════════════════════════════════════════════════════════
 // FIREBASE — INICIALIZAÇÃO COM FALLBACK PARA GITHUB PAGES
@@ -3694,6 +3850,9 @@ function _mostrarBannerErro(bannerId, erros) {
 }
 
 function validarEAbrirModalEnvio() {
+  if (!validarAcaoEtapa('solicitacao', 'Acesso negado — somente Vendas pode enviar a solicitação ao Supervisor AS&TS.')) {
+    return;
+  }
   if (validateStep_Solicitacao()) {
     showMod('mEnviar');
   }
@@ -4320,6 +4479,10 @@ function coletarDadosRelatorio() {
 
 // 01 → VENDAS envia para Supervisor AS&TS
 async function confirmEnviarGestor() {
+  if (!validarAcaoEtapa('solicitacao', 'Acesso negado — somente Vendas pode enviar a solicitação ao Supervisor AS&TS.')) {
+    closeMod('mEnviar');
+    return;
+  }
   // Revalida antes de processar (garante que não bypassa a validação)
   if (!validateStep_Solicitacao()) {
     closeMod('mEnviar');
@@ -4407,8 +4570,7 @@ async function confirmEnviarGestor() {
 
 // 02 → GESTOR aprova
 async function confirmAprovar() {
-  if (!isSupervisorASTS() && !isSuperAdmin()) {
-    showToast('Acesso negado — somente o Supervisor AS&TS pode aprovar esta etapa.', 'error');
+  if (!validarAcaoEtapa('gestor', 'Acesso negado — somente o Supervisor AS&TS pode aprovar esta etapa.')) {
     return;
   }
   if (!validateStep_Gestor('aprovar')) return;
@@ -4475,8 +4637,7 @@ async function confirmAprovar() {
 
 // 02 → GESTOR rejeita
 async function confirmRejeitar() {
-  if (!isSupervisorASTS() && !isSuperAdmin()) {
-    showToast('Acesso negado — somente o Supervisor AS&TS pode rejeitar esta etapa.', 'error');
+  if (!validarAcaoEtapa('gestor', 'Acesso negado — somente o Supervisor AS&TS pode rejeitar esta etapa.')) {
     return;
   }
   const obs = document.getElementById('textareaParecerGestor')?.value?.trim();
@@ -4518,8 +4679,7 @@ async function confirmRejeitar() {
 
 // 02 → GESTOR solicita ajuste
 async function confirmSolicitarAjuste() {
-  if (!isSupervisorASTS() && !isSuperAdmin()) {
-    showToast('Acesso negado — somente o Supervisor AS&TS pode solicitar ajuste.', 'error');
+  if (!validarAcaoEtapa('gestor', 'Acesso negado — somente o Supervisor AS&TS pode solicitar ajuste.')) {
     return;
   }
   const obs = document.getElementById('textareaParecerGestor')?.value?.trim();
@@ -4561,8 +4721,7 @@ async function confirmSolicitarAjuste() {
 
 // 03 → ADM aciona Fornecedor
 async function confirmFornecedor() {
-  if (!isAdmVendas() && !isSuperAdmin()) {
-    showToast('Acesso negado — somente o ADM de Vendas pode acionar o fornecedor.', 'error');
+  if (!validarAcaoEtapa('adm', 'Acesso negado — somente o ADM de Vendas pode acionar o fornecedor.')) {
     return;
   }
   if (!validateStep_Adm()) return;
@@ -4620,6 +4779,9 @@ async function confirmFornecedor() {
 
 // 04 → FORNECEDOR confirma expedição com NF
 async function confirmExpedicao() {
+  if (!validarAcaoEtapa('fornecedor', 'Acesso negado — somente o fornecedor responsável pode confirmar a expedição nesta etapa.')) {
+    return;
+  }
   if (!validateStep_Fornecedor()) return;
 
   const btnExpedicao = document.getElementById('btnConfirmExpedicao');
@@ -4701,8 +4863,7 @@ async function confirmExpedicao() {
 
 // 05 → ADM aciona logística e encaminha ao Supervisor AS&TS
 async function confirmAgendarInstalacao() {
-  if (!isAdmVendas() && !isSuperAdmin()) {
-    showToast('Acesso negado — somente o ADM de Vendas pode acionar a logística.', 'error');
+  if (!validarAcaoEtapa('logistica', 'Acesso negado — somente o ADM de Vendas pode acionar a logística.')) {
     return;
   }
   if (!validateStep_Logistica()) return;
@@ -4753,8 +4914,7 @@ async function confirmAgendarInstalacao() {
 
 // 06 → Técnico avança para gerar relatório
 async function confirmIniciarRelatorio() {
-  if (!isSupervisorASTS() && !isSuperAdmin()) {
-    showToast('Acesso negado — somente o Supervisor AS&TS pode registrar a data de instalação.', 'error');
+  if (!validarAcaoEtapa('instalacao', 'Acesso negado — somente o Supervisor AS&TS pode registrar a data de instalação.')) {
     return;
   }
   if (!validateStep_Instalacao()) return;
@@ -4807,8 +4967,7 @@ async function confirmIniciarRelatorio() {
 
 // 07 → Encerramento do processo
 async function confirmConcluir() {
-  if (!isSupervisorASTS() && !isSuperAdmin()) {
-    showToast('Acesso negado — somente o Supervisor AS&TS pode finalizar a solicitação.', 'error');
+  if (!validarAcaoEtapa('relatorio', 'Acesso negado — somente o Supervisor AS&TS pode finalizar a solicitação.')) {
     return;
   }
   if (!validateStep_Relatorio()) return;
@@ -5026,6 +5185,7 @@ function go(id){
   currentPage = id;
   if(!currentFlow) currentFlow = id;
   visitedFlow.add(id);
+  restaurarBloqueioTelaFluxo(document.getElementById('screen-' + id));
   document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
   const sb = document.getElementById('sb-solicitacao');
   if(sb) sb.classList.add('active');
@@ -5190,6 +5350,8 @@ function go(id){
       if (tSupv) { tSupv.checked = true; updateTL('tSupv','lSupv'); }
     }
   }
+
+  aplicarPermissoesTelaFluxo(id);
 }
 
 function setBreadcrumb(text){
@@ -5478,6 +5640,8 @@ async function abrirSolicitacao(solicitacaoId) {
 
 // ─── MODALS ─────────────────────────────────────────────────
 function showMod(id){
+  const etapa = MODAL_ETAPA[id];
+  if (etapa && !validarAcaoEtapa(etapa)) return;
   const el = document.getElementById(id);
   if (el) { el.classList.add('open'); el.setAttribute('aria-modal','true'); }
 }
