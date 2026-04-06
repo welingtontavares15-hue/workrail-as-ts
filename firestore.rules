@@ -11,8 +11,9 @@ service cloud.firestore {
     }
 
     function getUserProfile() {
-      return isSignedIn()
-             ? get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.perfil
+      let uPath = /databases/$(database)/documents/usuarios/$(request.auth.uid);
+      return (isSignedIn() && exists(uPath))
+             ? get(uPath).data.perfil
              : null;
     }
 
@@ -222,7 +223,7 @@ service cloud.firestore {
     }
 
     match /integracoes/{docId} {
-      allow read, create, update, delete: if isSuperAdmin();
+      allow read, create, update, delete: if isSuperAdmin() || isAdmVendas();
     }
 
     match /contadores/{docId} {
