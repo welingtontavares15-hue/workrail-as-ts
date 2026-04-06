@@ -5641,9 +5641,12 @@ function buildProgressNav(){
     const btn=document.createElement('button');
     const done=visitedFlow.has(id)&&id!==currentPage;
     const active=id===currentPage;
+    const canNavigate = isSuperAdmin() || visitedFlow.has(id);
     btn.className='pnav-step'+(active?' active':'')+(done?' done':'');
     btn.innerHTML=`<div class="pnav-num">${done?'✓':i+1}</div><span>${FLOW_LABELS[i]}</span>`;
-    btn.onclick=()=>{if(visitedFlow.has(id))go(id);};
+    btn.style.cursor = canNavigate ? 'pointer' : 'default';
+    btn.title = canNavigate ? `Abrir etapa ${i+1}` : 'Etapa ainda não disponível para navegação';
+    btn.onclick=()=>{if(canNavigate)go(id);};
     pn.appendChild(btn);
   });
 }
