@@ -221,6 +221,10 @@ service cloud.firestore {
       allow create, update, delete: if isSuperAdmin() || isAdmVendas();
     }
 
+    match /integracoes/{docId} {
+      allow read, create, update, delete: if isSuperAdmin();
+    }
+
     match /contadores/{docId} {
       allow read: if isSignedIn();
       // Qualquer usuário autenticado pode incrementar (geração de protocolo WR).

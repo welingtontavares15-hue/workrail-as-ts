@@ -1533,6 +1533,43 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
               </div>
             </div>
 
+            <!-- Power Automate + SharePoint -->
+            <div class="fcard">
+              <div class="fc-head">
+                <svg viewBox="0 0 13 13" fill="none"><path d="M2 3.5h9v6H2z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M4.5 2v2M8.5 2v2M4.5 9.5v1.5M8.5 9.5v1.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+                <span class="fc-title">Power Automate — SharePoint</span>
+              </div>
+              <div class="fc-body c1">
+                <div class="field">
+                  <label><input type="checkbox" id="cfg-pa-enabled" style="margin-right:8px">Habilitar sincronização automática de documentos</label>
+                </div>
+                <div class="field">
+                  <label>Webhook HTTP do Power Automate</label>
+                  <input type="url" id="cfg-pa-webhook" placeholder="https://prod-00.brazilsouth.logic.azure.com/...">
+                </div>
+                <div class="field">
+                  <label>Site SharePoint</label>
+                  <input type="text" id="cfg-pa-site" placeholder="Solenis Brasil">
+                </div>
+                <div class="field">
+                  <label>Biblioteca de documentos</label>
+                  <input type="text" id="cfg-pa-library" placeholder="Documentos Compartilhados">
+                </div>
+                <div class="field">
+                  <label>Pasta raiz no SharePoint</label>
+                  <input type="text" id="cfg-pa-root-folder" placeholder="WORKRAIL/AS&TS">
+                </div>
+                <div style="font-size:11px;color:var(--text-mid);background:var(--teal-xlight);border:1px solid #b2dfdb;border-radius:4px;padding:9px 11px;margin-top:2px;line-height:1.6">
+                  O WORKRAIL enviará automaticamente para o Power Automate apenas os anexos de <strong>Contrato</strong>, <strong>Nota Fiscal</strong> e <strong>Relatório de Instalação</strong>.
+                  O fluxo do Power Automate deve baixar o arquivo pela URL recebida e salvar na estrutura informada do SharePoint.
+                </div>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                  <button class="btn-primary" style="margin-top:10px;align-self:flex-start" onclick="salvarConfigPowerAutomateAdmin()">Salvar Integração</button>
+                  <div id="cfg-pa-msg" style="font-size:11px;color:var(--teal-dark);margin-top:10px;display:none"></div>
+                </div>
+              </div>
+            </div>
+
             <!-- Informações do sistema -->
             <div class="fcard">
               <div class="fc-head">
@@ -2334,6 +2371,42 @@ const EMAIL_RECIPIENTS = {
   adm:       'adm@solenis.com',
   fornecedor:'fornecedor@solenis.com'
 };
+const POWER_AUTOMATE_CONFIG_DOC = 'power_automate';
+const DOCUMENTO_TIPOS_NEGOCIO = [
+  'CONTRATO',
+  'FORMULARIO_PEDIDO',
+  'NOTA_FISCAL',
+  'COMPROVANTE_ENTREGA',
+  'RELATORIO_INSTALACAO'
+];
+const DOCUMENTO_TIPOS_NEGOCIO_SET = new Set(DOCUMENTO_TIPOS_NEGOCIO);
+
+function inferirTipoDocumentoPorPath(storagePath) {
+  const path = String(storagePath || '').toLowerCase();
+  if (path.includes('/contratos/')) return 'CONTRATO';
+  if (path.includes('/formularios/')) return 'FORMULARIO_PEDIDO';
+  if (path.includes('/documentos-fiscais/')) return 'NOTA_FISCAL';
+  if (path.includes('/comprovantes/')) return 'COMPROVANTE_ENTREGA';
+  if (path.includes('/relatorios/')) return 'RELATORIO_INSTALACAO';
+  return '';
+}
+
+function getDocumentoTipo(doc) {
+  const tipoDireto = String(doc?.tipoDocumento || doc?.tipo || '').trim().toUpperCase();
+  if (DOCUMENTO_TIPOS_NEGOCIO_SET.has(tipoDireto)) return tipoDireto;
+  return inferirTipoDocumentoPorPath(doc?.storagePath);
+}
+
+function getDocumentoMimeType(doc) {
+  const mimeType = String(doc?.mimeType || '').trim();
+  if (mimeType) return mimeType;
+
+  const tipoLegado = String(doc?.tipo || '').trim();
+  if (tipoLegado && !DOCUMENTO_TIPOS_NEGOCIO_SET.has(tipoLegado.toUpperCase())) {
+    return tipoLegado;
+  }
+  return '';
+}
 
 // ─── STATUS PADRONIZADOS DO FLUXO ────────────────────────────
 const STATUS = {
@@ -3415,7 +3488,7 @@ async function uploadArquivo(file, pasta) {
     return {
       url,
       nomeArquivo: file.name,
-      tipo:        file.type,
+      mimeType:    file.type,
       tamanho:     file.size,
       storagePath: path
     };
@@ -3432,7 +3505,7 @@ async function uploadMultiplos(campos, pasta) {
     if (file) {
       const up = await uploadArquivo(file, pasta);
       if (up) {
-        docs.push({ tipo, ...up });
+        docs.push({ ...up, tipo, tipoDocumento: tipo });
       } else {
         // Upload retornou null — falha silenciosa do uploadArquivo; reporta ao usuário
         const msg = `Falha ao fazer upload do arquivo "${file.name}" (${tipo}). Verifique sua conexão e tente novamente.`;
@@ -3521,6 +3594,9 @@ async function adicionarDocumentos(id, docs) {
   if (!docs || docs.length === 0) return;
   const comMeta = docs.map(d => ({
     ...d,
+    tipo:         getDocumentoTipo(d) || d.tipo || d.tipoDocumento || '',
+    tipoDocumento:getDocumentoTipo(d) || d.tipoDocumento || d.tipo || '',
+    mimeType:     getDocumentoMimeType(d),
     responsavel:  d.responsavel || 'Sistema',
     etapa:        d.etapa || currentSolicitacao?.etapaAtual || 'desconhecida',
     dataAnexo:    new Date().toISOString()
@@ -5315,7 +5391,7 @@ function go(id){
     setTxt('info-cnpj-02',     dc.cnpj);
     setTxt('info-tipo-02',     ds.tipoSolicitacao);
     setTxt('info-ref-dia-02',  ds.refeicoesDia ? ds.refeicoesDia + ' ref./dia' : '—');
-    const contratoDoc = docs.find(d => d.tipo === 'CONTRATO');
+    const contratoDoc = docs.find(d => getDocumentoTipo(d) === 'CONTRATO');
     setTxt('info-contrato-02', contratoDoc ? '✓ Anexado por Vendas' : 'Não anexado');
     // Restaurar campos do supervisor se já preenchidos
     const esp = currentSolicitacao?.parecerGestor?.especificacao || {};
@@ -5347,7 +5423,7 @@ function go(id){
 
     // Mostrar contrato anexado por Vendas (somente leitura)
     const docs = currentSolicitacao?.documentos || [];
-    const contratoDoc = docs.find(d => d.tipo === 'CONTRATO');
+    const contratoDoc = docs.find(d => getDocumentoTipo(d) === 'CONTRATO');
     const nomeEl = document.getElementById('admContratoNome');
     const linkEl = document.getElementById('admContratoLink');
     if (nomeEl && contratoDoc) {
@@ -7097,6 +7173,123 @@ function salvarEmailSistema() {
   showToast('E-mail salvo! Recarregue a página para aplicar.', 'success');
 }
 
+async function carregarConfigPowerAutomateAdmin() {
+  const msgEl = document.getElementById('cfg-pa-msg');
+  const setMsg = (text, isError = false) => {
+    if (!msgEl) return;
+    msgEl.textContent = text;
+    msgEl.style.display = text ? 'block' : 'none';
+    msgEl.style.color = isError ? '#c62828' : 'var(--teal-dark)';
+  };
+
+  const defaults = {
+    enabled: false,
+    webhookUrl: '',
+    siteName: 'Solenis Brasil',
+    libraryName: 'Documentos Compartilhados',
+    rootFolder: 'WORKRAIL/AS&TS'
+  };
+
+  const fill = cfg => {
+    const enabledEl = document.getElementById('cfg-pa-enabled');
+    const webhookEl = document.getElementById('cfg-pa-webhook');
+    const siteEl = document.getElementById('cfg-pa-site');
+    const libraryEl = document.getElementById('cfg-pa-library');
+    const rootFolderEl = document.getElementById('cfg-pa-root-folder');
+    if (enabledEl) enabledEl.checked = !!cfg.enabled;
+    if (webhookEl) webhookEl.value = cfg.webhookUrl || '';
+    if (siteEl) siteEl.value = cfg.siteName || defaults.siteName;
+    if (libraryEl) libraryEl.value = cfg.libraryName || defaults.libraryName;
+    if (rootFolderEl) rootFolderEl.value = cfg.rootFolder || defaults.rootFolder;
+  };
+
+  fill(defaults);
+  if (!db) {
+    setMsg('Firebase não conectado. Não foi possível carregar a integração.', true);
+    return;
+  }
+
+  try {
+    const snap = await db.collection('integracoes').doc(POWER_AUTOMATE_CONFIG_DOC).get();
+    if (snap.exists) {
+      fill({ ...defaults, ...snap.data() });
+      setMsg('Configuração carregada.');
+    } else {
+      setMsg('Nenhuma configuração salva ainda. Preencha os campos e salve.');
+    }
+  } catch (e) {
+    console.error('[WORKRAIL] Erro ao carregar configuração Power Automate:', e);
+    setMsg('Erro ao carregar configuração da integração.', true);
+  }
+}
+
+async function salvarConfigPowerAutomateAdmin() {
+  if (!db) {
+    showToast('Firebase não conectado.', 'error');
+    return;
+  }
+
+  const enabled = !!document.getElementById('cfg-pa-enabled')?.checked;
+  const webhookUrl = document.getElementById('cfg-pa-webhook')?.value?.trim() || '';
+  const siteName = document.getElementById('cfg-pa-site')?.value?.trim() || 'Solenis Brasil';
+  const libraryName = document.getElementById('cfg-pa-library')?.value?.trim() || 'Documentos Compartilhados';
+  const rootFolder = document.getElementById('cfg-pa-root-folder')?.value?.trim() || 'WORKRAIL/AS&TS';
+  const msgEl = document.getElementById('cfg-pa-msg');
+
+  if (enabled && !webhookUrl) {
+    showToast('Informe o webhook do Power Automate para habilitar a integração.', 'error');
+    if (msgEl) {
+      msgEl.textContent = 'Preencha o webhook antes de habilitar a sincronização.';
+      msgEl.style.display = 'block';
+      msgEl.style.color = '#c62828';
+    }
+    return;
+  }
+
+  if (webhookUrl) {
+    try {
+      const url = new URL(webhookUrl);
+      if (!/^https?:$/i.test(url.protocol)) throw new Error('invalid-protocol');
+    } catch (_) {
+      showToast('Webhook inválido.', 'error');
+      if (msgEl) {
+        msgEl.textContent = 'Informe uma URL HTTP/HTTPS válida.';
+        msgEl.style.display = 'block';
+        msgEl.style.color = '#c62828';
+      }
+      return;
+    }
+  }
+
+  try {
+    await db.collection('integracoes').doc(POWER_AUTOMATE_CONFIG_DOC).set({
+      enabled,
+      webhookUrl,
+      siteName,
+      libraryName,
+      rootFolder,
+      atualizadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+      atualizadoPorUid: currentUser?.uid || null,
+      atualizadoPorNome: currentUser?.nome || ''
+    }, { merge: true });
+
+    if (msgEl) {
+      msgEl.textContent = '✓ Integração salva com sucesso.';
+      msgEl.style.display = 'block';
+      msgEl.style.color = 'var(--teal-dark)';
+    }
+    showToast('Integração Power Automate salva.', 'success');
+  } catch (e) {
+    console.error('[WORKRAIL] Erro ao salvar configuração Power Automate:', e);
+    if (msgEl) {
+      msgEl.textContent = 'Erro ao salvar integração: ' + (e.message || e);
+      msgEl.style.display = 'block';
+      msgEl.style.color = '#c62828';
+    }
+    showToast('Erro ao salvar integração.', 'error');
+  }
+}
+
 // ─── BUSCA NAS TABELAS ADMIN ─────────────────────────────────
 function filtrarTabelaAdmin(tbodyId, termo) {
   const tbody = document.getElementById(tbodyId);
@@ -7726,6 +7919,7 @@ function onEnterAdmin() {
   if (elVerm) elVerm.value = cfg.alertaVerm;
   if (elLar)  elLar.value  = cfg.alertaLar;
   if (elAmar) elAmar.value = cfg.alertaAmar;
+  carregarConfigPowerAutomateAdmin();
 }
 
 function salvarCfgVigenciaAdmin() {
