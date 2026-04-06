@@ -1996,6 +1996,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
                 <div class="field"><label>Data de Entrega ao Cliente</label><input type="date" id="inputDataEntrega"></div>
                 <div class="field"><label>Responsável / Transportadora</label><input type="text" id="inputResponsavelColeta" placeholder="Nome do responsável ou transportadora"></div>
                 <div class="field"><label>Supervisor AS&TS notificado?</label><div class="toggle-field"><label class="toggle"><input type="checkbox" id="tSupv" onchange="updateTL('tSupv','lSupv')"><span class="toggle-slider"></span></label><span class="toggle-lbl" id="lSupv">Não</span></div></div>
+                <div class="field s2"><label>Nota Fiscal pela Logística</label><label class="file-drop" id="fNFLogistica"><input type="file" onchange="setFile(this,'fNFLogistica','fNFLogisticaA')"><svg viewBox="0 0 18 18" fill="none"><path d="M9 4v8M5 8l4-4 4 4M3 14h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Anexar NF complementar (opcional)</span></label><div class="file-attached" id="fNFLogisticaA"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1"/><path d="M8 1v3h3" stroke="currentColor" stroke-width="1"/></svg><span></span></div></div>
+                <div class="field s2"><label>Comprovante de Entrega</label><label class="file-drop" id="fEntrega"><input type="file" onchange="setFile(this,'fEntrega','fEntregaA')"><svg viewBox="0 0 18 18" fill="none"><path d="M9 4v8M5 8l4-4 4 4M3 14h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Anexar comprovante (opcional)</span></label><div class="file-attached" id="fEntregaA"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1"/><path d="M8 1v3h3" stroke="currentColor" stroke-width="1"/></svg><span></span></div></div>
                 <div class="field"><label>Observações</label><input type="text" id="inputObsLogistica" placeholder="Informações sobre coleta e entrega"></div>
               </div>
             </div>
@@ -5092,17 +5094,25 @@ async function confirmAgendarInstalacao() {
   try {
     const dados = coletarDadosLogistica();
 
-    const uploads = await uploadMultiplos(
+    const uploadsNF = await uploadMultiplos(
+      [['fNFLogistica','NOTA_FISCAL']], 'documentos-fiscais'
+    );
+    const uploadsEntrega = await uploadMultiplos(
       [['fEntrega','COMPROVANTE_ENTREGA']], 'comprovantes'
     );
+    const uploads = [...uploadsNF, ...uploadsEntrega];
 
     if (uploads.length > 0) {
       await adicionarDocumentos(currentSolicitacaoId,
         uploads.map(u => ({ ...u, etapa:'logistica', responsavel: currentUser?.nome || 'Logística' })));
     }
 
+    const anexosLogistica = uploads
+      .map(u => getDocumentoLabel(u))
+      .filter(Boolean)
+      .join(', ');
     const hist = entradaHistorico('LOGISTICA_ACIONADA', currentUser?.nome || 'Logística', 'logistica',
-      `Coleta/entrega confirmada. Coleta prevista em ${dados.dataColetaConfirmada}. Responsável: ${dados.responsavelColeta}`);
+      `Coleta/entrega confirmada. Coleta prevista em ${dados.dataColetaConfirmada}. Responsável: ${dados.responsavelColeta}${anexosLogistica ? '. Anexos: ' + anexosLogistica : ''}`);
     await atualizarSolicitacao(currentSolicitacaoId,
       { dadosLogistica: dados }, STATUS.AGUARDANDO_INSTALACAO.key, 'instalacao', hist
     );
