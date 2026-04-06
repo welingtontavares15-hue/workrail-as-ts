@@ -174,32 +174,49 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
 /* Progress nav */
 .progress-nav{
   background:var(--teal-dark);
-  height:42px;display:flex;align-items:center;
-  padding:0 16px;overflow-x:auto;scrollbar-width:none;flex-shrink:0;
+  min-height:56px;display:flex;align-items:center;
+  gap:6px;padding:8px 18px;overflow-x:auto;scrollbar-width:none;flex-shrink:0;
   border-bottom:1px solid rgba(255,255,255,.1);
 }
 .progress-nav::-webkit-scrollbar{display:none}
 .pnav-step{
   display:flex;align-items:center;gap:6px;
-  padding:0 12px;height:42px;
-  font-size:11px;color:rgba(255,255,255,.45);
+  padding:0 14px;min-height:38px;
+  font-size:11px;color:rgba(255,255,255,.62);
   cursor:pointer;white-space:nowrap;
-  border-bottom:2.5px solid transparent;
-  transition:color .15s,border-color .15s,background .15s;
+  border:1px solid transparent;border-radius:14px;
+  background:rgba(255,255,255,.05);
+  appearance:none;-webkit-appearance:none;
+  transition:color .15s,border-color .15s,background .15s,box-shadow .15s,transform .15s,opacity .15s;
 }
-.pnav-step:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.8)}
-.pnav-step.active{color:#fff;border-bottom-color:#7fe0e5;background:rgba(255,255,255,.07)}
-.pnav-step.done{color:rgba(255,255,255,.55)}
+.pnav-step.clickable:hover{
+  background:rgba(255,255,255,.11);color:#fff;border-color:rgba(127,224,229,.32);
+  box-shadow:0 8px 16px rgba(3,35,38,.16);transform:translateY(-1px);
+}
+.pnav-step:focus-visible{
+  outline:none;border-color:#7fe0e5;box-shadow:0 0 0 2px rgba(127,224,229,.18);
+}
+.pnav-step.active{
+  color:#fff;background:rgba(255,255,255,.14);border-color:rgba(127,224,229,.48);
+  box-shadow:0 10px 20px rgba(3,35,38,.18);
+}
+.pnav-step.done{color:rgba(255,255,255,.8)}
+.pnav-step.locked{opacity:.68}
 .pnav-num{
-  width:17px;height:17px;border-radius:50%;
+  width:21px;height:21px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
-  font-size:9px;font-weight:700;
-  background:rgba(255,255,255,.12);color:rgba(255,255,255,.45);
+  font-size:9.5px;font-weight:700;
+  background:rgba(255,255,255,.14);color:rgba(255,255,255,.62);
   flex-shrink:0;transition:background .15s,color .15s;
 }
 .pnav-step.active .pnav-num{background:#7fe0e5;color:#075a60}
-.pnav-step.done .pnav-num{background:rgba(127,224,229,.35);color:#cff}
-.pnav-arr{color:rgba(255,255,255,.18);font-size:9px;margin:0 1px}
+.pnav-step.done .pnav-num{background:rgba(127,224,229,.28);color:#e9ffff}
+.pnav-step.locked .pnav-num{background:rgba(255,255,255,.1);color:rgba(255,255,255,.42)}
+.pnav-label{
+  display:flex;align-items:center;min-height:20px;
+  font-size:11.5px;font-weight:600;letter-spacing:.01em;
+}
+.pnav-arr{color:rgba(255,255,255,.2);font-size:10px;margin:0 -1px}
 
 /* Screens */
 .screens{flex:1;position:relative;overflow:hidden}
@@ -5633,22 +5650,53 @@ function setBreadcrumb(text){
     `<span class="tb-bc-item">WORKRAIL</span><span class="tb-bc-sep">›</span><span class="tb-bc-item active">${text}</span>`;
 }
 
+function navegarEtapaProgressNav(stageId) {
+  if (!FLOW.includes(stageId)) return;
+  const canNavigate = isSuperAdmin() || visitedFlow.has(stageId);
+  if (!canNavigate) return;
+  go(stageId);
+}
+
 function buildProgressNav(){
   const pn = document.getElementById('progressNav');
+  if (!pn) return;
   pn.innerHTML='';
+
+  pn.onclick = (event) => {
+    const step = event.target.closest('.pnav-step[data-stage-id]');
+    if (!step || !pn.contains(step)) return;
+    event.preventDefault();
+    navegarEtapaProgressNav(step.dataset.stageId);
+  };
+
+  pn.onkeydown = (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const step = event.target.closest('.pnav-step[data-stage-id]');
+    if (!step || !pn.contains(step)) return;
+    event.preventDefault();
+    navegarEtapaProgressNav(step.dataset.stageId);
+  };
+
   FLOW.forEach((id,i)=>{
     if(i>0){const a=document.createElement('span');a.className='pnav-arr';a.textContent='›';pn.appendChild(a);}
     const btn=document.createElement('button');
     const done=visitedFlow.has(id)&&id!==currentPage;
     const active=id===currentPage;
     const canNavigate = isSuperAdmin() || visitedFlow.has(id);
-    btn.className='pnav-step'+(active?' active':'')+(done?' done':'');
-    btn.innerHTML=`<div class="pnav-num">${done?'✓':i+1}</div><span>${FLOW_LABELS[i]}</span>`;
+    btn.type = 'button';
+    btn.className='pnav-step'+(active?' active':'')+(done?' done':'')+(canNavigate?' clickable':' locked');
+    btn.setAttribute('data-stage-id', id);
+    btn.setAttribute('data-can-navigate', canNavigate ? '1' : '0');
+    btn.setAttribute('aria-current', active ? 'step' : 'false');
+    btn.setAttribute('aria-label', `Etapa ${i+1}: ${FLOW_LABELS[i].replace('·',' ')}`);
+    btn.innerHTML=`<div class="pnav-num">${done?'✓':i+1}</div><span class="pnav-label">${FLOW_LABELS[i]}</span>`;
     btn.style.cursor = canNavigate ? 'pointer' : 'default';
     btn.title = canNavigate ? `Abrir etapa ${i+1}` : 'Etapa ainda não disponível para navegação';
-    btn.onclick=()=>{if(canNavigate)go(id);};
+    btn.disabled = false;
     pn.appendChild(btn);
   });
+
+  pn.querySelector('.pnav-step.active')?.scrollIntoView({ block:'nearest', inline:'center' });
 }
 
 function openPendentes(){ goPage('pendentes'); }
