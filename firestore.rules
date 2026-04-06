@@ -31,6 +31,10 @@ service cloud.firestore {
       return p == 'adm_vendas' || p == 'adm';
     }
 
+    function isLogistica() {
+      return getUserProfile() == 'logistica';
+    }
+
     // ═══════════════════════════════════════════════
     // /usuarios/{userId}
     // ═══════════════════════════════════════════════
@@ -91,6 +95,7 @@ service cloud.firestore {
             isSuperAdmin()
             || isSupervisorASTS()
             || isAdmVendas()
+            || isLogistica()
             || (perfil == 'vendas'            && doc.criadoPorUid == uid)
             || (perfil == 'fornecedor_ebst'   && fornecedorEBST)
             || (perfil == 'fornecedor_hobart' && fornecedorHobart)
@@ -109,7 +114,7 @@ service cloud.firestore {
           || (etapa == 'fornecedor' && getUserProfile() == 'fornecedor_hobart'
               && (resource.data.get(['dadosAdm','encaminhadoFornecedor'],'') == 'Hobart Brasil'
                   || resource.data.get(['dadosAdm','fornecedor'],'') == 'Hobart Brasil'))
-          || (etapa == 'logistica'   && isAdmVendas())
+          || (etapa == 'logistica'   && isLogistica())
           || ((etapa == 'instalacao' || etapa == 'data_instalacao') && isSupervisorASTS())
           || ((etapa == 'relatorio'  || etapa == 'relatorio_final') && isSupervisorASTS());
     }

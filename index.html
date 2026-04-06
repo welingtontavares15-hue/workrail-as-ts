@@ -1827,6 +1827,12 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
               </div>
             </div>
             <div class="fcard">
+              <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1.1"/><path d="M8 1v3h3M4.5 7h4M4.5 9h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg><span class="fc-title">Arquivo da Etapa Anterior</span></div>
+              <div class="fc-body">
+                <div id="gestorDocsPrev"></div>
+              </div>
+            </div>
+            <div class="fcard">
               <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="11" height="11" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M3.5 5h6M3.5 7h6M3.5 9h4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg><span class="fc-title">Especificação Técnica da Máquina</span></div>
               <div class="fc-body c3">
                 <div class="field"><label>Fornecedor Recomendado <span class="req">*</span></label><select id="supervisorFornecedor"><option value="">Selecionar...</option><option>Hobart Brasil</option><option>EBST</option></select></div>
@@ -1886,6 +1892,12 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
               </div>
             </div>
             <div class="fcard">
+              <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1.1"/><path d="M8 1v3h3M4.5 7h4M4.5 9h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg><span class="fc-title">Arquivos das Etapas Anteriores</span></div>
+              <div class="fc-body">
+                <div id="admDocsPrev"></div>
+              </div>
+            </div>
+            <div class="fcard">
               <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><rect x="1.5" y="4.5" width="8" height="7" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M9.5 6.5h2l1.5 2.5v3h-3.5v-5.5z" stroke="currentColor" stroke-width="1.1"/><circle cx="4" cy="12" r="1" stroke="currentColor" stroke-width="1"/><circle cx="11" cy="12" r="1" stroke="currentColor" stroke-width="1"/></svg><span class="fc-title">Encaminhamento ao Fornecedor</span></div>
               <div class="fc-body c3">
                 <div class="field"><label>Fornecedor <span class="req">*</span></label><select id="selectFornecedorAdm"><option value="">Selecionar...</option><option>Hobart Brasil</option><option>EBST</option></select></div>
@@ -1910,6 +1922,12 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
             <div class="fh-status"><div class="chip c-supplier"><div class="chip-dot"></div>Em Preparação</div></div>
           </div>
           <div class="form-body">
+            <div class="fcard">
+              <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1.1"/><path d="M8 1v3h3M4.5 7h4M4.5 9h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg><span class="fc-title">Documentos Recebidos</span></div>
+              <div class="fc-body">
+                <div id="fornecedorDocsPrev"></div>
+              </div>
+            </div>
             <div class="fcard">
               <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1.1"/><path d="M8 1v3h3M4.5 7h4M4.5 9h4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg><span class="fc-title">Nota Fiscal e Liberação</span></div>
               <div class="fc-body c2">
@@ -1944,7 +1962,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
         <div class="form-screen">
           <div class="form-hdr">
             <div class="fh-icon"><svg viewBox="0 0 17 17" fill="none"><path d="M8.5 2v5.5l3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8.5" cy="8.5" r="6" stroke="currentColor" stroke-width="1.3"/></svg></div>
-            <div><div class="fh-title">05 — Logística de Coleta e Entrega</div><div class="fh-sub">ADM de Vendas · acionar logística para coleta e entrega</div></div>
+            <div><div class="fh-title">05 — Logística de Coleta e Entrega</div><div class="fh-sub">Logística · confirmar coleta e entrega ao cliente</div></div>
             <div class="fh-status"><div class="chip c-transit"><div class="chip-dot"></div>Em Trânsito</div></div>
           </div>
           <div class="form-body">
@@ -1960,13 +1978,19 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
                 <div class="timeline">
                   <div class="tl-row"><div class="tl-dot" style="background:#2e7d32">✓</div><div class="tl-body"><div class="tl-label">Pedido emitido ao fornecedor</div><div class="tl-time" id="tl-data-pedido">—</div></div></div>
                   <div class="tl-row"><div class="tl-dot" style="background:#2e7d32">✓</div><div class="tl-body"><div class="tl-label">Máquina expedida</div><div class="tl-time" id="tl-data-expedicao">—</div></div></div>
-                  <div class="tl-row"><div class="tl-dot" style="background:#0e7b82">→</div><div class="tl-body"><div class="tl-label">Em coleta / entrega</div><div class="tl-meta">ADM deve acionar a logística para coleta e entrega ao cliente</div></div></div>
+                  <div class="tl-row"><div class="tl-dot" style="background:#0e7b82">→</div><div class="tl-body"><div class="tl-label">Em coleta / entrega</div><div class="tl-meta">A equipe de Logística deve confirmar coleta e entrega ao cliente</div></div></div>
                   <div class="tl-row"><div class="tl-dot" style="background:#cfd8dc">4</div><div class="tl-body"><div class="tl-label" style="color:var(--text-muted)">Instalação (pendente)</div></div></div>
                 </div>
               </div>
             </div>
             <div class="fcard">
-              <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 5.5-5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="fc-title">Acionamento da Logística</span></div>
+              <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1.1"/><path d="M8 1v3h3M4.5 7h4M4.5 9h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg><span class="fc-title">Arquivos do Fornecedor</span></div>
+              <div class="fc-body">
+                <div id="logisticaDocsPrev"></div>
+              </div>
+            </div>
+            <div class="fcard">
+              <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 5.5-5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="fc-title">Confirmação da Logística</span></div>
               <div class="fc-body c2">
                 <div class="field"><label>Data de Coleta Confirmada <span class="req">*</span></label><input type="date" id="dataColetaConfirmada"></div>
                 <div class="field"><label>Data de Entrega ao Cliente</label><input type="date" id="inputDataEntrega"></div>
@@ -1978,7 +2002,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
           </div>
           <div class="action-bar">
             <div class="ab-left"><button class="btn btn-back" onclick="go('fornecedor')"><svg viewBox="0 0 13 13" fill="none"><path d="M8 2L4 6.5 8 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Voltar</button></div>
-            <div class="ab-right"><button class="btn btn-advance" onclick="showMod('mInstalacao')"><svg viewBox="0 0 13 13" fill="none"><path d="M11 6.5H2M7.5 3l3.5 3.5L7.5 10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Notificar Logística</button></div>
+            <div class="ab-right"><button class="btn btn-advance" onclick="showMod('mInstalacao')"><svg viewBox="0 0 13 13" fill="none"><path d="M11 6.5H2M7.5 3l3.5 3.5L7.5 10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Confirmar Coleta e Encaminhar</button></div>
           </div>
         </div>
       </div>
@@ -1992,6 +2016,12 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
             <div class="fh-status"><div class="chip c-install"><div class="chip-dot"></div>Registrar Data de Instalação</div></div>
           </div>
           <div class="form-body">
+            <div class="fcard">
+              <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1.1"/><path d="M8 1v3h3M4.5 7h4M4.5 9h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg><span class="fc-title">Arquivos da Logística</span></div>
+              <div class="fc-body">
+                <div id="instalacaoDocsPrev"></div>
+              </div>
+            </div>
             <div class="fcard">
               <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.1"/><path d="M6.5 3.5v3l2 2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg><span class="fc-title">Programação da Instalação</span></div>
               <div class="fc-body c3">
@@ -2022,6 +2052,12 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
           </div>
           <div class="form-body">
             <div class="alert a-info" style="background:#fff8e1;border-color:#f9a825;color:#5d4037"><svg viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 7v3.5M7.5 5.5v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span><strong>Ação obrigatória:</strong> Anexe o relatório de instalação gerado no sistema externo. O processo só pode ser encerrado após o upload do relatório.</span></div>
+            <div class="fcard">
+              <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1.1"/><path d="M8 1v3h3M4.5 7h4M4.5 9h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg><span class="fc-title">Arquivos das Etapas Anteriores</span></div>
+              <div class="fc-body">
+                <div id="relatorioDocsPrev"></div>
+              </div>
+            </div>
             <div class="fcard" style="border:2px solid #0e7b82">
               <div class="fc-head"><svg viewBox="0 0 13 13" fill="none"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M8 1v3h3M4.5 7h4M4.5 9h4M4.5 11h2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg><span class="fc-title">Relatório de Instalação</span><span style="font-size:10px;color:var(--red);margin-left:auto;font-weight:600">Upload obrigatório para encerrar</span></div>
               <div class="fc-body c2">
@@ -2073,6 +2109,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#e2e8ef;color:
           <option value="vendas">Vendas</option>
           <option value="supervisor_asts">Supervisor AS&TS</option>
           <option value="adm_vendas">ADM Vendas</option>
+          <option value="logistica">Logística</option>
           <option value="fornecedor_ebst">Fornecedor EBST</option>
           <option value="fornecedor_hobart">Fornecedor Hobart Brasil</option>
           <option value="super_admin">Administrador do Sistema</option>
@@ -2380,6 +2417,13 @@ const DOCUMENTO_TIPOS_NEGOCIO = [
   'RELATORIO_INSTALACAO'
 ];
 const DOCUMENTO_TIPOS_NEGOCIO_SET = new Set(DOCUMENTO_TIPOS_NEGOCIO);
+const DOCUMENTO_LABELS = {
+  CONTRATO: 'Contrato',
+  FORMULARIO_PEDIDO: 'Formulário de Pedido',
+  NOTA_FISCAL: 'Nota Fiscal',
+  COMPROVANTE_ENTREGA: 'Comprovante de Entrega',
+  RELATORIO_INSTALACAO: 'Relatório de Instalação'
+};
 
 function inferirTipoDocumentoPorPath(storagePath) {
   const path = String(storagePath || '').toLowerCase();
@@ -2406,6 +2450,47 @@ function getDocumentoMimeType(doc) {
     return tipoLegado;
   }
   return '';
+}
+
+function getDocumentoLabel(doc) {
+  const tipo = getDocumentoTipo(doc);
+  return DOCUMENTO_LABELS[tipo] || doc?.nomeArquivo || 'Documento';
+}
+
+function getDocumentosPorEtapas(etapas) {
+  const etapasSet = new Set(etapas || []);
+  return (currentSolicitacao?.documentos || [])
+    .filter(doc => doc?.url)
+    .filter(doc => !etapasSet.size || etapasSet.has(doc.etapa))
+    .sort((a, b) => {
+      const ta = Date.parse(a?.dataAnexo || 0) || 0;
+      const tb = Date.parse(b?.dataAnexo || 0) || 0;
+      return tb - ta;
+    });
+}
+
+function renderDocumentosRelacionados(containerId, etapas, emptyText) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const docs = getDocumentosPorEtapas(etapas);
+  if (!docs.length) {
+    container.innerHTML = `<div style="background:#f6fbfc;border:1px dashed #b7d7da;border-radius:6px;padding:10px 12px;font-size:12px;color:var(--text-muted)">${emptyText}</div>`;
+    return;
+  }
+
+  container.innerHTML = docs.map(doc => {
+    const etapa = getEtapaLabel(doc.etapa);
+    const dataAnexo = doc?.dataAnexo ? new Date(doc.dataAnexo).toLocaleString('pt-BR') : '—';
+    return `<div style="display:flex;align-items:center;gap:10px;border:1px solid #d5e7ea;border-radius:6px;padding:10px 12px;background:#f8fcfc${docs.length > 1 ? ';margin-bottom:8px' : ''}">
+      <svg viewBox="0 0 13 13" fill="none" style="width:14px;height:14px;color:#0e7b82;flex-shrink:0"><path d="M3 1h5l3 3v8H3V1z" stroke="currentColor" stroke-width="1.1"/><path d="M8 1v3h3M4.5 7h4M4.5 9h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:#075a60;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${getDocumentoLabel(doc)} · ${doc.nomeArquivo || 'Arquivo'}</div>
+        <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px">${etapa} · ${doc.responsavel || 'Sistema'} · ${dataAnexo}</div>
+      </div>
+      <a href="${doc.url}" target="_blank" rel="noopener" style="font-size:11px;color:#0e7b82;text-decoration:underline;white-space:nowrap">Visualizar ↗</a>
+    </div>`;
+  }).join('');
 }
 
 // ─── STATUS PADRONIZADOS DO FLUXO ────────────────────────────
@@ -2436,7 +2521,7 @@ let auth    = null;
 let firebaseOk = false;
 
 // ─── PERFIL DO USUÁRIO LOGADO ─────────────────────────────────
-// perfil: 'vendas' | 'gestor' | 'adm' | 'fornecedor_ebst' | 'fornecedor_hobart'
+// perfil: 'vendas' | 'gestor' | 'adm' | 'logistica' | 'fornecedor_ebst' | 'fornecedor_hobart'
 let currentUser = null;
 
 // ─── MAPEAMENTO DE PERFIS ─────────────────────────────────────
@@ -2447,6 +2532,7 @@ const PERFIS = {
   supervisor_asts:   { label:'Supervisor AS&TS', chip:'c-analysis', cor:'#1565c0' }, // alias
   adm:               { label:'ADM Vendas',       chip:'c-approved', cor:'#2e7d32' },
   adm_vendas:        { label:'ADM Vendas',       chip:'c-approved', cor:'#2e7d32' }, // alias
+  logistica:         { label:'Logística',        chip:'c-transit',  cor:'#00695c' },
   fornecedor_ebst:   { label:'Fornecedor EBST',  chip:'c-supplier', cor:'#4527a0' },
   fornecedor_hobart: { label:'Fornecedor Hobart',chip:'c-supplier', cor:'#4527a0' }
 };
@@ -2472,8 +2558,16 @@ function isAdmVendas() {
   return p === 'adm_vendas' || p === 'adm';
 }
 
+function isLogistica() {
+  return currentUser?.perfil === 'logistica';
+}
+
 function isSuperAdmin() {
   return currentUser?.perfil === 'super_admin';
+}
+
+function solicitacaoNoEscopoLogistica(data) {
+  return ['logistica', 'instalacao', 'relatorio', 'concluido'].includes(data?.etapaAtual);
 }
 
 
@@ -2622,7 +2716,7 @@ const RESPONSAVEL_ETAPA = {
   gestor: 'Supervisor AS&TS',
   adm: 'ADM de Vendas',
   fornecedor: 'Fornecedor',
-  logistica: 'ADM de Vendas',
+  logistica: 'Logística',
   instalacao: 'Supervisor AS&TS',
   relatorio: 'Supervisor AS&TS'
 };
@@ -2660,8 +2754,9 @@ function etapaPertenceAoPerfil(etapa) {
     case 'relatorio':
       return isSupervisorASTS();
     case 'adm':
-    case 'logistica':
       return isAdmVendas();
+    case 'logistica':
+      return isLogistica();
     case 'fornecedor': {
       if (!isFornecedor()) return false;
       const fornecedorDaSolicitacao = currentSolicitacao?.dadosAdm?.encaminhadoFornecedor
@@ -2686,6 +2781,7 @@ function resolverEtapaVisualizacaoSolicitacao(etapaAtual) {
   if (isSuperAdmin()) return etapaAtual || 'solicitacao';
   if (currentUser?.perfil === 'vendas') return 'solicitacao';
   if (isFornecedor()) return 'fornecedor';
+  if (isLogistica()) return 'logistica';
   if (isSupervisorASTS()) {
     return ['gestor', 'instalacao', 'relatorio'].includes(etapaAtual) ? etapaAtual : 'gestor';
   }
@@ -3417,14 +3513,14 @@ function aplicarControleMenu(perfil) {
   // Esconde itens de menu não permitidos por perfil
   const regras = {
     // item_id: ['perfis que PODEM ver']
-    'sb-solicitacao':  ['vendas','gestor','supervisor_asts','adm','adm_vendas','super_admin'],
-    'sb-pendentes':    ['gestor','supervisor_asts','adm','adm_vendas','super_admin','fornecedor_ebst','fornecedor_hobart'],
+    'sb-solicitacao':  ['vendas','gestor','supervisor_asts','adm','adm_vendas','logistica','super_admin'],
+    'sb-pendentes':    ['gestor','supervisor_asts','adm','adm_vendas','logistica','super_admin','fornecedor_ebst','fornecedor_hobart'],
     'sb-relatorios':   ['gestor','supervisor_asts','adm','adm_vendas','super_admin'],
     'sb-configuracoes':['adm','adm_vendas','super_admin'],
     'sb-dashboard':    ['vendas','gestor','supervisor_asts','adm','adm_vendas','super_admin'],
-    'sb-historico':    ['vendas','gestor','supervisor_asts','adm','adm_vendas','super_admin','fornecedor_ebst','fornecedor_hobart'],
-    'sb-notificacoes': ['vendas','gestor','supervisor_asts','adm','adm_vendas','super_admin'],
-    'sb-home':         ['vendas','gestor','supervisor_asts','adm','adm_vendas','super_admin'],
+    'sb-historico':    ['vendas','gestor','supervisor_asts','adm','adm_vendas','logistica','super_admin','fornecedor_ebst','fornecedor_hobart'],
+    'sb-notificacoes': ['vendas','gestor','supervisor_asts','adm','adm_vendas','logistica','super_admin'],
+    'sb-home':         ['vendas','gestor','supervisor_asts','adm','adm_vendas','logistica','super_admin'],
     'sb-admin':        ['super_admin']
   };
 
@@ -3705,7 +3801,7 @@ async function carregarHistoricoFirebase() {
 
     rows = [...rows, ...rowsMaq];
 
-    const podeVerTudoHist = ['gestor','supervisor_asts','adm','adm_vendas','super_admin'].includes(currentUser?.perfil);
+    const podeVerTudoHist = ['gestor','supervisor_asts','adm','adm_vendas','logistica','super_admin'].includes(currentUser?.perfil);
     if (!podeVerTudoHist) {
       if (currentUser?.perfil === 'vendas') {
         const nomeUser = currentUser.nome || '';
@@ -3801,6 +3897,7 @@ async function buscarEmailsPorPerfil(perfil) {
     const aliasMap = {
       gestor:  ['supervisor_asts', 'gestor'],
       adm:     ['adm_vendas', 'adm'],
+      logistica: ['logistica'],
       vendas:  ['vendas'],
       super_admin: ['super_admin']
     };
@@ -4937,7 +5034,15 @@ async function confirmExpedicao() {
     try {
       await notificarPorPerfil('adm',
         'Máquina Expedida — NF Disponível',
-        `NF anexada e máquina liberada pelo fornecedor. A ADM deve acionar a logística para coleta e entrega.`,
+        `NF anexada e máquina liberada pelo fornecedor. O ADM pode acompanhar a solicitação, que agora aguarda ação da Logística.`,
+        prot, { NF: dados.numeroNF, 'Data Liberação': dados.dataColeta,
+                'Serial Máquina': dados.maquinaConfirmada?.serialMaquina || '—',
+                Cliente: currentSolicitacao?.dadosCliente?.nomeCliente,
+                'Acesso ao sistema': window.location.href }
+      );
+      await notificarPorPerfil('logistica',
+        'Máquina Expedida — Ação da Logística Necessária',
+        `NF anexada e máquina liberada pelo fornecedor. A Logística deve confirmar coleta e entrega ao cliente.`,
         prot, { NF: dados.numeroNF, 'Data Liberação': dados.dataColeta,
                 'Serial Máquina': dados.maquinaConfirmada?.serialMaquina || '—',
                 Cliente: currentSolicitacao?.dadosCliente?.nomeCliente,
@@ -4974,9 +5079,9 @@ async function confirmExpedicao() {
   }
 }
 
-// 05 → ADM aciona logística e encaminha ao Supervisor AS&TS
+// 05 → Logística confirma coleta/entrega e encaminha ao Supervisor AS&TS
 async function confirmAgendarInstalacao() {
-  if (!validarAcaoEtapa('logistica', 'Acesso negado — somente o ADM de Vendas pode acionar a logística.')) {
+  if (!validarAcaoEtapa('logistica', 'Acesso negado — somente a equipe de Logística pode confirmar coleta e entrega.')) {
     return;
   }
   if (!validateStep_Logistica()) return;
@@ -4993,11 +5098,11 @@ async function confirmAgendarInstalacao() {
 
     if (uploads.length > 0) {
       await adicionarDocumentos(currentSolicitacaoId,
-        uploads.map(u => ({ ...u, etapa:'logistica', responsavel:'ADM de Vendas' })));
+        uploads.map(u => ({ ...u, etapa:'logistica', responsavel: currentUser?.nome || 'Logística' })));
     }
 
-    const hist = entradaHistorico('LOGISTICA_ACIONADA','ADM de Vendas','logistica',
-      `Logística acionada. Coleta prevista em ${dados.dataColetaConfirmada}. Responsável: ${dados.responsavelColeta}`);
+    const hist = entradaHistorico('LOGISTICA_ACIONADA', currentUser?.nome || 'Logística', 'logistica',
+      `Coleta/entrega confirmada. Coleta prevista em ${dados.dataColetaConfirmada}. Responsável: ${dados.responsavelColeta}`);
     await atualizarSolicitacao(currentSolicitacaoId,
       { dadosLogistica: dados }, STATUS.AGUARDANDO_INSTALACAO.key, 'instalacao', hist
     );
@@ -5012,13 +5117,13 @@ async function confirmAgendarInstalacao() {
                 'Acesso ao sistema': window.location.href }
       );
       await enviarNotificacao(FORMSUBMIT_EMAIL,
-        'Logística Acionada', `Coleta em ${dados.dataColetaConfirmada}`, prot);
+        'Logística Confirmada', `Coleta em ${dados.dataColetaConfirmada}`, prot);
     } catch(notifErr) {
       console.warn('[WORKRAIL] Notificação de logística falhou:', notifErr);
     }
 
     pendingFiles = {};
-    showToast('Logística notificada. O Supervisor AS&TS deve informar a data de instalação.', 'success');
+    showToast('Coleta e entrega registradas. O Supervisor AS&TS deve informar a data de instalação.', 'success');
     go('instalacao');
   } catch(e) {
     console.error(e);
@@ -5393,6 +5498,7 @@ function go(id){
     setTxt('info-ref-dia-02',  ds.refeicoesDia ? ds.refeicoesDia + ' ref./dia' : '—');
     const contratoDoc = docs.find(d => getDocumentoTipo(d) === 'CONTRATO');
     setTxt('info-contrato-02', contratoDoc ? '✓ Anexado por Vendas' : 'Não anexado');
+    renderDocumentosRelacionados('gestorDocsPrev', ['solicitacao'], 'Nenhum arquivo foi anexado por Vendas nesta solicitação.');
     // Restaurar campos do supervisor se já preenchidos
     const esp = currentSolicitacao?.parecerGestor?.especificacao || {};
     const _setVal = (elId, val) => { const el = document.getElementById(elId); if (el && val) el.value = val; };
@@ -5428,13 +5534,27 @@ function go(id){
     const linkEl = document.getElementById('admContratoLink');
     if (nomeEl && contratoDoc) {
       nomeEl.textContent = contratoDoc.nomeArquivo || 'Contrato anexado por Vendas';
-      if (linkEl && contratoDoc.url) {
-        linkEl.href = contratoDoc.url;
-        linkEl.style.display = '';
+      if (linkEl) {
+        if (contratoDoc.url) {
+          linkEl.href = contratoDoc.url;
+          linkEl.style.display = '';
+        } else {
+          linkEl.removeAttribute('href');
+          linkEl.style.display = 'none';
+        }
       }
     } else if (nomeEl) {
       nomeEl.textContent = 'Nenhum contrato vinculado';
+      if (linkEl) {
+        linkEl.removeAttribute('href');
+        linkEl.style.display = 'none';
+      }
     }
+    renderDocumentosRelacionados('admDocsPrev', ['gestor', 'solicitacao'], 'Nenhum documento de apoio foi anexado nas etapas anteriores.');
+  }
+
+  if (id === 'fornecedor') {
+    renderDocumentosRelacionados('fornecedorDocsPrev', ['gestor', 'solicitacao'], 'Nenhum documento anterior foi disponibilizado para o fornecedor.');
   }
 
   // Ao entrar na tela Fornecedor, pré-preenche Serial da máquina registrada pelo Fornecedor (se retorno)
@@ -5454,6 +5574,7 @@ function go(id){
     const _setVal = (elId, val) => { const el = document.getElementById(elId); if (el && val) el.value = val; };
     _setVal('inputDataInstalacao',   di.dataInstalacao);
     _setVal('inputHorarioInstalacao', di.horario);
+    renderDocumentosRelacionados('instalacaoDocsPrev', ['logistica', 'fornecedor'], 'Nenhum arquivo foi disponibilizado pela Logística.');
   }
 
   // Ao entrar na tela Logística, popula painéis e timeline com dados reais
@@ -5483,10 +5604,15 @@ function go(id){
     _setVal('inputDataEntrega',       dl.dataEntrega);
     _setVal('inputResponsavelColeta', dl.responsavelColeta);
     _setVal('inputObsLogistica',      dl.observacoes);
+    renderDocumentosRelacionados('logisticaDocsPrev', ['fornecedor'], 'Nenhum arquivo foi anexado pelo fornecedor nesta solicitação.');
     if (dl.supervisorNotificado === 'Sim') {
       const tSupv = document.getElementById('tSupv');
       if (tSupv) { tSupv.checked = true; updateTL('tSupv','lSupv'); }
     }
+  }
+
+  if (id === 'relatorio') {
+    renderDocumentosRelacionados('relatorioDocsPrev', ['logistica', 'fornecedor', 'gestor', 'solicitacao'], 'Nenhum arquivo anterior disponível para consulta.');
   }
 
   aplicarPermissoesTelaFluxo(id);
@@ -5556,7 +5682,9 @@ async function carregarSolicitacoesPendentes() {
     const snap = await query.get();
 
     // Ordena por data decrescente client-side (mais recente primeiro)
-    _solicitacoesCache = snap.docs.sort((a, b) => {
+    _solicitacoesCache = snap.docs
+      .filter(d => currentUser?.perfil === 'logistica' ? solicitacaoNoEscopoLogistica(d.data()) : true)
+      .sort((a, b) => {
       const ta = a.data().criadoEm?.toMillis ? a.data().criadoEm.toMillis() : 0;
       const tb = b.data().criadoEm?.toMillis ? b.data().criadoEm.toMillis() : 0;
       return tb - ta;
@@ -5626,6 +5754,7 @@ async function buscarSolicitacoesHomeStats() {
 
   const snap = await query.get();
   return snap.docs.filter(doc => {
+    if (perfil === 'logistica' && !solicitacaoNoEscopoLogistica(doc.data())) return false;
     if (!isFornecedor()) return true;
     const data = doc.data();
     const fornecedorDaSolicitacao = data.dadosAdm?.encaminhadoFornecedor || data.dadosAdm?.fornecedor;
@@ -5738,6 +5867,8 @@ async function carregarPendentesEquipe() {
       query = db.collection('solicitacoes').where('etapaAtual','==','gestor').limit(50);
     } else if (perfil === 'adm_vendas' || perfil === 'adm') {
       query = db.collection('solicitacoes').where('etapaAtual','==','adm').limit(50);
+    } else if (perfil === 'logistica') {
+      query = db.collection('solicitacoes').where('etapaAtual','==','logistica').limit(50);
     } else if (perfil === 'fornecedor_ebst') {
       query = db.collection('solicitacoes').where('etapaAtual','==','fornecedor').where('dadosAdm.encaminhadoFornecedor','==','EBST').limit(50);
     } else if (perfil === 'fornecedor_hobart') {
@@ -5819,6 +5950,12 @@ async function abrirSolicitacao(solicitacaoId) {
         goPage('pendentes');
         return;
       }
+    }
+
+    if (isLogistica() && !solicitacaoNoEscopoLogistica(data)) {
+      showToast('Acesso bloqueado para Logística nesta etapa da solicitação.', 'error');
+      goPage('pendentes');
+      return;
     }
 
     currentSolicitacaoId = solicitacaoId;
@@ -6027,7 +6164,7 @@ async function carregarNotificacoesFirebase() {
       // Busca máquinas com vencimento próximo ou vencidas
       const snapMaq = await db.collection('maquinas').limit(500).get().catch(() => null);
       if (snapMaq) {
-        const podeVerTudo = ['gestor','supervisor_asts','adm','adm_vendas','super_admin'].includes(currentUser?.perfil);
+        const podeVerTudo = ['gestor','supervisor_asts','adm','adm_vendas','logistica','super_admin'].includes(currentUser?.perfil);
 
         snapMaq.docs.forEach(doc => {
           const m = doc.data();
@@ -6141,7 +6278,7 @@ async function exportarRelatorio(tipo, btnEl) {
       const snap = await db.collection('maquinas').limit(1000).get();
       const hoje_ = new Date();
       // Filtro por perfil: vendas vê apenas os próprios
-      const podeVerTudoPerf = ['gestor','supervisor_asts','adm','adm_vendas','super_admin'].includes(currentUser?.perfil);
+      const podeVerTudoPerf = ['gestor','supervisor_asts','adm','adm_vendas','logistica','super_admin'].includes(currentUser?.perfil);
       const por = {};
       const detalhes = [];
       snap.docs.forEach(d => {
@@ -6616,7 +6753,7 @@ async function carregarDashboard() {
   // Atualiza subtítulo
   const subEl = document.getElementById('dash-sub');
   const hoje  = new Date();
-  const podeVerTudoSub = ['gestor','supervisor_asts','adm','adm_vendas','super_admin'].includes(currentUser?.perfil);
+  const podeVerTudoSub = ['gestor','supervisor_asts','adm','adm_vendas','logistica','super_admin'].includes(currentUser?.perfil);
   if (subEl) subEl.textContent = (podeVerTudoSub ? 'Parque de máquinas' : 'Seus contratos') +
     ' · ' + hoje.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
 
@@ -6642,7 +6779,7 @@ async function carregarDashboard() {
     // Para vendas: busca somente as próprias solicitações via query restrita.
     // Para os demais perfis operacionais: visão completa do parque.
     const uid = currentUser?.uid;
-    const podeVerTudoQuery = ['gestor','supervisor_asts','adm','adm_vendas','super_admin'].includes(currentUser?.perfil);
+    const podeVerTudoQuery = ['gestor','supervisor_asts','adm','adm_vendas','logistica','super_admin'].includes(currentUser?.perfil);
     const querySolicitacoes = podeVerTudoQuery
       ? db.collection('solicitacoes').get()
       : db.collection('solicitacoes').where('criadoPorUid','==',uid).get();
@@ -6709,7 +6846,7 @@ async function carregarDashboard() {
       });
 
     // ── Filtro por perfil: vendas já vem filtrado pela query; bloco abaixo é defesa extra ──
-    const podeVerTudo = ['gestor','supervisor_asts','adm','adm_vendas','super_admin'].includes(currentUser?.perfil);
+    const podeVerTudo = ['gestor','supervisor_asts','adm','adm_vendas','logistica','super_admin'].includes(currentUser?.perfil);
     let filtradosSol = contratosSol;
     let filtradosMaq = contratosMaq;
     if (!podeVerTudo && currentUser?.perfil === 'vendas') {
