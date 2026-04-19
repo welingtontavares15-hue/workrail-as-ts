@@ -1347,6 +1347,87 @@ html,body{background:linear-gradient(135deg,#e8eef4 0%,#f7fafc 55%,#eef5f7 100%)
   #screen-solicitacao .s3,#screen-solicitacao .s4{grid-column:span 2}
 }
 
+/* Dashboard: tabela de contratos compacta e estável */
+.ctd-card{
+  padding:16px 16px 14px;overflow:hidden;
+}
+.ctd-card .cc-head{
+  margin-bottom:12px;display:grid;grid-template-columns:minmax(0,1fr) auto;
+  gap:12px;align-items:center;
+}
+.ctd-filter{
+  display:flex;align-items:center;justify-content:flex-end;min-width:0;
+}
+#ctdSearch{
+  width:clamp(150px,16vw,220px);height:32px!important;
+  min-width:0!important;border-radius:999px;padding:0 13px;
+  font-size:11.5px!important;background:#fbfdfe;
+}
+.ctd-wrap{
+  width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;
+  border:1px solid var(--line-soft);border-radius:16px;background:#fff;
+}
+.ctd-table{
+  width:100%;min-width:900px;table-layout:fixed;border-collapse:separate;border-spacing:0;
+  font-size:11.4px;
+}
+.ctd-table th{
+  padding:9px 8px;font-size:9.6px;letter-spacing:.075em;line-height:1.25;
+  color:#617784;background:linear-gradient(180deg,#f8fbfc,#eef5f8);
+}
+.ctd-table td{
+  padding:8px 8px;line-height:1.28;vertical-align:middle;
+}
+.ctd-table th,.ctd-table td{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.ctd-table th:nth-child(1),.ctd-table td:nth-child(1){width:8.5%}
+.ctd-table th:nth-child(2),.ctd-table td:nth-child(2){width:20%}
+.ctd-table th:nth-child(3),.ctd-table td:nth-child(3){width:9.5%}
+.ctd-table th:nth-child(4),.ctd-table td:nth-child(4){width:10%}
+.ctd-table th:nth-child(5),.ctd-table td:nth-child(5){width:8%}
+.ctd-table th:nth-child(6),.ctd-table td:nth-child(6){width:6%;text-align:center}
+.ctd-table th:nth-child(7),.ctd-table td:nth-child(7){width:8%}
+.ctd-table th:nth-child(8),.ctd-table td:nth-child(8){width:12%}
+.ctd-table th:nth-child(9),.ctd-table td:nth-child(9){width:8.2%}
+.ctd-table th:nth-child(10),.ctd-table td:nth-child(10){width:5.8%;text-align:center}
+.ctd-proto,.ctd-serial,.ctd-date,.ctd-months{
+  display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-family:'DM Mono',monospace;
+}
+.ctd-proto{font-size:10.5px;font-weight:700;color:#075a60}
+.ctd-serial{font-size:10.4px;color:#075a60}
+.ctd-date,.ctd-months{font-size:10.3px;color:#58707d}
+.ctd-cliente,.ctd-modelo{
+  display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.ctd-cliente{font-size:11.8px;font-weight:650;color:#172535}
+.ctd-modelo{font-size:10.9px;color:#4f6471}
+.ctd-progress-wrap{
+  min-width:0;width:100%;gap:2px;
+}
+.ctd-progress{height:6px;border-radius:999px;background:#e6eef3}
+.ctd-pct-lbl{
+  font-size:9.4px;text-align:right;line-height:1.1;color:#748a96;
+}
+.ctd-badge{
+  min-width:0;max-width:100%;height:22px;padding:2px 7px;
+  font-size:9.8px;border-radius:999px;letter-spacing:-.01em;
+}
+.ctd-table .btn-mini{
+  height:24px;padding:0 7px;font-size:10px;border-radius:9px;
+}
+@media(max-width:1180px){
+  .ctd-table{min-width:860px}
+  .ctd-card .cc-head{grid-template-columns:1fr}
+  .ctd-filter{justify-content:flex-start}
+  #ctdSearch{width:min(100%,260px)}
+}
+@media(max-width:860px){
+  .ctd-card{padding:14px}
+  .ctd-table{min-width:820px}
+}
+
 /* Login e admin */
 .login-card{border-radius:22px;box-shadow:0 28px 90px rgba(3,35,38,.32)}
 .login-head{padding:28px;background:linear-gradient(135deg,#14172a,#101726)}
@@ -1675,14 +1756,14 @@ html,body{background:linear-gradient(135deg,#e8eef4 0%,#f7fafc 55%,#eef5f7 100%)
           </div>
 
           <!-- TABELA CONTAGEM REGRESSIVA -->
-          <div class="chart-card">
-            <div class="cc-head">
+          <div class="chart-card ctd-card">
+            <div class="cc-head ctd-head">
               <div>
                 <div class="cc-title">Contagem Regressiva dos Contratos</div>
                 <div class="cc-sub">Todos os contratos ativos — ordenados por vencimento</div>
               </div>
-              <div style="display:flex;gap:8px;align-items:center">
-                <input type="text" id="ctdSearch" class="cf-input" placeholder="Filtrar contratos..." style="height:28px;font-size:12px;min-width:160px" oninput="filtrarContratos(this.value)">
+              <div class="ctd-filter">
+                <input type="text" id="ctdSearch" class="cf-input" placeholder="Filtrar contratos..." oninput="filtrarContratos(this.value)">
               </div>
             </div>
             <div class="ctd-wrap">
@@ -7167,18 +7248,18 @@ function renderizarTabelaContratos(contratos) {
     return `<tr>
       <td><span class="ctd-proto">${c.numeroPedido||'—'}</span></td>
       <td><span class="ctd-cliente">${c.nomeCliente||'—'}</span></td>
-      <td style="font-size:11.5px;font-family:'DM Mono',monospace;color:var(--teal-dark)">${c.serial||'—'}</td>
+      <td><span class="ctd-serial">${c.serial||'—'}</span></td>
       <td><span class="ctd-modelo">${c.modelo||'—'}</span></td>
-      <td style="font-size:11px;color:var(--text-mid);white-space:nowrap">${fmtDate(c.dataInst)||'—'}</td>
-      <td style="font-size:11px;color:var(--text-mid);text-align:center">${c.meses ? c.meses+'m' : '—'}</td>
-      <td style="font-size:11px;color:var(--text-mid);white-space:nowrap">${c.dataVenc ? fmtDate(c.dataVenc) : '—'}</td>
+      <td><span class="ctd-date">${fmtDate(c.dataInst)||'—'}</span></td>
+      <td><span class="ctd-months">${c.meses ? c.meses+'m' : '—'}</span></td>
+      <td><span class="ctd-date">${c.dataVenc ? fmtDate(c.dataVenc) : '—'}</span></td>
       <td>
         ${pct !== null ? `
         <div class="ctd-progress-wrap">
           <div class="ctd-progress">
             <div class="ctd-bar" style="width:${pct}%;background:${barCor}"></div>
           </div>
-          <div class="ctd-pct-lbl">${Math.round(pct)}% decorrido</div>
+          <div class="ctd-pct-lbl">${Math.round(pct)}%</div>
         </div>` : '<span style="font-size:11px;color:var(--text-muted)">—</span>'}
       </td>
       <td><span class="ctd-badge ctd-${cat}">${lbl}</span></td>
