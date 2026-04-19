@@ -1285,6 +1285,68 @@ html,body{background:linear-gradient(135deg,#e8eef4 0%,#f7fafc 55%,#eef5f7 100%)
   .pnav-step{flex-basis:148px}
 }
 
+/* Correções pontuais: Histórico e Nova Solicitação */
+#screen-historico .panel-header{
+  margin-left:18px;margin-right:18px;max-width:calc(100% - 36px);
+}
+#screen-historico .panel-body{
+  padding:16px 18px 24px;gap:14px;
+}
+#screen-historico .hist-table-wrap{
+  width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;
+}
+#screen-historico .hist-table{
+  width:100%;table-layout:fixed;
+}
+#screen-historico .hist-table th{
+  padding:11px 9px;font-size:9.8px;letter-spacing:.075em;
+}
+#screen-historico .hist-table td{
+  padding:11px 9px;font-size:12px;
+}
+#screen-historico .hist-table th,
+#screen-historico .hist-table td{
+  overflow:hidden;text-overflow:ellipsis;
+}
+#screen-historico .hist-table th:nth-child(6),
+#screen-historico .hist-table td:nth-child(6),
+#screen-historico .hist-table th:nth-child(7),
+#screen-historico .hist-table td:nth-child(7){
+  text-align:center;
+}
+#screen-historico .ht-avatar{
+  width:24px;height:24px;font-size:9px;margin-right:4px;
+}
+#screen-historico .ht-name{
+  display:inline-block;max-width:142px;margin-left:4px;
+  vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+#screen-historico .ht-code{font-size:10.8px}
+#screen-historico .chip{padding:3px 7px;font-size:10px;gap:3px}
+#screen-historico .ht-actions{gap:3px}
+#screen-historico .ht-btn{width:25px;height:25px;border-radius:8px}
+
+#screen-solicitacao .form-body{
+  padding-left:28px;padding-right:34px;overflow-x:hidden;
+}
+#screen-solicitacao .fcard{
+  width:100%;max-width:100%;
+}
+#screen-solicitacao .fc-body{
+  max-width:100%;overflow:hidden;
+}
+#screen-solicitacao .field input,
+#screen-solicitacao .field select,
+#screen-solicitacao .field textarea,
+#screen-solicitacao .file-drop{
+  max-width:100%;
+}
+@media(max-width:1280px){
+  #screen-solicitacao .fc-body.c4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #screen-solicitacao .fc-body.c3{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #screen-solicitacao .s3,#screen-solicitacao .s4{grid-column:span 2}
+}
+
 /* Login e admin */
 .login-card{border-radius:22px;box-shadow:0 28px 90px rgba(3,35,38,.32)}
 .login-head{padding:28px;background:linear-gradient(135deg,#14172a,#101726)}
@@ -1671,18 +1733,18 @@ html,body{background:linear-gradient(135deg,#e8eef4 0%,#f7fafc 55%,#eef5f7 100%)
                corretamente sem expandir o flex container pai (panel-body / screen). -->
           <div style="overflow-x:auto;min-width:0">
             <div class="hist-table-wrap">
-            <table class="hist-table" id="histTable" style="min-width:1060px"><thead><tr>
-              <th style="min-width:130px">N° do Pedido</th>
-              <th style="min-width:160px">Cliente</th>
-              <th style="min-width:110px">Serial</th>
-              <th style="min-width:110px">Modelo</th>
-              <th style="min-width:100px">Fornecedor</th>
-              <th style="min-width:56px;text-align:center">Mesa</th>
-              <th style="min-width:60px;text-align:center">Dosador</th>
-              <th style="min-width:110px">Data instalação</th>
-              <th style="min-width:140px">Responsável vendas</th>
-              <th style="min-width:110px">Status</th>
-              <th style="min-width:74px">Ações</th>
+            <table class="hist-table" id="histTable" style="min-width:1040px;table-layout:fixed"><thead><tr>
+              <th style="width:112px">N° do Pedido</th>
+              <th style="width:210px">Cliente</th>
+              <th style="width:96px">Serial</th>
+              <th style="width:108px">Modelo</th>
+              <th style="width:104px">Fornecedor</th>
+              <th style="width:54px;text-align:center">Mesa</th>
+              <th style="width:66px;text-align:center">Dosador</th>
+              <th style="width:104px">Data instalação</th>
+              <th style="width:118px">Resp. vendas</th>
+              <th style="width:94px">Status</th>
+              <th style="width:64px">Ações</th>
             </tr></thead><tbody id="histBody"></tbody></table>
             </div>
           </div>
