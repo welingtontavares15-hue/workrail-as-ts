@@ -4100,7 +4100,7 @@ function aplicarPerfilNaInterface() {
   // Controle de visibilidade da sidebar por perfil
   aplicarControleMenu(perfil);
 
-  // Banner para fornecedores
+  // Garante que sessões anteriores não deixem banner legado visível.
   adicionarBannerFornecedor(perfil);
 }
 
@@ -4140,26 +4140,7 @@ function aplicarControleMenu(perfil) {
 
 function adicionarBannerFornecedor(perfil) {
   const existing = document.getElementById('supplier-banner');
-
-  // Se NÃO é fornecedor, garante que o banner (de sessão anterior) seja removido
-  if (!isFornecedor()) {
-    if (existing) existing.remove();
-    return;
-  }
-
-  // Já está visível com o fornecedor correto — nada a fazer
-  if (existing) return;
-
-  const main = document.querySelector('.main');
-  if (!main) return;
-
-  const nomeFornecedor = currentUser.fornecedor || fornecedorDoPerfil(perfil);
-  const banner = document.createElement('div');
-  banner.id = 'supplier-banner';
-  banner.className = 'supplier-banner';
-  banner.innerHTML = `<svg viewBox="0 0 14 14" fill="none"><path d="M7 1L1 4v4c0 3.31 2.69 6 6 6s6-2.69 6-6V4L7 1z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l1.5 1.5L9 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    <span>Acesso restrito · Você está visualizando somente solicitações do fornecedor <strong>${nomeFornecedor}</strong></span>`;
-  main.insertBefore(banner, main.firstChild);
+  if (existing) existing.remove();
 }
 
 // ════════════════════════════════════════════════════════════
