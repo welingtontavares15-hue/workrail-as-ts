@@ -4313,32 +4313,47 @@ async function carregarHistoricoFirebase() {
     const uid    = currentUser?.uid;
 
     // Query base — sem orderBy para evitar índice composto; ordenação feita client-side
-    let querySol = db.collection('solicitacoes').limit(200);
+    let queriesSol = [db.collection('solicitacoes').limit(200)];
 
     if (perfil === 'vendas') {
       // Vendas vê apenas suas próprias solicitações
-      querySol = db.collection('solicitacoes')
+      queriesSol = [db.collection('solicitacoes')
         .where('criadoPorUid', '==', uid)
-        .limit(200);
+        .limit(200)];
     } else if (isFornecedor()) {
       // Deriva fornecedor do campo explícito ou do perfil (fallback seguro)
       const fornecedorFiltro = currentUser.fornecedor || fornecedorDoPerfil(perfil);
       if (fornecedorFiltro) {
-        // Usa campo canônico encaminhadoFornecedor; client-side também filtra o alias legado
-        querySol = db.collection('solicitacoes')
-          .where('dadosAdm.encaminhadoFornecedor', '==', fornecedorFiltro)
-          .limit(200);
+        // Busca pelo campo canônico e pelo alias legado, mantendo escopo restrito ao fornecedor.
+        queriesSol = [
+          db.collection('solicitacoes')
+            .where('dadosAdm.encaminhadoFornecedor', '==', fornecedorFiltro)
+            .limit(200),
+          db.collection('solicitacoes')
+            .where('dadosAdm.fornecedor', '==', fornecedorFiltro)
+            .limit(200)
+        ];
       }
     }
 
-    // maquinas: busca simples. Falha graciosamente se permissão não configurada.
-    const [snap, snapMaq] = await Promise.all([
-      querySol.get(),
-      db.collection('maquinas').limit(1000).get().catch(() => null)
+    // maquinas: busca simples para perfis internos; fornecedor vê apenas solicitações vinculadas.
+    const queryMaq = isFornecedor()
+      ? Promise.resolve(null)
+      : db.collection('maquinas').limit(1000).get().catch(() => null);
+    const [snapsSol, snapMaq] = await Promise.all([
+      Promise.all(queriesSol.map(q => q.get())),
+      queryMaq
     ]);
+    const docsSol = [];
+    const vistosSol = new Set();
+    snapsSol.forEach(snap => snap.docs.forEach(doc => {
+      if (vistosSol.has(doc.id)) return;
+      vistosSol.add(doc.id);
+      docsSol.push(doc);
+    }));
 
     // ── Mapeia solicitações ────────────────────────────────
-    let rows = snap.docs.map(d => {
+    let rows = docsSol.map(d => {
       const data = d.data();
       const st   = STATUS[data.status] || STATUS.RASCUNHO;
       const dataInstRaw = data.dadosInstalacao?.dataInstalacao || data.dadosRelatorio?.dataInstalacao || data.dadosFornecedor?.dataColeta || '';
@@ -4349,7 +4364,7 @@ async function carregarHistoricoFirebase() {
         client:         data.dadosCliente?.nomeCliente || '—',
         serial:         data.dadosFornecedor?.maquinaConfirmada?.serialMaquina || data.dadosAdm?.maquina?.serialMaquina || '—',
         model:          data.dadosSolicitacao?.modeloMaquina || data.parecerGestor?.especificacao?.modeloValidado || '—',
-        fornecedor:     data.dadosAdm?.fornecedor || data.parecerGestor?.especificacao?.fornecedorSugerido || '—',
+        fornecedor:     data.dadosAdm?.encaminhadoFornecedor || data.dadosAdm?.fornecedor || data.parecerGestor?.especificacao?.fornecedorSugerido || '—',
         mesa:           data.dadosSolicitacao?.mesa || '—',
         dosador:        data.dadosSolicitacao?.dosador || '—',
         dataInstalacao: dataInstFmt,
@@ -4404,8 +4419,9 @@ async function carregarHistoricoFirebase() {
           r.createdByUid === currentUser.uid ||
           (r.resp && r.resp === nomeUser)
         );
-      } else if (isFornecedor() && currentUser.fornecedor) {
-        rows = rows.filter(r => r.fornecedor === currentUser.fornecedor);
+      } else if (isFornecedor()) {
+        const fornecedorFiltro = currentUser.fornecedor || fornecedorDoPerfil(currentUser.perfil);
+        rows = rows.filter(r => r.fornecedor === fornecedorFiltro);
       }
     }
 
@@ -4425,7 +4441,12 @@ async function carregarHistoricoFirebase() {
     }
     // Atualizar subtítulo do histórico
     const histSub = document.querySelector('#screen-historico .ph-sub');
-    if (histSub) histSub.textContent = rows.length + ' registro' + (rows.length !== 1 ? 's' : '') + ' · ordenados por data';
+    if (histSub) {
+      const escopo = isFornecedor()
+        ? ' · fornecedor ' + (currentUser.fornecedor || fornecedorDoPerfil(currentUser.perfil) || '')
+        : ' · ordenados por data';
+      histSub.textContent = rows.length + ' registro' + (rows.length !== 1 ? 's' : '') + escopo;
+    }
   } catch(e) {
     console.error('[WORKRAIL] Erro ao carregar histórico:', e);
   }
@@ -5953,11 +5974,6 @@ function goPage(id){
   // Guard: fornecedores não podem acessar páginas restritas
   const PAGINAS_BLOQUEADAS_FORNECEDOR = ['dashboard','relatorios','admin','configuracoes'];
   if (isFornecedor() && PAGINAS_BLOQUEADAS_FORNECEDOR.includes(id)) {
-    showToast('Acesso restrito. Redirecionando para Pendentes.', 'warn');
-    id = 'pendentes';
-  }
-  // Guard adicional: histórico sem filtro de fornecedor também é bloqueado
-  if (isFornecedor() && id === 'historico') {
     showToast('Acesso restrito. Redirecionando para Pendentes.', 'warn');
     id = 'pendentes';
   }
